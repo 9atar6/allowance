@@ -49,7 +49,5 @@ export const projectEndpointSchema = z.object({
   headers: z.string().trim().min(1),
 });
 
-export const projectKeyLimit = optionalPositive;
-
 export type EndpointInput = z.infer<typeof endpointSchema>;
 export type TopUpInput = z.infer<typeof topUpSchema>;
