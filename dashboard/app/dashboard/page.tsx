@@ -4,6 +4,7 @@ import { AddEndpointForm } from "@/components/add-endpoint-form";
 import { CreateKeyButton } from "@/components/create-key-button";
 import { EndpointToggle } from "@/components/endpoint-toggle";
 import { KeyList } from "@/components/key-list";
+import { ProjectsSection, type ProjectRow } from "@/components/projects-section";
 import { TopUp } from "@/components/top-up";
 import { TransactionsTable, type TxnRow } from "@/components/transactions-table";
 import { UsageTable, type UsageRow } from "@/components/usage-table";
@@ -17,12 +18,16 @@ interface Endpoint {
   target_url: string;
   cost_per_request: number;
   is_active: boolean;
+  project_id: string | null;
+  slug: string | null;
 }
 interface ProxyKey {
   id: string;
   key_prefix: string;
   is_active: boolean;
   endpoint_id: string | null;
+  project_id: string | null;
+  daily_limit: number | null;
 }
 
 export default async function DashboardPage({
@@ -40,15 +45,16 @@ export default async function DashboardPage({
     { data: keys },
     { data: usage },
     { data: txns },
+    { data: projects },
   ] = await Promise.all([
     supabase.from("wallets").select("balance, currency").single(),
     supabase
       .from("endpoints")
-      .select("id, name, target_url, cost_per_request, is_active")
+      .select("id, name, target_url, cost_per_request, is_active, project_id, slug")
       .order("created_at", { ascending: false }),
     supabase
       .from("proxy_keys")
-      .select("id, key_prefix, is_active, endpoint_id")
+      .select("id, key_prefix, is_active, endpoint_id, project_id, daily_limit")
       .order("created_at", { ascending: false }),
     supabase
       .from("usage_events")
@@ -60,11 +66,19 @@ export default async function DashboardPage({
       .select("id, type, amount, balance_after, created_at")
       .order("created_at", { ascending: false })
       .limit(20),
+    supabase
+      .from("projects")
+      .select("id, name, monthly_budget, is_active")
+      .order("created_at", { ascending: false }),
   ]);
 
   const balance = wallet?.balance ?? 0;
   const endpointList = (endpoints ?? []) as Endpoint[];
   const keyList = (keys ?? []) as ProxyKey[];
+  const projectList = (projects ?? []) as ProjectRow[];
+
+  // Standalone endpoints/keys (not tied to a project) for the simple section.
+  const standaloneEndpoints = endpointList.filter((e) => !e.project_id);
 
   // Map raw rows → typed view models (numeric columns can arrive as strings).
   const endpointNames = new Map(endpointList.map((e) => [e.id, e.name]));
@@ -118,20 +132,27 @@ export default async function DashboardPage({
         <TopUp />
       </Card>
 
-      {/* Add endpoint */}
+      {/* Projects (one key, many services) */}
+      <ProjectsSection
+        projects={projectList}
+        services={endpointList}
+        keys={keyList}
+      />
+
+      {/* Add a standalone endpoint */}
       <Card className="mb-8">
-        <CardTitle className="mb-4">Add an endpoint</CardTitle>
+        <CardTitle className="mb-4">Add a standalone service</CardTitle>
         <AddEndpointForm />
       </Card>
 
-      {/* Endpoints + keys */}
+      {/* Standalone endpoints + keys */}
       <Card>
-        <CardTitle className="mb-4">Your endpoints</CardTitle>
-        {endpointList.length === 0 ? (
-          <p className="text-sm text-neutral-500">No endpoints yet.</p>
+        <CardTitle className="mb-4">Standalone services</CardTitle>
+        {standaloneEndpoints.length === 0 ? (
+          <p className="text-sm text-neutral-500">No standalone services yet.</p>
         ) : (
           <ul className="space-y-4">
-            {endpointList.map((e) => {
+            {standaloneEndpoints.map((e) => {
               const endpointKeys = keyList
                 .filter((k) => k.endpoint_id === e.id)
                 .map((k) => ({

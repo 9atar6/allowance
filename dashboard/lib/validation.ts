@@ -27,5 +27,29 @@ export const topUpSchema = z.object({
   amount: z.coerce.number().positive().min(5).max(10000),
 });
 
+const optionalPositive = z.preprocess(
+  (v) => (v === "" || v == null ? undefined : v),
+  z.coerce.number().positive().optional(),
+);
+
+export const projectSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  monthlyBudget: optionalPositive,
+});
+
+export const projectEndpointSchema = z.object({
+  projectId: z.string().uuid(),
+  name: z.string().trim().min(1).max(80),
+  targetUrl: z.string().url().startsWith("https://", "URL must be https://"),
+  slug: z
+    .string()
+    .trim()
+    .regex(/^[a-z0-9-]{1,40}$/, "Slug: lowercase letters, numbers, hyphens only"),
+  costPerRequest: z.coerce.number().positive().max(1000),
+  headers: z.string().trim().min(1),
+});
+
+export const projectKeyLimit = optionalPositive;
+
 export type EndpointInput = z.infer<typeof endpointSchema>;
 export type TopUpInput = z.infer<typeof topUpSchema>;

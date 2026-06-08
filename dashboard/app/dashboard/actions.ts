@@ -7,7 +7,11 @@ import { generateProxyKey } from "@/lib/keys";
 import { purgeProxyKeyCache } from "@/lib/proxy-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { endpointSchema } from "@/lib/validation";
+import {
+  endpointSchema,
+  projectEndpointSchema,
+  projectSchema,
+} from "@/lib/validation";
 
 export interface ActionResult {
   ok: boolean;
@@ -129,6 +133,98 @@ export async function setEndpointActive(
   if (error) return { ok: false, error: "Could not update endpoint." };
   revalidatePath("/dashboard");
   return { ok: true };
+}
+
+// ── Projects ─────────────────────────────────────────────────────────────────
+
+/** Create a project (a bundle of services billed to one key). */
+export async function createProject(formData: FormData): Promise<ActionResult> {
+  const parsed = projectSchema.safeParse({
+    name: formData.get("name"),
+    monthlyBudget: formData.get("monthlyBudget"),
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("create_project", {
+    p_name: parsed.data.name,
+    p_monthly_budget: parsed.data.monthlyBudget ?? null,
+  });
+  if (error) return { ok: false, error: "Could not create project." };
+
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Add a service to a project (routed by its slug). Credentials go to Vault. */
+export async function createProjectEndpoint(formData: FormData): Promise<ActionResult> {
+  const parsed = projectEndpointSchema.safeParse({
+    projectId: formData.get("projectId"),
+    name: formData.get("name"),
+    targetUrl: formData.get("targetUrl"),
+    slug: formData.get("slug"),
+    costPerRequest: formData.get("costPerRequest"),
+    headers: formData.get("headers"),
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+
+  const headers = parseHeaders(parsed.data.headers);
+  if (!headers) {
+    return { ok: false, error: 'Headers must be "Name: value" lines.' };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("create_endpoint", {
+    p_name: parsed.data.name,
+    p_target_url: parsed.data.targetUrl,
+    p_cost_per_request: parsed.data.costPerRequest,
+    p_auth_headers: headers,
+    p_project_id: parsed.data.projectId,
+    p_slug: parsed.data.slug,
+  });
+  if (error) return { ok: false, error: "Could not add service (is the slug unique?)." };
+
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Mint a project key (routes to all services in the project), optional daily cap. */
+export async function createProjectKey(
+  projectId: string,
+  dailyLimit: number | null,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated." };
+
+  // Verify ownership (RLS-scoped).
+  const { data: project } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .single();
+  if (!project) return { ok: false, error: "Project not found." };
+
+  const { key, keyHash, keyPrefix } = generateProxyKey();
+
+  const admin = createAdminClient();
+  const { error } = await admin.rpc("issue_proxy_key", {
+    p_user_id: user.id,
+    p_key_hash: keyHash,
+    p_key_prefix: keyPrefix,
+    p_project_id: projectId,
+    p_daily_limit: dailyLimit,
+  });
+  if (error) return { ok: false, error: "Could not create key." };
+
+  revalidatePath("/dashboard");
+  return { ok: true, generatedKey: key };
 }
 
 export async function signOut(): Promise<void> {
