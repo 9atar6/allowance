@@ -3,10 +3,11 @@
 import { useState } from "react";
 
 // Lightweight shell-syntax coloring. Tokens: quoted strings, flags, URLs.
+// Colors come in light/dark pairs so the block reads in both themes.
 function classify(tok: string): string {
-  if (/^["']/.test(tok)) return "text-amber-300";
-  if (/^https?:\/\//.test(tok)) return "text-emerald-400";
-  if (/^-{1,2}[A-Za-z]/.test(tok)) return "text-sky-400";
+  if (/^["']/.test(tok)) return "text-amber-700 dark:text-amber-300";
+  if (/^https?:\/\//.test(tok)) return "text-emerald-700 dark:text-emerald-400";
+  if (/^-{1,2}[A-Za-z]/.test(tok)) return "text-sky-700 dark:text-sky-400";
   return "";
 }
 
@@ -48,8 +49,8 @@ export function CodeBlock({ code, label = "bash" }: CodeBlockProps) {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-neutral-800 bg-[#0d1117] shadow-xl">
-      <div className="flex items-center justify-between border-b border-neutral-800 px-4 py-2.5">
+    <div className="overflow-hidden rounded-xl border border-neutral-200 bg-[#f6f8fa] shadow-sm dark:border-neutral-800 dark:bg-[#0d1117] dark:shadow-xl">
+      <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-2.5 dark:border-neutral-800">
         <div className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
           <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
@@ -59,12 +60,12 @@ export function CodeBlock({ code, label = "bash" }: CodeBlockProps) {
         <button
           type="button"
           onClick={copy}
-          className="rounded px-2 py-1 font-mono text-xs text-neutral-400 transition-colors hover:bg-neutral-800 hover:text-neutral-200"
+          className="rounded px-2 py-1 font-mono text-xs text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
         >
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="overflow-x-auto px-5 py-4 text-[13px] leading-relaxed text-neutral-200">
+      <pre className="overflow-x-auto px-5 py-4 text-[13px] leading-relaxed text-neutral-800 dark:text-neutral-200">
         <code className="font-mono">
           {code.split("\n").map((line, i) => (
             <Line key={i} line={line} />
