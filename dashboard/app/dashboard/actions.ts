@@ -227,6 +227,24 @@ export async function createProjectKey(
   return { ok: true, generatedKey: key };
 }
 
+/** Delete a service (endpoint). RLS scopes it to the owner. */
+export async function deleteService(endpointId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("endpoints").delete().eq("id", endpointId);
+  if (error) return { ok: false, error: "Could not delete service." };
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Delete a project (cascades to its services). RLS-scoped. */
+export async function deleteProject(projectId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("projects").delete().eq("id", projectId);
+  if (error) return { ok: false, error: "Could not delete project." };
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 export async function signOut(): Promise<void> {
   const supabase = await createClient();
   await supabase.auth.signOut();

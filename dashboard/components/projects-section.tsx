@@ -1,6 +1,8 @@
+import { deleteProject, deleteService } from "@/app/dashboard/actions";
 import { AddServiceForm } from "@/components/add-service-form";
 import { CreateProjectForm } from "@/components/create-project-form";
 import { CreateProjectKeyButton } from "@/components/create-project-key-button";
+import { InlineDelete } from "@/components/inline-delete";
 import { KeyList, type KeyItem } from "@/components/key-list";
 import { Card, CardTitle } from "@/components/ui/card";
 import { formatUsd } from "@/lib/format";
@@ -14,6 +16,7 @@ export interface ProjectRow {
 export interface ServiceRow {
   id: string;
   name: string;
+  target_url: string;
   cost_per_request: number;
   slug: string | null;
   project_id: string | null;
@@ -34,16 +37,18 @@ interface Props {
 
 export function ProjectsSection({ projects, services, keys }: Props) {
   return (
-    <Card className="mb-8">
-      <CardTitle className="mb-1">Projects</CardTitle>
+    <Card>
+      <div className="mb-1 flex items-center justify-between">
+        <CardTitle>Projects</CardTitle>
+      </div>
       <p className="mb-4 text-sm text-neutral-500">
-        Bundle several services under one key. Call them at{" "}
+        Group services under one key. Agents call them at{" "}
         <code className="text-neutral-400">/v1/proxy/&lt;slug&gt;/…</code>
       </p>
 
       <CreateProjectForm />
 
-      <div className="mt-6 space-y-6">
+      <div className="mt-6 space-y-5">
         {projects.length === 0 ? (
           <p className="text-sm text-neutral-500">No projects yet.</p>
         ) : (
@@ -51,40 +56,61 @@ export function ProjectsSection({ projects, services, keys }: Props) {
             const projServices = services.filter((s) => s.project_id === p.id);
             const projKeys: KeyItem[] = keys
               .filter((k) => k.project_id === p.id)
-              .map((k) => ({ id: k.id, keyPrefix: k.key_prefix, isActive: k.is_active }));
+              .map((k) => ({
+                id: k.id,
+                keyPrefix: k.key_prefix,
+                isActive: k.is_active,
+                dailyLimit: k.daily_limit,
+              }));
 
             return (
               <div key={p.id} className="rounded-lg border border-neutral-800 p-4">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-medium text-white">{p.name}</p>
-                  {p.monthly_budget != null && (
-                    <span className="text-xs tabular-nums text-neutral-400">
-                      budget {formatUsd(Number(p.monthly_budget))}/mo
-                    </span>
-                  )}
+                  <div className="flex items-center gap-3">
+                    {p.monthly_budget != null && (
+                      <span className="text-xs tabular-nums text-neutral-400">
+                        {formatUsd(Number(p.monthly_budget))}/mo cap
+                      </span>
+                    )}
+                    <InlineDelete action={deleteProject.bind(null, p.id)} label="Delete" />
+                  </div>
                 </div>
 
-                <div className="mt-3 space-y-1">
+                {/* Services */}
+                <div className="mt-3 space-y-1.5">
                   {projServices.length === 0 ? (
                     <p className="text-xs text-neutral-600">No services yet.</p>
                   ) : (
                     projServices.map((s) => (
-                      <div key={s.id} className="flex items-center justify-between text-xs">
-                        <span className="text-neutral-300">
-                          <code className="text-emerald-400">/{s.slug}</code> · {s.name}
-                        </span>
-                        <span className="tabular-nums text-neutral-500">
-                          {formatUsd(Number(s.cost_per_request))}/call
-                        </span>
+                      <div key={s.id} className="flex items-center justify-between gap-3 text-xs">
+                        <div className="min-w-0">
+                          <code className="text-emerald-400">/{s.slug}</code>
+                          <span className="ml-2 text-neutral-300">{s.name}</span>
+                          <span className="ml-2 truncate text-neutral-600">{s.target_url}</span>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-3">
+                          <span className="tabular-nums text-neutral-500">
+                            {formatUsd(Number(s.cost_per_request))}/call
+                          </span>
+                          <InlineDelete action={deleteService.bind(null, s.id)} label="remove" />
+                        </div>
                       </div>
                     ))
                   )}
                 </div>
 
-                <div className="mt-3 border-t border-neutral-800 pt-3">
-                  <AddServiceForm projectId={p.id} />
-                </div>
+                {/* Add a service (collapsed to stay compact) */}
+                <details className="mt-3 border-t border-neutral-800 pt-3">
+                  <summary className="cursor-pointer text-xs text-neutral-400 hover:text-neutral-200">
+                    + Add a service
+                  </summary>
+                  <div className="mt-3">
+                    <AddServiceForm projectId={p.id} />
+                  </div>
+                </details>
 
+                {/* Keys */}
                 <div className="mt-3 space-y-2 border-t border-neutral-800 pt-3">
                   <KeyList keys={projKeys} />
                   <CreateProjectKeyButton projectId={p.id} />

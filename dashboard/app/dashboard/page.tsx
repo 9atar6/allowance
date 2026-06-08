@@ -1,8 +1,8 @@
 import { Card, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { AddEndpointForm } from "@/components/add-endpoint-form";
 import { CreateKeyButton } from "@/components/create-key-button";
 import { EndpointToggle } from "@/components/endpoint-toggle";
+import { InlineDelete } from "@/components/inline-delete";
 import { KeyList } from "@/components/key-list";
 import { ProjectsSection, type ProjectRow } from "@/components/projects-section";
 import { TopUp } from "@/components/top-up";
@@ -10,7 +10,7 @@ import { TransactionsTable, type TxnRow } from "@/components/transactions-table"
 import { UsageTable, type UsageRow } from "@/components/usage-table";
 import { formatUsd as usd } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { signOut } from "./actions";
+import { deleteService, signOut } from "./actions";
 
 interface Endpoint {
   id: string;
@@ -60,12 +60,12 @@ export default async function DashboardPage({
       .from("usage_events")
       .select("id, endpoint_id, cost, status_code, created_at")
       .order("created_at", { ascending: false })
-      .limit(20),
+      .limit(8),
     supabase
       .from("wallet_transactions")
       .select("id, type, amount, balance_after, created_at")
       .order("created_at", { ascending: false })
-      .limit(20),
+      .limit(8),
     supabase
       .from("projects")
       .select("id, name, monthly_budget, is_active")
@@ -102,8 +102,8 @@ export default async function DashboardPage({
   }));
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10">
-      <header className="mb-8 flex items-center justify-between">
+    <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
+      <header className="flex items-center justify-between">
         <h1 className="text-xl font-semibold text-white">Allowance</h1>
         <form action={signOut}>
           <Button variant="ghost" type="submit" className="text-xs">
@@ -113,14 +113,21 @@ export default async function DashboardPage({
       </header>
 
       {/* Balance + top-up */}
-      <Card className="mb-8">
-        <CardTitle>Prepaid balance</CardTitle>
-        <p className="mt-2 text-3xl font-semibold tabular-nums text-white">
-          {usd(Number(balance))}
-        </p>
-        <p className="mt-1 text-xs text-neutral-500">
-          Requests hard-stop with HTTP 402 when this hits zero.
-        </p>
+      <Card>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <CardTitle>Balance</CardTitle>
+            <p className="mt-1 text-3xl font-semibold tabular-nums text-white">
+              {usd(Number(balance))}
+            </p>
+            <p className="mt-1 text-xs text-neutral-500">
+              Calls stop with HTTP 402 when this reaches zero.
+            </p>
+          </div>
+          <div className="w-full sm:w-auto">
+            <TopUp />
+          </div>
+        </div>
         {topup === "success" && (
           <p className="mt-3 text-sm text-green-400">
             Payment received. Your balance updates within a few seconds.
@@ -129,80 +136,81 @@ export default async function DashboardPage({
         {topup === "cancelled" && (
           <p className="mt-3 text-sm text-neutral-400">Top-up cancelled.</p>
         )}
-        <TopUp />
       </Card>
 
-      {/* Projects (one key, many services) */}
+      {/* Projects: the main way to add services + keys */}
       <ProjectsSection
         projects={projectList}
         services={endpointList}
         keys={keyList}
       />
 
-      {/* Add a standalone endpoint */}
-      <Card className="mb-8">
-        <CardTitle className="mb-4">Add a standalone service</CardTitle>
-        <AddEndpointForm />
-      </Card>
-
-      {/* Standalone endpoints + keys */}
-      <Card>
-        <CardTitle className="mb-4">Standalone services</CardTitle>
-        {standaloneEndpoints.length === 0 ? (
-          <p className="text-sm text-neutral-500">No standalone services yet.</p>
-        ) : (
-          <ul className="space-y-4">
-            {standaloneEndpoints.map((e) => {
-              const endpointKeys = keyList
-                .filter((k) => k.endpoint_id === e.id)
-                .map((k) => ({
-                  id: k.id,
-                  keyPrefix: k.key_prefix,
-                  isActive: k.is_active,
-                }));
-              return (
-                <li
-                  key={e.id}
-                  className={`rounded-lg border border-neutral-800 p-4 ${
-                    e.is_active ? "" : "opacity-60"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-white">{e.name}</p>
-                      <p className="text-xs text-neutral-500">{e.target_url}</p>
+      {/* Ungrouped (legacy single-endpoint) services, collapsed, only if any */}
+      {standaloneEndpoints.length > 0 && (
+        <Card>
+          <details>
+            <summary className="cursor-pointer text-sm font-medium text-white">
+              Ungrouped services ({standaloneEndpoints.length})
+            </summary>
+            <p className="mb-3 mt-1 text-xs text-neutral-500">
+              Single services not in a project. New services are best added
+              inside a project above.
+            </p>
+            <ul className="space-y-3">
+              {standaloneEndpoints.map((e) => {
+                const endpointKeys = keyList
+                  .filter((k) => k.endpoint_id === e.id)
+                  .map((k) => ({
+                    id: k.id,
+                    keyPrefix: k.key_prefix,
+                    isActive: k.is_active,
+                    dailyLimit: k.daily_limit,
+                  }));
+                return (
+                  <li
+                    key={e.id}
+                    className={`rounded-lg border border-neutral-800 p-3 ${
+                      e.is_active ? "" : "opacity-60"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-white">{e.name}</p>
+                        <p className="truncate text-xs text-neutral-600">
+                          {e.target_url}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-3">
+                        <span className="text-xs tabular-nums text-neutral-400">
+                          {usd(Number(e.cost_per_request))}/call
+                        </span>
+                        <EndpointToggle endpointId={e.id} isActive={e.is_active} />
+                        <InlineDelete action={deleteService.bind(null, e.id)} label="delete" />
+                      </div>
                     </div>
-                    <span className="text-xs tabular-nums text-neutral-400">
-                      {usd(Number(e.cost_per_request))}/call
-                    </span>
-                  </div>
+                    <div className="mt-2 flex items-center justify-between gap-2 border-t border-neutral-800 pt-2">
+                      <KeyList keys={endpointKeys} />
+                      <CreateKeyButton endpointId={e.id} />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </details>
+        </Card>
+      )}
 
-                  <div className="mt-3 flex items-center justify-between">
-                    <EndpointToggle endpointId={e.id} isActive={e.is_active} />
-                    <CreateKeyButton endpointId={e.id} />
-                  </div>
-
-                  <div className="mt-3 border-t border-neutral-800 pt-3">
-                    <KeyList keys={endpointKeys} />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </Card>
-
-      {/* Recent usage */}
-      <Card className="mt-8">
-        <CardTitle className="mb-4">Recent usage</CardTitle>
-        <UsageTable rows={usageRows} endpointName={endpointName} />
-      </Card>
-
-      {/* Transactions */}
-      <Card className="mt-8">
-        <CardTitle className="mb-4">Transactions</CardTitle>
-        <TransactionsTable rows={txnRows} />
-      </Card>
+      {/* Activity: usage + transactions side by side */}
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardTitle className="mb-3">Recent usage</CardTitle>
+          <UsageTable rows={usageRows} endpointName={endpointName} />
+        </Card>
+        <Card>
+          <CardTitle className="mb-3">Transactions</CardTitle>
+          <TransactionsTable rows={txnRows} />
+        </Card>
+      </div>
     </main>
   );
 }

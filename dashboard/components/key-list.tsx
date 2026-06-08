@@ -8,6 +8,7 @@ export interface KeyItem {
   id: string;
   keyPrefix: string;
   isActive: boolean;
+  dailyLimit?: number | null;
 }
 
 export function KeyList({ keys }: { keys: KeyItem[] }) {
@@ -35,6 +36,9 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
         <li key={k.id} className="flex items-center justify-between text-xs">
           <code className="text-neutral-400">
             {k.keyPrefix}…{" "}
+            {k.dailyLimit != null && (
+              <span className="text-neutral-500">· ${k.dailyLimit}/day</span>
+            )}{" "}
             {!k.isActive && <span className="text-neutral-600">(revoked)</span>}
           </code>
           {k.isActive && (
