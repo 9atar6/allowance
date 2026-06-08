@@ -378,4 +378,155 @@ grant execute on function public.debit_wallet(uuid,uuid,numeric,text,int,int,int
 grant execute on function public.credit_wallet(uuid,numeric,public.txn_type,text) to service_role;
 grant execute on function public.issue_proxy_key(uuid,text,text,uuid)             to service_role;
 
+-- =============================================================================
+-- PROJECTS — group several services under one key, with optional budgets.
+-- Additive + idempotent: safe to run on the existing live database. Keys made
+-- before this upgrade (bound to a single endpoint) keep working unchanged.
+-- =============================================================================
+
+create table if not exists public.projects (
+  id              uuid primary key default gen_random_uuid(),
+  user_id         uuid not null references auth.users (id) on delete cascade,
+  name            text not null check (char_length(name) between 1 and 80),
+  monthly_budget  numeric(14, 6) check (monthly_budget is null or monthly_budget > 0),
+  is_active       boolean not null default true,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+create index if not exists projects_user_idx on public.projects (user_id) where is_active;
+
+drop trigger if exists set_updated_at on public.projects;
+create trigger set_updated_at before update on public.projects
+  for each row execute function public.tg_set_updated_at();
+
+-- Route services within a project by a URL slug; cap a key's daily spend.
+alter table public.endpoints  add column if not exists project_id uuid references public.projects (id) on delete cascade;
+alter table public.endpoints  add column if not exists slug text;
+create unique index if not exists endpoints_project_slug_uniq
+  on public.endpoints (project_id, slug) where project_id is not null;
+alter table public.proxy_keys add column if not exists project_id uuid references public.projects (id) on delete set null;
+alter table public.proxy_keys add column if not exists daily_limit numeric(14, 6);
+
+-- RLS: own rows only.
+alter table public.projects enable row level security;
+drop policy if exists "projects_select_own" on public.projects;
+create policy "projects_select_own" on public.projects for select to authenticated using (user_id = auth.uid());
+drop policy if exists "projects_insert_own" on public.projects;
+create policy "projects_insert_own" on public.projects for insert to authenticated with check (user_id = auth.uid());
+drop policy if exists "projects_update_own" on public.projects;
+create policy "projects_update_own" on public.projects for update to authenticated using (user_id = auth.uid()) with check (user_id = auth.uid());
+drop policy if exists "projects_delete_own" on public.projects;
+create policy "projects_delete_own" on public.projects for delete to authenticated using (user_id = auth.uid());
+
+-- create_project: client-callable.
+create or replace function public.create_project(p_name text, p_monthly_budget numeric default null)
+returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_user uuid := auth.uid(); v_id uuid;
+begin
+  if v_user is null then raise exception 'auth required'; end if;
+  insert into public.projects (user_id, name, monthly_budget)
+  values (v_user, p_name, p_monthly_budget) returning id into v_id;
+  return v_id;
+end; $$;
+
+-- create_endpoint v2: optional project_id + slug (for project routing).
+drop function if exists public.create_endpoint(text,text,numeric,jsonb,text,numeric,numeric);
+create or replace function public.create_endpoint(
+  p_name text, p_target_url text, p_cost_per_request numeric, p_auth_headers jsonb,
+  p_metering_mode text default 'flat', p_input_token_cost numeric default 0, p_output_token_cost numeric default 0,
+  p_project_id uuid default null, p_slug text default null
+)
+returns uuid language plpgsql security definer set search_path = public, vault, pg_temp as $$
+declare v_user_id uuid := auth.uid(); v_secret_id uuid; v_endpoint uuid;
+begin
+  if v_user_id is null then raise exception 'auth required'; end if;
+  if jsonb_typeof(p_auth_headers) <> 'object' then raise exception 'p_auth_headers must be a JSON object'; end if;
+  if p_metering_mode not in ('flat','per_token') then raise exception 'invalid metering_mode'; end if;
+  if p_project_id is not null then
+    if not exists (select 1 from public.projects where id = p_project_id and user_id = v_user_id) then
+      raise exception 'project not found';
+    end if;
+    if p_slug is null or p_slug !~ '^[a-z0-9-]{1,40}$' then
+      raise exception 'a project endpoint needs a slug matching ^[a-z0-9-]{1,40}$';
+    end if;
+  end if;
+  v_secret_id := vault.create_secret(p_auth_headers::text, 'endpoint:' || gen_random_uuid()::text, 'Allowance upstream credentials (JSON header map)');
+  insert into public.endpoints
+    (user_id, name, target_url, cost_per_request, vault_secret_id, metering_mode, input_token_cost, output_token_cost, project_id, slug)
+  values (v_user_id, p_name, p_target_url, p_cost_per_request, v_secret_id, p_metering_mode, p_input_token_cost, p_output_token_cost, p_project_id, p_slug)
+  returning id into v_endpoint;
+  return v_endpoint;
+end; $$;
+
+-- issue_proxy_key v2: a key is bound to a single endpoint OR a project; optional daily cap.
+drop function if exists public.issue_proxy_key(uuid,text,text,uuid);
+create or replace function public.issue_proxy_key(
+  p_user_id uuid, p_key_hash text, p_key_prefix text,
+  p_endpoint_id uuid default null, p_project_id uuid default null, p_daily_limit numeric default null
+)
+returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_id uuid;
+begin
+  insert into public.proxy_keys (user_id, key_hash, key_prefix, endpoint_id, project_id, daily_limit)
+  values (p_user_id, p_key_hash, p_key_prefix, p_endpoint_id, p_project_id, p_daily_limit)
+  returning id into v_id;
+  return v_id;
+end; $$;
+
+-- get_proxy_context v2: project keys return a `routes` array (slug -> endpoint);
+-- single-endpoint keys keep the original flat shape. Both gain `daily_limit`.
+create or replace function public.get_proxy_context(p_key_hash text)
+returns jsonb language plpgsql security definer set search_path = public, vault, pg_temp as $$
+declare k record; v_routes jsonb;
+begin
+  select pk.user_id, w.balance, pk.endpoint_id, pk.project_id, pk.daily_limit
+  into k
+  from public.proxy_keys pk
+  join public.wallets w on w.user_id = pk.user_id
+  where pk.key_hash = p_key_hash and pk.is_active;
+  if not found then return null; end if;
+
+  if k.project_id is not null then
+    select jsonb_agg(jsonb_build_object(
+      'slug', e.slug,
+      'endpoint_id', e.id,
+      'target_url', e.target_url,
+      'cost_per_request', e.cost_per_request,
+      'metering_mode', coalesce(e.metering_mode, 'flat'),
+      'input_token_cost', coalesce(e.input_token_cost, 0),
+      'output_token_cost', coalesce(e.output_token_cost, 0),
+      'upstream_header', (select decrypted_secret from vault.decrypted_secrets where id = e.vault_secret_id)
+    ))
+    into v_routes
+    from public.endpoints e
+    where e.project_id = k.project_id and e.is_active and e.slug is not null;
+
+    return jsonb_build_object(
+      'user_id', k.user_id, 'balance', k.balance, 'daily_limit', k.daily_limit,
+      'project_id', k.project_id, 'routes', coalesce(v_routes, '[]'::jsonb)
+    );
+  end if;
+
+  return (
+    select jsonb_build_object(
+      'user_id', k.user_id, 'balance', k.balance, 'daily_limit', k.daily_limit,
+      'endpoint_id', e.id, 'target_url', e.target_url, 'cost_per_request', e.cost_per_request,
+      'metering_mode', coalesce(e.metering_mode, 'flat'),
+      'input_token_cost', coalesce(e.input_token_cost, 0),
+      'output_token_cost', coalesce(e.output_token_cost, 0),
+      'endpoint_active', coalesce(e.is_active, false),
+      'upstream_header', (select decrypted_secret from vault.decrypted_secrets where id = e.vault_secret_id)
+    )
+    from public.endpoints e where e.id = k.endpoint_id
+  );
+end; $$;
+
+-- Privilege lockdown for the new/updated functions.
+revoke all on function public.create_project(text,numeric) from public;
+revoke all on function public.create_endpoint(text,text,numeric,jsonb,text,numeric,numeric,uuid,text) from public;
+revoke all on function public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric) from public;
+grant execute on function public.create_project(text,numeric) to authenticated;
+grant execute on function public.create_endpoint(text,text,numeric,jsonb,text,numeric,numeric,uuid,text) to authenticated;
+grant execute on function public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric) to service_role;
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';
