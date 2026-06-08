@@ -1,12 +1,12 @@
 @import "tailwindcss";
 
-:root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
-}
+/* Enable class-based dark mode (toggled by next-themes on <html>). */
+@custom-variant dark (&:where(.dark, .dark *));
 
+/* The app canvas is dark grey. The public marketing pages (landing, docs) opt
+   into light/dark via Tailwind `dark:` pairs; the authenticated app stays dark. */
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: #18181b;
+  color: #fafafa;
   font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
 }
