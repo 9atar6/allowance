@@ -1,0 +1,32 @@
+// Magic-link confirmation. @supabase/ssr uses the PKCE flow by default, so the
+// link arrives with ?code=... which we exchange for a session. We also support
+// the ?token_hash&type flow for completeness. Either path sets the session
+// cookie, then lands on the dashboard.
+import { type EmailOtpType } from "@supabase/supabase-js";
+import { type NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const code = searchParams.get("code");
+  const token_hash = searchParams.get("token_hash");
+  const type = searchParams.get("type") as EmailOtpType | null;
+
+  const supabase = await createClient();
+
+  // PKCE flow — the default for @supabase/ssr magic links.
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  } else if (token_hash && type) {
+    // OTP token_hash flow (used if the email template emits {{ .TokenHash }}).
+    const { error } = await supabase.auth.verifyOtp({ type, token_hash });
+    if (!error) {
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    }
+  }
+
+  return NextResponse.redirect(new URL("/login?error=link", request.url));
+}

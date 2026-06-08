@@ -1,0 +1,49 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "api-wallet-proxy",
+  "main": "src/index.ts",
+  "compatibility_date": "2024-12-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Structured logs (NO secrets/bodies are ever logged — see lib/log.ts).
+  "observability": { "enabled": true },
+
+  // Edge cache for encrypted credentials + balance snapshots.
+  // Create with: wrangler kv namespace create WALLET_KV
+  "kv_namespaces": [
+    { "binding": "WALLET_KV", "id": "14407e2b3fb74ec5b92c71b271b37d29", "preview_id": "92c20b8c68a44cd0afa8a1190836ee99" }
+  ],
+
+  // Per-key edge rate limit: 100 requests / 60s. namespace_id is an arbitrary
+  // stable id you choose per limiter. (Open-beta binding.)
+  "unsafe": {
+    "bindings": [
+      {
+        "name": "RATE_LIMITER",
+        "type": "ratelimit",
+        "namespace_id": "1001",
+        "simple": { "limit": 100, "period": 60 }
+      }
+    ]
+  },
+
+  // Non-secret config only. Secrets go through `wrangler secret put` (see below).
+  "vars": {
+    "SUPABASE_URL": "https://izcxmonodmfoebaazxxe.supabase.co",
+    "LAGO_API_URL": "https://api.getlago.com",
+    "LAGO_EVENT_CODE": "api_call",
+    "KV_CONTEXT_TTL_SECONDS": "60",
+    // x402 top-up rail (Base Sepolia testnet, free x402.org facilitator).
+    // Receiving wallet is a self-transfer for testing — use a treasury in prod.
+    "X402_RECEIVING_WALLET": "0xFb34999aAbAf58799D06eeE7c78C5887A4dCaF23",
+    "X402_FACILITATOR_URL": "https://x402.org/facilitator",
+    "X402_NETWORK": "base-sepolia",
+    "X402_ASSET": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+    "X402_ASSET_DECIMALS": "6"
+  }
+
+  // SECRETS — never commit these; set them per-environment:
+  //   wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+  //   wrangler secret put LAGO_API_KEY
+  //   wrangler secret put EDGE_ENCRYPTION_KEY     # base64 of 32 random bytes
+}

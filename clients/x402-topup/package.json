@@ -1,0 +1,13 @@
+{
+  "name": "allowance-x402-topup-client",
+  "private": true,
+  "type": "module",
+  "description": "Test client: pays an Allowance /v1/topup with USDC via x402.",
+  "scripts": {
+    "topup": "node topup.mjs"
+  },
+  "dependencies": {
+    "viem": "^2.21.0",
+    "x402-fetch": "^0.6.0"
+  }
+}

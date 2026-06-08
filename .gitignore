@@ -1,0 +1,24 @@
+# Env / secrets — never commit
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+
+# Dependencies
+node_modules/
+
+# Build output
+.next/
+dist/
+.vercel/
+.wrangler/
+*.tsbuildinfo
+
+# Supabase local
+supabase/.branches/
+supabase/.temp/
+
+# OS / editor
+.DS_Store
+*.log
