@@ -34,7 +34,7 @@ export function UsageTable({ rows, endpointName }: Props) {
             <td className="py-2 text-neutral-400">{formatTimestamp(r.createdAt)}</td>
             <td className="py-2 text-neutral-300">{endpointName(r.endpointId)}</td>
             <td className="py-2 text-right tabular-nums text-neutral-400">
-              {r.statusCode ?? "—"}
+              {r.statusCode ?? "-"}
             </td>
             <td className="py-2 text-right tabular-nums text-neutral-200">
               {formatUsd(r.cost)}

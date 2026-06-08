@@ -34,7 +34,7 @@ export function AddEndpointForm() {
         onChange={(e) => setMode(e.target.value as "flat" | "per_token")}
         className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
       >
-        <option value="flat">Flat — per request</option>
+        <option value="flat">Flat (per request)</option>
         <option value="per_token">Per token (OpenAI-style usage)</option>
       </select>
 
@@ -77,8 +77,8 @@ export function AddEndpointForm() {
         required
       />
       <p className="text-xs text-neutral-500">
-        Credentials are encrypted in Supabase Vault — never stored or logged in
-        plaintext.
+        Credentials are encrypted in Supabase Vault. They are never stored or
+        logged in plaintext.
       </p>
       {error && <p className="text-sm text-red-400">{error}</p>}
       <Button type="submit" disabled={pending}>

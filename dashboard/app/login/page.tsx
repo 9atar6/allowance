@@ -16,7 +16,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-sm">
         <h1 className="text-lg font-semibold text-white">Allowance</h1>
         <CardTitle className="mt-1 mb-6">
-          Sign in with a magic link — no password.
+          Sign in with a magic link. No password.
         </CardTitle>
 
         {state.status === "sent" ? (

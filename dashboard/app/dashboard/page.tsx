@@ -69,7 +69,7 @@ export default async function DashboardPage({
   // Map raw rows → typed view models (numeric columns can arrive as strings).
   const endpointNames = new Map(endpointList.map((e) => [e.id, e.name]));
   const endpointName = (id: string | null) =>
-    (id && endpointNames.get(id)) || "—";
+    (id && endpointNames.get(id)) || "-";
 
   const usageRows: UsageRow[] = (usage ?? []).map((u) => ({
     id: u.id as string,
@@ -109,7 +109,7 @@ export default async function DashboardPage({
         </p>
         {topup === "success" && (
           <p className="mt-3 text-sm text-green-400">
-            Payment received — your balance updates within a few seconds.
+            Payment received. Your balance updates within a few seconds.
           </p>
         )}
         {topup === "cancelled" && (

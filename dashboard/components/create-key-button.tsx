@@ -22,7 +22,7 @@ export function CreateKeyButton({ endpointId }: { endpointId: string }) {
     return (
       <div className="rounded-md border border-amber-700/50 bg-amber-950/30 p-3">
         <p className="mb-1 text-xs font-medium text-amber-400">
-          Copy this key now — it is shown only once.
+          Copy this key now. It is shown only once.
         </p>
         <code className="block break-all text-xs text-amber-200">{key}</code>
         <Button
