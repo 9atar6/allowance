@@ -56,6 +56,7 @@ describe("buildTargetUrl", () => {
       buildTargetUrl(
         "https://proxy.test/v1/proxy/chat/completions",
         "https://upstream.test/v1",
+        "/v1/proxy",
       ),
     ).toBe("https://upstream.test/v1/chat/completions");
   });
@@ -65,6 +66,7 @@ describe("buildTargetUrl", () => {
       buildTargetUrl(
         "https://proxy.test/v1/proxy/models?limit=5",
         "https://upstream.test/v1",
+        "/v1/proxy",
       ),
     ).toBe("https://upstream.test/v1/models?limit=5");
   });
@@ -74,13 +76,14 @@ describe("buildTargetUrl", () => {
       buildTargetUrl(
         "https://proxy.test/v1/proxy/chat",
         "https://upstream.test/v1/",
+        "/v1/proxy",
       ),
     ).toBe("https://upstream.test/v1/chat");
   });
 
   it("handles an empty sub-path", () => {
     expect(
-      buildTargetUrl("https://proxy.test/v1/proxy", "https://upstream.test/v1"),
+      buildTargetUrl("https://proxy.test/v1/proxy", "https://upstream.test/v1", "/v1/proxy"),
     ).toBe("https://upstream.test/v1");
   });
 });

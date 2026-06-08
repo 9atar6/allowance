@@ -2,7 +2,7 @@
 // tasks, and a fetch mock that stands in for Supabase RPCs, the upstream API,
 // and Lago.
 import { vi } from "vitest";
-import type { Env, RpcProxyContext } from "../src/types";
+import type { Env, RpcProxyContext, RpcRoute } from "../src/types";
 
 /** Deterministic 32-byte edge key (base64) so crypto is reproducible in tests. */
 export const TEST_EDGE_KEY = Buffer.from(new Uint8Array(32).fill(7)).toString(
@@ -106,6 +106,7 @@ export function baseContext(over: Partial<RpcProxyContext> = {}): RpcProxyContex
   return {
     user_id: "user-1",
     balance: 10,
+    daily_limit: null,
     endpoint_id: "ep-1",
     target_url: "https://upstream.test/v1",
     cost_per_request: 0.01,
@@ -114,6 +115,36 @@ export function baseContext(over: Partial<RpcProxyContext> = {}): RpcProxyContex
     output_token_cost: 0,
     endpoint_active: true,
     upstream_header: JSON.stringify({ Authorization: "Bearer sk-upstream" }),
+    ...over,
+  };
+}
+
+/** A route within a project (for project-key tests). */
+export function makeRoute(slug: string, over: Partial<RpcRoute> = {}): RpcRoute {
+  return {
+    slug,
+    endpoint_id: `ep-${slug}`,
+    target_url: `https://${slug}.test/v1`,
+    cost_per_request: 0.01,
+    metering_mode: "flat",
+    input_token_cost: 0,
+    output_token_cost: 0,
+    upstream_header: JSON.stringify({ Authorization: `Bearer sk-${slug}` }),
+    ...over,
+  };
+}
+
+/** A project-key proxy context (one key, many routes by slug). */
+export function projectContext(
+  routes: RpcRoute[],
+  over: Partial<RpcProxyContext> = {},
+): RpcProxyContext {
+  return {
+    user_id: "user-1",
+    balance: 10,
+    daily_limit: null,
+    project_id: "proj-1",
+    routes,
     ...over,
   };
 }

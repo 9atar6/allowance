@@ -7,8 +7,8 @@
 //   pass through chunk-by-chunk while we tally chunks for telemetry.
 // =============================================================================
 
-import { BODILESS_METHODS, PROXY_BASE_PATH, STRIP_REQUEST_HEADERS } from "../config";
-import type { ResolvedContext, TokenUsage } from "../types";
+import { BODILESS_METHODS, STRIP_REQUEST_HEADERS } from "../config";
+import type { ActiveRequest, TokenUsage } from "../types";
 import { UsageExtractor } from "./usage-meter";
 
 export interface StreamResult {
@@ -24,11 +24,19 @@ function joinPath(base: string, sub: string): string {
   return `${b}${s}`;
 }
 
-/** Build the upstream URL from target_url + the path/query after the base. */
-export function buildTargetUrl(reqUrl: string, targetUrl: string): string {
+/**
+ * Build the upstream URL from target_url + the path/query after `prefix`.
+ * `prefix` is /v1/proxy for single-endpoint keys, or /v1/proxy/{slug} for a
+ * project key (so the service slug is stripped before forwarding).
+ */
+export function buildTargetUrl(
+  reqUrl: string,
+  targetUrl: string,
+  prefix: string,
+): string {
   const incoming = new URL(reqUrl);
-  const subPath = incoming.pathname.startsWith(PROXY_BASE_PATH)
-    ? incoming.pathname.slice(PROXY_BASE_PATH.length)
+  const subPath = incoming.pathname.startsWith(prefix)
+    ? incoming.pathname.slice(prefix.length)
     : "";
   const target = new URL(targetUrl);
   target.pathname = joinPath(target.pathname, subPath);
@@ -39,18 +47,18 @@ export function buildTargetUrl(reqUrl: string, targetUrl: string): string {
 /** Forward the incoming request to the resolved upstream endpoint. */
 export async function forwardRequest(
   req: Request,
-  ctx: ResolvedContext,
+  active: ActiveRequest,
 ): Promise<Response> {
   const headers = new Headers(req.headers);
   for (const h of STRIP_REQUEST_HEADERS) headers.delete(h);
 
   // Inject the user's decrypted upstream credentials (in-memory only).
-  for (const [name, value] of Object.entries(ctx.upstreamHeaders)) {
+  for (const [name, value] of Object.entries(active.upstreamHeaders)) {
     headers.set(name, value);
   }
 
   const method = req.method.toUpperCase();
-  const url = buildTargetUrl(req.url, ctx.targetUrl!);
+  const url = buildTargetUrl(req.url, active.targetUrl, active.proxyPrefix);
 
   return fetch(url, {
     method,

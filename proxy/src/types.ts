@@ -58,50 +58,101 @@ export interface TokenUsage {
   completionTokens: number;
 }
 
-export interface RpcProxyContext {
-  user_id: string;
-  balance: number;
-  endpoint_id: string | null;
-  target_url: string | null;
+/** One service inside a project, keyed by slug (credential still plaintext here). */
+export interface RpcRoute {
+  slug: string | null;
+  endpoint_id: string;
+  target_url: string;
   cost_per_request: number;
   metering_mode: MeteringMode;
   input_token_cost: number;
   output_token_cost: number;
-  endpoint_active: boolean;
-  upstream_header: string | null; // JSON string: { "Authorization": "Bearer ..." }
+  upstream_header: string | null; // decrypted JSON header map
 }
 
 /**
- * What we persist in KV: identical metadata, but the credential is stored as
- * AES-GCM ciphertext (`upstream_header_enc`) — encrypted credentials at the edge.
+ * Shape from get_proxy_context. A single-endpoint key carries the flat fields;
+ * a project key carries `routes` (one per service). Both carry `daily_limit`
+ * (null = unlimited). Credentials are plaintext here, in memory only.
  */
-export interface CachedProxyContext {
+export interface RpcProxyContext {
   user_id: string;
   balance: number;
-  endpoint_id: string | null;
-  target_url: string | null;
+  daily_limit: number | null;
+  // single-endpoint (legacy) key:
+  endpoint_id?: string | null;
+  target_url?: string | null;
+  cost_per_request?: number;
+  metering_mode?: MeteringMode;
+  input_token_cost?: number;
+  output_token_cost?: number;
+  endpoint_active?: boolean;
+  upstream_header?: string | null;
+  // project key:
+  project_id?: string | null;
+  routes?: RpcRoute[] | null;
+}
+
+/** A route cached at the edge: credential stored as AES-GCM ciphertext. */
+export interface CachedRoute {
+  slug: string | null;
+  endpoint_id: string;
+  target_url: string;
   cost_per_request: number;
   metering_mode: MeteringMode;
   input_token_cost: number;
   output_token_cost: number;
+  upstream_header_enc: string | null;
+}
+
+export interface CachedSingle extends CachedRoute {
   endpoint_active: boolean;
-  upstream_header_enc: string | null; // AES-GCM ciphertext (iv-prefixed, base64)
+}
+
+export interface CachedProxyContext {
+  user_id: string;
+  balance: number;
+  daily_limit: number | null;
+  single: CachedSingle | null;
+  routes: CachedRoute[] | null;
   cached_at: number;
 }
 
-/** Fully-resolved, in-memory context the request handler works with. */
-export interface ResolvedContext {
-  userId: string;
-  balance: number;
-  endpointId: string | null;
-  targetUrl: string | null;
+/** One endpoint, decrypted, ready to serve. */
+export interface ResolvedEndpoint {
+  slug: string | null;
+  endpointId: string;
+  targetUrl: string;
   costPerRequest: number;
   meteringMode: MeteringMode;
   inputTokenCost: number;
   outputTokenCost: number;
-  endpointActive: boolean;
   upstreamHeaders: Record<string, string>;
+}
+
+/** Key-level context (single endpoint OR project routes) set by auth middleware. */
+export interface ResolvedContext {
+  userId: string;
+  balance: number;
+  dailyLimit: number | null;
   keyHash: string;
+  single: (ResolvedEndpoint & { endpointActive: boolean }) | null;
+  routes: ResolvedEndpoint[] | null;
+}
+
+/** The endpoint chosen for a single request, plus the key context it needs. */
+export interface ActiveRequest {
+  userId: string;
+  keyHash: string;
+  balance: number;
+  endpointId: string;
+  targetUrl: string;
+  costPerRequest: number;
+  meteringMode: MeteringMode;
+  inputTokenCost: number;
+  outputTokenCost: number;
+  upstreamHeaders: Record<string, string>;
+  proxyPrefix: string; // path to strip when forwarding
 }
 
 /** Hono context variable map. */

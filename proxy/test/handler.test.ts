@@ -8,7 +8,9 @@ import {
   installFetch,
   makeCtx,
   makeEnv,
+  makeRoute,
   makeSseResponse,
+  projectContext,
   type FetchMock,
 } from "./helpers";
 
@@ -130,7 +132,7 @@ describe("proxy handler", () => {
     )) as CachedProxyContext;
     expect(cached.balance).toBeCloseTo(9.99, 6);
     // Credential cached as ciphertext, never plaintext.
-    expect(cached.upstream_header_enc).not.toContain("sk-upstream");
+    expect(cached.single?.upstream_header_enc).not.toContain("sk-upstream");
   });
 
   it("streams SSE through and counts chunks for settlement", async () => {
@@ -210,5 +212,57 @@ describe("proxy handler", () => {
     await second.flush();
     expect(res.status).toBe(200);
     expect(ctl.proxyContextCalls).toHaveLength(1); // still 1 — cache hit
+  });
+
+  it("routes a project key to the right service by slug", async () => {
+    const ctl = newCtl({
+      proxyContext: projectContext([makeRoute("openai"), makeRoute("anthropic")]),
+    });
+    const fetchFn = installFetch(ctl);
+    const { ctx, flush } = makeCtx();
+
+    const req = new Request("https://proxy.test/v1/proxy/openai/chat/completions", {
+      method: "POST",
+      headers: { "content-type": "application/json", Authorization: `Bearer ${KEY}` },
+      body: JSON.stringify({ model: "x" }),
+    });
+    const res = await app.fetch(req, makeEnv(), ctx);
+    await res.text();
+    await flush();
+
+    expect(res.status).toBe(200);
+    // Forwarded to the openai route with the slug stripped from the path.
+    expect(ctl.upstreamCalls[0].url).toBe("https://openai.test/v1/chat/completions");
+    // Injected that route's credential.
+    const init = fetchFn.mock.calls.find(([u]) =>
+      String(u).startsWith("https://openai.test"),
+    )?.[1] as RequestInit | undefined;
+    expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer sk-openai");
+  });
+
+  it("404s a project key for an unknown service slug", async () => {
+    const ctl = newCtl({ proxyContext: projectContext([makeRoute("openai")]) });
+    installFetch(ctl);
+    const { ctx } = makeCtx();
+
+    const req = new Request("https://proxy.test/v1/proxy/unknown/x", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${KEY}` },
+    });
+    const res = await app.fetch(req, makeEnv(), ctx);
+    expect(res.status).toBe(404);
+    expect(ctl.upstreamCalls).toHaveLength(0);
+  });
+
+  it("402s when the per-key daily limit is exceeded", async () => {
+    const ctl = newCtl({ proxyContext: baseContext({ daily_limit: 0.005 }) }); // < 0.01 cost
+    installFetch(ctl);
+    const { ctx } = makeCtx();
+
+    const res = await app.fetch(proxyRequest(), makeEnv(), ctx);
+    expect(res.status).toBe(402);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("daily_limit_reached");
+    expect(ctl.upstreamCalls).toHaveLength(0);
   });
 });

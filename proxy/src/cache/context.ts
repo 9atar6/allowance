@@ -39,6 +39,39 @@ export async function purgeCachedContext(env: Env, hash: string): Promise<void> 
   await env.WALLET_KV.delete(keyFor(hash));
 }
 
+// ── Per-key daily spend counter (for per-key daily limits) ───────────────────
+const SPEND_TTL_SECONDS = 60 * 60 * 48; // 2 days, so yesterday's key expires
+
+/** UTC day key, e.g. "2026-06-08". */
+export function utcDateKey(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 10);
+}
+
+const spendKey = (hash: string, date: string) => `spend:${hash}:${date}`;
+
+/** Spend so far today for a key (best-effort edge counter; 0 if unset). */
+export async function getDailySpend(
+  env: Env,
+  hash: string,
+  date: string,
+): Promise<number> {
+  const v = await env.WALLET_KV.get(spendKey(hash, date));
+  return v ? Number(v) : 0;
+}
+
+/** Add to today's spend counter for a key (called during settlement). */
+export async function addDailySpend(
+  env: Env,
+  hash: string,
+  date: string,
+  amount: number,
+): Promise<void> {
+  const current = await getDailySpend(env, hash, date);
+  await env.WALLET_KV.put(spendKey(hash, date), String(current + amount), {
+    expirationTtl: SPEND_TTL_SECONDS,
+  });
+}
+
 /**
  * After a successful debit, write the decremented balance back to the cached
  * snapshot (preserving the already-encrypted credential) so the next request

@@ -7,6 +7,7 @@
 
 import { Hono } from "hono";
 import { handlePurge } from "./admin/purge";
+import { getDailySpend, utcDateKey } from "./cache/context";
 import { PROXY_BASE_PATH } from "./config";
 import { logEvent } from "./lib/log";
 import { buildX402Body } from "./lib/x402";
@@ -14,6 +15,7 @@ import { withinRateLimit } from "./lib/rate-limit";
 import { authMiddleware } from "./middleware/auth";
 import { computeCost } from "./proxy/cost";
 import { forwardRequest, streamWithCount } from "./proxy/forward";
+import { resolveActive } from "./proxy/route";
 import { settle } from "./settlement/settle";
 import type { Env, Variables } from "./types";
 import { handleTopup } from "./x402/topup";
@@ -41,20 +43,37 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
     return c.json({ error: "rate_limited" }, 429);
   }
 
-  // Endpoint must exist and be active.
-  if (!ctx.endpointActive || !ctx.targetUrl) {
+  // ── Resolve which service to hit (single endpoint, or project slug) ───────
+  const { active, error } = resolveActive(ctx, c.req.url);
+  if (!active) {
+    if (error === "unknown_service") {
+      logEvent({ event: "unknown_service", requestId, userId: ctx.userId });
+      return c.json({ error: "unknown_service" }, 404);
+    }
     logEvent({ event: "endpoint_unavailable", requestId, userId: ctx.userId, reason: "inactive_or_missing" });
     return c.json({ error: "endpoint_unavailable" }, 503);
   }
 
+  // ── Per-key daily limit (edge counter; null = unlimited) ──────────────────
+  if (ctx.dailyLimit != null) {
+    const spentToday = await getDailySpend(c.env, ctx.keyHash, utcDateKey());
+    if (spentToday + active.costPerRequest > ctx.dailyLimit) {
+      logEvent({ event: "daily_limit_reached", requestId, userId: ctx.userId });
+      return c.json(
+        { error: "daily_limit_reached", limit: ctx.dailyLimit, spentToday },
+        402,
+      );
+    }
+  }
+
   // ── x402 hard-stop (advisory edge check; DB debit is authoritative) ───────
-  if (ctx.balance < ctx.costPerRequest) {
+  if (ctx.balance < active.costPerRequest) {
     logEvent({ event: "payment_required", requestId, userId: ctx.userId, reason: "insufficient_balance" });
     return c.json(
       buildX402Body({
         resource: new URL(c.req.url).pathname,
         balance: ctx.balance,
-        cost: ctx.costPerRequest,
+        cost: active.costPerRequest,
         topUpUrl: "https://app.allowance.dev/billing",
       }),
       402,
@@ -64,7 +83,7 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
   // ── Forward upstream ──────────────────────────────────────────────────────
   let upstream: Response;
   try {
-    upstream = await forwardRequest(c.req.raw, ctx);
+    upstream = await forwardRequest(c.req.raw, active);
   } catch {
     logEvent({ event: "upstream_error", requestId, userId: ctx.userId });
     return c.json({ error: "upstream_unreachable" }, 502);
@@ -89,8 +108,8 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
         return;
       }
       // flat fee, or per-token cost from the parsed usage (flat fallback).
-      const cost = computeCost(ctx, usage);
-      return settle(c.env, ctx, {
+      const cost = computeCost(active, usage);
+      return settle(c.env, active, {
         requestId,
         statusCode: upstream.status,
         chunkCount,

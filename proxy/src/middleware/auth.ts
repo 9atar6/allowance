@@ -1,11 +1,12 @@
 // =============================================================================
 // Auth middleware — resolves the Bearer proxy key into an in-memory context.
 //
-// Cache-miss path:   key_hash -> get_proxy_context RPC -> encrypt cred -> cache
-// Cache-hit path:    read KV -> decrypt cred in memory
+// A key is either single-endpoint (legacy) or project-bound (a set of routes).
+// Cache-miss: get_proxy_context RPC -> encrypt each credential -> cache.
+// Cache-hit:  read KV -> decrypt creds in memory.
 //
-// On success it sets c.var.resolved. It does NOT enforce balance (that's the
-// handler's job, so the 402/x402 path is explicit in the main flow).
+// It only resolves the KEY context; the request handler then picks the active
+// endpoint (by slug) and enforces balance/limits.
 // =============================================================================
 
 import { createMiddleware } from "hono/factory";
@@ -14,7 +15,16 @@ import { decryptEdge, encryptEdge } from "../lib/edge-crypto";
 import { sha256Hex } from "../lib/hash";
 import { logEvent } from "../lib/log";
 import { getProxyContext } from "../lib/supabase";
-import type { CachedProxyContext, Env, ResolvedContext, Variables } from "../types";
+import type {
+  CachedProxyContext,
+  CachedRoute,
+  Env,
+  ResolvedContext,
+  ResolvedEndpoint,
+  RpcProxyContext,
+  RpcRoute,
+  Variables,
+} from "../types";
 
 function extractBearer(header: string | undefined): string | null {
   if (!header) return null;
@@ -36,6 +46,116 @@ function parseHeaderMap(json: string | null): Record<string, string> {
   return {};
 }
 
+// ── RPC route -> cached route (encrypt credential before it touches KV) ───────
+async function encryptRoute(env: Env, r: RpcRoute): Promise<CachedRoute> {
+  return {
+    slug: r.slug,
+    endpoint_id: r.endpoint_id,
+    target_url: r.target_url,
+    cost_per_request: r.cost_per_request,
+    metering_mode: r.metering_mode,
+    input_token_cost: r.input_token_cost,
+    output_token_cost: r.output_token_cost,
+    upstream_header_enc: r.upstream_header
+      ? await encryptEdge(env.EDGE_ENCRYPTION_KEY, r.upstream_header)
+      : null,
+  };
+}
+
+async function rpcToCached(env: Env, ctx: RpcProxyContext): Promise<CachedProxyContext> {
+  const common = { user_id: ctx.user_id, balance: ctx.balance, daily_limit: ctx.daily_limit, cached_at: Date.now() };
+  if (ctx.routes) {
+    const routes = await Promise.all(ctx.routes.map((r) => encryptRoute(env, r)));
+    return { ...common, single: null, routes };
+  }
+  const encrypted = ctx.upstream_header
+    ? await encryptEdge(env.EDGE_ENCRYPTION_KEY, ctx.upstream_header)
+    : null;
+  return {
+    ...common,
+    single: {
+      slug: null,
+      endpoint_id: ctx.endpoint_id ?? "",
+      target_url: ctx.target_url ?? "",
+      cost_per_request: ctx.cost_per_request ?? 0,
+      metering_mode: ctx.metering_mode ?? "flat",
+      input_token_cost: ctx.input_token_cost ?? 0,
+      output_token_cost: ctx.output_token_cost ?? 0,
+      endpoint_active: ctx.endpoint_active ?? false,
+      upstream_header_enc: encrypted,
+    },
+    routes: null,
+  };
+}
+
+// ── RPC -> resolved (in-memory, plaintext creds) ─────────────────────────────
+function rpcRouteToEndpoint(r: RpcRoute): ResolvedEndpoint {
+  return {
+    slug: r.slug,
+    endpointId: r.endpoint_id,
+    targetUrl: r.target_url,
+    costPerRequest: r.cost_per_request,
+    meteringMode: r.metering_mode,
+    inputTokenCost: r.input_token_cost,
+    outputTokenCost: r.output_token_cost,
+    upstreamHeaders: parseHeaderMap(r.upstream_header),
+  };
+}
+
+function rpcToResolved(ctx: RpcProxyContext, keyHash: string): ResolvedContext {
+  const common = { userId: ctx.user_id, balance: ctx.balance, dailyLimit: ctx.daily_limit, keyHash };
+  if (ctx.routes) {
+    return { ...common, single: null, routes: ctx.routes.map(rpcRouteToEndpoint) };
+  }
+  return {
+    ...common,
+    single: {
+      slug: null,
+      endpointId: ctx.endpoint_id ?? "",
+      targetUrl: ctx.target_url ?? "",
+      costPerRequest: ctx.cost_per_request ?? 0,
+      meteringMode: ctx.metering_mode ?? "flat",
+      inputTokenCost: ctx.input_token_cost ?? 0,
+      outputTokenCost: ctx.output_token_cost ?? 0,
+      upstreamHeaders: parseHeaderMap(ctx.upstream_header ?? null),
+      endpointActive: ctx.endpoint_active ?? false,
+    },
+    routes: null,
+  };
+}
+
+// ── Cached -> resolved (decrypt creds) ───────────────────────────────────────
+async function decryptRoute(env: Env, r: CachedRoute): Promise<ResolvedEndpoint> {
+  const json = r.upstream_header_enc
+    ? await decryptEdge(env.EDGE_ENCRYPTION_KEY, r.upstream_header_enc)
+    : null;
+  return {
+    slug: r.slug,
+    endpointId: r.endpoint_id,
+    targetUrl: r.target_url,
+    costPerRequest: r.cost_per_request,
+    meteringMode: r.metering_mode,
+    inputTokenCost: r.input_token_cost,
+    outputTokenCost: r.output_token_cost,
+    upstreamHeaders: parseHeaderMap(json),
+  };
+}
+
+async function cachedToResolved(
+  env: Env,
+  cached: CachedProxyContext,
+  keyHash: string,
+): Promise<ResolvedContext> {
+  const common = { userId: cached.user_id, balance: cached.balance, dailyLimit: cached.daily_limit, keyHash };
+  if (cached.routes) {
+    const routes = await Promise.all(cached.routes.map((r) => decryptRoute(env, r)));
+    return { ...common, single: null, routes };
+  }
+  const s = cached.single!;
+  const ep = await decryptRoute(env, s);
+  return { ...common, single: { ...ep, endpointActive: s.endpoint_active }, routes: null };
+}
+
 export const authMiddleware = createMiddleware<{
   Bindings: Env;
   Variables: Variables;
@@ -51,75 +171,27 @@ export const authMiddleware = createMiddleware<{
 
   let resolved: ResolvedContext | null = null;
 
-  // ── Cache hit ───────────────────────────────────────────────────────────
+  // ── Cache hit ─────────────────────────────────────────────────────────────
   const cached = await getCachedContext(c.env, keyHash);
   if (cached) {
     try {
-      const headerJson = cached.upstream_header_enc
-        ? await decryptEdge(c.env.EDGE_ENCRYPTION_KEY, cached.upstream_header_enc)
-        : null;
-      resolved = {
-        userId: cached.user_id,
-        balance: cached.balance,
-        endpointId: cached.endpoint_id,
-        targetUrl: cached.target_url,
-        costPerRequest: cached.cost_per_request,
-        meteringMode: cached.metering_mode,
-        inputTokenCost: cached.input_token_cost,
-        outputTokenCost: cached.output_token_cost,
-        endpointActive: cached.endpoint_active,
-        upstreamHeaders: parseHeaderMap(headerJson),
-        keyHash,
-      };
+      resolved = await cachedToResolved(c.env, cached, keyHash);
       logEvent({ event: "auth_resolved", requestId, userId: resolved.userId, cacheHit: true });
     } catch {
-      // Decrypt failed (rotated EDGE_ENCRYPTION_KEY / corrupt blob). Treat as a
-      // miss and re-warm from the DB rather than failing the request.
+      // Decrypt failed (rotated key / corrupt blob). Re-warm from the DB.
       resolved = null;
       logEvent({ event: "cache_decrypt_failed", requestId, reason: "stale_or_corrupt" });
     }
   }
 
-  // ── Cache miss (or unusable cache) → single DB round-trip, then re-warm ────
+  // ── Cache miss → single DB round-trip, then re-warm ───────────────────────
   if (!resolved) {
     const ctx = await getProxyContext(c.env, keyHash);
     if (!ctx) {
       return c.json({ error: "invalid_api_key" }, 401);
     }
-
-    // Encrypt the credential before it ever touches KV.
-    const encrypted = ctx.upstream_header
-      ? await encryptEdge(c.env.EDGE_ENCRYPTION_KEY, ctx.upstream_header)
-      : null;
-
-    const toCache: CachedProxyContext = {
-      user_id: ctx.user_id,
-      balance: ctx.balance,
-      endpoint_id: ctx.endpoint_id,
-      target_url: ctx.target_url,
-      cost_per_request: ctx.cost_per_request,
-      metering_mode: ctx.metering_mode,
-      input_token_cost: ctx.input_token_cost,
-      output_token_cost: ctx.output_token_cost,
-      endpoint_active: ctx.endpoint_active,
-      upstream_header_enc: encrypted,
-      cached_at: Date.now(),
-    };
-    await putCachedContext(c.env, keyHash, toCache);
-
-    resolved = {
-      userId: ctx.user_id,
-      balance: ctx.balance,
-      endpointId: ctx.endpoint_id,
-      targetUrl: ctx.target_url,
-      costPerRequest: ctx.cost_per_request,
-      meteringMode: ctx.metering_mode,
-      inputTokenCost: ctx.input_token_cost,
-      outputTokenCost: ctx.output_token_cost,
-      endpointActive: ctx.endpoint_active,
-      upstreamHeaders: parseHeaderMap(ctx.upstream_header),
-      keyHash,
-    };
+    await putCachedContext(c.env, keyHash, await rpcToCached(c.env, ctx));
+    resolved = rpcToResolved(ctx, keyHash);
     logEvent({ event: "auth_resolved", requestId, userId: resolved.userId, cacheHit: false });
   }
 

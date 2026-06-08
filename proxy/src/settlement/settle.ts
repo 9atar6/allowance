@@ -8,15 +8,15 @@
 //   3. Emit the Lago usage event.
 // =============================================================================
 
-import { updateCachedBalance } from "../cache/context";
+import { addDailySpend, updateCachedBalance, utcDateKey } from "../cache/context";
 import { logEvent } from "../lib/log";
 import { debitWallet } from "../lib/supabase";
-import type { Env, ResolvedContext, TokenUsage } from "../types";
+import type { ActiveRequest, Env, TokenUsage } from "../types";
 import { sendLagoEvent } from "./lago";
 
 export async function settle(
   env: Env,
-  ctx: ResolvedContext,
+  ctx: ActiveRequest,
   params: {
     requestId: string;
     statusCode: number;
@@ -53,6 +53,8 @@ export async function settle(
 
     // Keep the edge snapshot in sync so the next call sees the new balance.
     await updateCachedBalance(env, ctx.keyHash, ctx.balance - params.cost);
+    // Bump the per-key daily spend counter (for per-key daily limits).
+    await addDailySpend(env, ctx.keyHash, utcDateKey(), params.cost);
 
     await sendLagoEvent(env, {
       userId: ctx.userId,

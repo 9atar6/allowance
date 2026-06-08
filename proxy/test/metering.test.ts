@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { computeCost } from "../src/proxy/cost";
 import { UsageExtractor } from "../src/proxy/usage-meter";
-import type { ResolvedContext } from "../src/types";
+import type { ActiveRequest } from "../src/types";
 
 const enc = (s: string) => new TextEncoder().encode(s);
 
@@ -46,9 +46,10 @@ describe("UsageExtractor", () => {
   });
 });
 
-function ctx(over: Partial<ResolvedContext>): ResolvedContext {
+function ctx(over: Partial<ActiveRequest>): ActiveRequest {
   return {
     userId: "u",
+    keyHash: "h",
     balance: 10,
     endpointId: "e",
     targetUrl: "https://x/v1",
@@ -56,9 +57,8 @@ function ctx(over: Partial<ResolvedContext>): ResolvedContext {
     meteringMode: "flat",
     inputTokenCost: 0,
     outputTokenCost: 0,
-    endpointActive: true,
     upstreamHeaders: {},
-    keyHash: "h",
+    proxyPrefix: "/v1/proxy",
     ...over,
   };
 }
