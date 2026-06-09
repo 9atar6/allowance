@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Wordmark } from "@/components/wordmark";
 import { sendMagicLink, signInWithProvider, type LoginState } from "./actions";
 
 const initial: LoginState = { status: "idle" };
@@ -17,12 +18,7 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-sm animate-in">
-        <div className="flex items-center gap-2.5">
-          <span className="neu-sm grid h-8 w-8 place-items-center text-sm font-semibold text-accent">
-            A
-          </span>
-          <h1 className="text-lg font-semibold tracking-tight">Allowance</h1>
-        </div>
+        <Wordmark />
         <CardTitle className="mt-6 mb-6">Sign in</CardTitle>
 
         {/* OAuth */}

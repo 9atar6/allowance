@@ -7,7 +7,13 @@
 
 import { Hono } from "hono";
 import { handlePurge } from "./admin/purge";
-import { getDailySpend, getMonthlyCount, utcDateKey, utcMonthKey } from "./cache/context";
+import {
+  getDailySpend,
+  getMonthlyCount,
+  getProjectSpend,
+  utcDateKey,
+  utcMonthKey,
+} from "./cache/context";
 import { FREE_MONTHLY_REQUESTS, PROXY_BASE_PATH } from "./config";
 import { logEvent } from "./lib/log";
 import { buildX402Body } from "./lib/x402";
@@ -78,6 +84,26 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
       logEvent({ event: "daily_limit_reached", requestId, userId: ctx.userId });
       return c.json(
         { error: "daily_limit_reached", limit: ctx.dailyLimit, spentToday },
+        402,
+      );
+    }
+  }
+
+  // ── Per-project monthly budget (edge counter; null = unlimited) ───────────
+  if (ctx.projectId && ctx.monthlyBudget != null) {
+    const spentThisMonth = await getProjectSpend(
+      c.env,
+      ctx.projectId,
+      utcMonthKey(),
+    );
+    if (spentThisMonth + active.costPerRequest > ctx.monthlyBudget) {
+      logEvent({ event: "project_budget_reached", requestId, userId: ctx.userId });
+      return c.json(
+        {
+          error: "project_budget_reached",
+          budget: ctx.monthlyBudget,
+          spentThisMonth,
+        },
         402,
       );
     }

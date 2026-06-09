@@ -572,16 +572,18 @@ end; $$;
 revoke all on function public.set_plan(uuid,text,text,text,text,timestamptz) from public;
 grant execute on function public.set_plan(uuid,text,text,text,text,timestamptz) to service_role;
 
--- get_proxy_context v3: also returns the wallet `plan`, so the edge can enforce
--- the free-tier monthly request cap without a second round-trip.
+-- get_proxy_context v4: returns the wallet `plan` (free-tier cap) AND the
+-- project's `monthly_budget` (project-wide USD cap), both enforced at the edge.
 create or replace function public.get_proxy_context(p_key_hash text)
 returns jsonb language plpgsql security definer set search_path = public, vault, pg_temp as $$
 declare k record; v_routes jsonb;
 begin
-  select pk.user_id, w.balance, w.plan, pk.endpoint_id, pk.project_id, pk.daily_limit
+  select pk.user_id, w.balance, w.plan, pk.endpoint_id, pk.project_id, pk.daily_limit,
+         pj.monthly_budget
   into k
   from public.proxy_keys pk
   join public.wallets w on w.user_id = pk.user_id
+  left join public.projects pj on pj.id = pk.project_id
   where pk.key_hash = p_key_hash and pk.is_active;
   if not found then return null; end if;
 
@@ -603,7 +605,8 @@ begin
     return jsonb_build_object(
       'user_id', k.user_id, 'balance', k.balance, 'plan', coalesce(k.plan, 'free'),
       'daily_limit', k.daily_limit,
-      'project_id', k.project_id, 'routes', coalesce(v_routes, '[]'::jsonb)
+      'project_id', k.project_id, 'monthly_budget', k.monthly_budget,
+      'routes', coalesce(v_routes, '[]'::jsonb)
     );
   end if;
 

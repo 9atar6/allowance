@@ -98,7 +98,7 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                 </div>
 
                 {/* Services */}
-                <div className="mt-5">
+                <div className="mt-4 border-t border-white/5 pt-4">
                   <GroupLabel>Services</GroupLabel>
                   {projServices.length === 0 ? (
                     <p className="text-xs text-[var(--text-faint)]">
@@ -144,11 +144,14 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                 </div>
 
                 {/* Keys */}
-                <div className="mt-5 border-t border-white/5 pt-4">
+                <div className="mt-4 border-t border-white/5 pt-4">
                   <GroupLabel>Keys</GroupLabel>
                   <KeyList keys={projKeys} />
                   <div className="mt-3">
                     <CreateProjectKeyButton projectId={p.id} />
+                    <p className="mt-1.5 text-xs text-[var(--text-faint)]">
+                      Optional: cap how much each key can spend per day.
+                    </p>
                   </div>
                 </div>
               </div>

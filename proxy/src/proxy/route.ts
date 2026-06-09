@@ -28,6 +28,7 @@ function toActive(
   return {
     userId: ctx.userId,
     keyHash: ctx.keyHash,
+    projectId: ctx.projectId,
     balance: ctx.balance,
     endpointId: ep.endpointId,
     targetUrl: ep.targetUrl,

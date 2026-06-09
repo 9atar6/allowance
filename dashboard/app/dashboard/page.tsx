@@ -7,6 +7,7 @@ import { PlanCard } from "@/components/plan-card";
 import { ProjectsSection, type ProjectRow } from "@/components/projects-section";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TopUp } from "@/components/top-up";
+import { Wordmark } from "@/components/wordmark";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
 import { formatUsd as usd } from "@/lib/format";
@@ -136,12 +137,7 @@ export default async function DashboardPage({
     <main className="mx-auto max-w-5xl space-y-8 px-6 pb-20">
       {/* Top bar */}
       <header className="flex items-center justify-between py-7">
-        <span className="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight">
-          <span className="neu-sm grid h-7 w-7 place-items-center text-[13px] text-accent">
-            A
-          </span>
-          Allowance
-        </span>
+        <Wordmark />
         <div className="flex items-center gap-3">
           <span
             className={`px-3 py-1 text-xs font-medium ${

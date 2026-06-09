@@ -10,6 +10,7 @@
 
 import {
   addDailySpend,
+  addProjectSpend,
   incrMonthlyCount,
   updateCachedBalance,
   utcDateKey,
@@ -63,6 +64,10 @@ export async function settle(
     await addDailySpend(env, ctx.keyHash, utcDateKey(), params.cost);
     // Bump the per-user monthly request counter (for the free-plan cap).
     await incrMonthlyCount(env, ctx.userId, utcMonthKey());
+    // Bump the per-project monthly spend (for the project-wide budget).
+    if (ctx.projectId) {
+      await addProjectSpend(env, ctx.projectId, utcMonthKey(), params.cost);
+    }
 
     await sendLagoEvent(env, {
       userId: ctx.userId,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/marketing/code-block";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Wordmark } from "@/components/wordmark";
 
 export const metadata = {
   title: "Allowance Docs",
@@ -62,14 +63,8 @@ export default function Docs() {
     <div className="min-h-screen text-[var(--text)]">
       <header className="sticky top-0 z-20 bg-[var(--bg)]">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
-          <Link
-            href="/"
-            className="flex items-center gap-2.5 text-lg font-semibold"
-          >
-            <span className="neu-sm grid h-7 w-7 place-items-center text-[13px] text-accent">
-              A
-            </span>
-            Allowance
+          <Link href="/">
+            <Wordmark />
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/login" className="btn-accent px-4 py-2 text-sm font-medium">

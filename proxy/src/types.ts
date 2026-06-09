@@ -94,6 +94,7 @@ export interface RpcProxyContext {
   upstream_header?: string | null;
   // project key:
   project_id?: string | null;
+  monthly_budget?: number | null; // project-wide monthly USD cap (null = none)
   routes?: RpcRoute[] | null;
 }
 
@@ -118,6 +119,8 @@ export interface CachedProxyContext {
   balance: number;
   plan: PlanTier;
   daily_limit: number | null;
+  project_id: string | null;
+  monthly_budget: number | null;
   single: CachedSingle | null;
   routes: CachedRoute[] | null;
   cached_at: number;
@@ -141,6 +144,8 @@ export interface ResolvedContext {
   balance: number;
   plan: PlanTier;
   dailyLimit: number | null;
+  projectId: string | null;
+  monthlyBudget: number | null;
   keyHash: string;
   single: (ResolvedEndpoint & { endpointActive: boolean }) | null;
   routes: ResolvedEndpoint[] | null;
@@ -150,6 +155,7 @@ export interface ResolvedContext {
 export interface ActiveRequest {
   userId: string;
   keyHash: string;
+  projectId: string | null;
   balance: number;
   endpointId: string;
   targetUrl: string;

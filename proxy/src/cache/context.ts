@@ -105,6 +105,33 @@ export async function incrMonthlyCount(
   });
 }
 
+// ── Per-project monthly spend counter (for the project-wide USD budget) ──────
+const projSpendKey = (projectId: string, month: string) =>
+  `pspend:${projectId}:${month}`;
+
+/** USD spent by a project this month (best-effort edge counter; 0 if unset). */
+export async function getProjectSpend(
+  env: Env,
+  projectId: string,
+  month: string,
+): Promise<number> {
+  const v = await env.WALLET_KV.get(projSpendKey(projectId, month));
+  return v ? Number(v) : 0;
+}
+
+/** Add to this month's project spend (called during settlement). */
+export async function addProjectSpend(
+  env: Env,
+  projectId: string,
+  month: string,
+  amount: number,
+): Promise<void> {
+  const current = await getProjectSpend(env, projectId, month);
+  await env.WALLET_KV.put(projSpendKey(projectId, month), String(current + amount), {
+    expirationTtl: MONTH_TTL_SECONDS,
+  });
+}
+
 /**
  * After a successful debit, write the decremented balance back to the cached
  * snapshot (preserving the already-encrypted credential) so the next request

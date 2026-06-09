@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/marketing/code-block";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Wordmark } from "@/components/wordmark";
 import {
   IconCap,
   IconLayers,
@@ -87,17 +88,6 @@ function Eyebrow({ children }: { children: string }) {
     <p className="text-xs font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">
       {children}
     </p>
-  );
-}
-
-function Wordmark() {
-  return (
-    <span className="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight">
-      <span className="neu-sm grid h-7 w-7 place-items-center text-[13px] text-accent">
-        A
-      </span>
-      Allowance
-    </span>
   );
 }
 
