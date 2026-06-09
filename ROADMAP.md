@@ -21,20 +21,20 @@ everything else is buildable in-session.
 
 - [ ] Status page (BetterStack/Instatus free) wired to the healthz monitor;
       link it in the site footer.
-- [ ] Worker: alert on elevated error *rate*, not just single errors (count
+- [x] Worker: alert on elevated error *rate*, not just single errors (count
       errors in KV per 5-min window inside `onError`; webhook when > threshold).
-- [ ] Worker: upstream timeout (e.g. 60s abort) + clean 504 so a hung provider
+- [x] Worker: upstream timeout (e.g. 60s abort) + clean 504 so a hung provider
       can't pin requests open. Test for it.
-- [ ] Runbook: `docs/RUNBOOK.md` — what to check when (a) proxy down,
+- [x] Runbook: `docs/RUNBOOK.md` — what to check when (a) proxy down,
       (b) Supabase down, (c) KV stale, (d) deploy rollback (`wrangler rollback`).
 - [ ] Supabase: confirm PITR/backup setting; document restore steps in runbook.
-- [ ] Log hygiene pass: confirm every log path is metadata-only (grep for
+- [x] Log hygiene pass: confirm every log path is metadata-only (grep for
       header/body logging; add a test asserting forward strips `Authorization`).
 
 ## Phase 2 — Proxy core (A− → A+)
 
-- [ ] Enforce request body size limit (e.g. 10 MB) → 413, with test.
-- [ ] Per-key *monthly* limit (same KV pattern as daily) — completes the
+- [x] Enforce request body size limit (e.g. 10 MB) → 413, with test.
+- [x] Per-key *monthly* limit (same KV pattern as daily) — completes the
       limits story (daily ✓, project-monthly ✓, key-monthly ✗).
 - [ ] Make the negative-key cache TTL + IP limit numbers config vars.
 - [ ] Decide Pro quota policy: either keep "uncapped" (current, honest) or
@@ -57,10 +57,10 @@ everything else is buildable in-session.
       Run against a **staging** Supabase project + preview worker.
 - [ ] Action-level tests: `createConnection`/`attachService`/`setBudget`
       against a local Supabase (or mocked PostgREST) asserting RLS scoping.
-- [ ] CI: add `npm run build` for the dashboard job; add Playwright job
+- [x] CI: add `npm run build` for the dashboard job; add Playwright job
       (staging secrets via GitHub environments); branch protection on `main`
       requiring CI green.
-- [ ] Coverage report in CI (vitest --coverage) with an 80% floor on
+- [x] Coverage report in CI (vitest --coverage) with an 80% floor on
       `proxy/src` and `dashboard/lib`.
 
 ## Phase 4 — Dashboard & UX (B → A+)
