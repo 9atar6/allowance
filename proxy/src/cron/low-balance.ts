@@ -22,17 +22,17 @@ async function sendAlertEmail(env: Env, w: LowBalanceWallet): Promise<void> {
   const body = {
     from: env.RESEND_FROM,
     to: [w.email],
-    subject: "Your Allowance balance is running low",
+    subject: "Your Allowance budget is running low",
     html: `
       <div style="font-family:ui-sans-serif,system-ui,sans-serif;color:#1a1a1a">
-        <h2 style="margin:0 0 12px">Balance running low</h2>
-        <p>Your Allowance balance is <strong>${usd(w.balance)}</strong>, below your
-        alert threshold of ${usd(w.threshold)}.</p>
-        <p>When it reaches zero, your API calls stop with HTTP 402. Top up to keep
-        everything running.</p>
+        <h2 style="margin:0 0 12px">Budget running low</h2>
+        <p>Your Allowance budget has <strong>${usd(w.balance)}</strong> left, below
+        your alert threshold of ${usd(w.threshold)}.</p>
+        <p>When it reaches zero, your API calls stop with HTTP 402. Raise your
+        budget to keep everything running.</p>
         <p><a href="${appUrl}/dashboard"
           style="display:inline-block;background:#5b5ef0;color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:600">
-          Top up your balance</a></p>
+          Open your dashboard</a></p>
       </div>`,
   };
 

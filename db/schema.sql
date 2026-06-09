@@ -910,4 +910,27 @@ begin
   );
 end; $$;
 
+-- =============================================================================
+-- MODEL A (control layer / BYOK): the balance is a FREE budget cap the user
+-- sets, not real money. No provider payments flow through Allowance.
+-- =============================================================================
+
+-- User sets their spend budget (free). Calls 402 when remaining hits zero.
+create or replace function public.set_budget(p_amount numeric)
+returns void language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if auth.uid() is null then raise exception 'auth required'; end if;
+  if p_amount is null or p_amount < 0 or p_amount > 1000000 then
+    raise exception 'budget must be between 0 and 1,000,000';
+  end if;
+  update public.wallets
+     set balance = p_amount, low_balance_alerted_at = null, updated_at = now()
+   where user_id = auth.uid();
+end; $$;
+revoke all on function public.set_budget(numeric) from public;
+grant execute on function public.set_budget(numeric) to authenticated;
+
+-- Disable any auto-reload left over from the prepaid experiment (no card charges).
+update public.wallets set auto_reload_enabled = false where auto_reload_enabled;
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';

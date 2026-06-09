@@ -7,7 +7,6 @@
 
 import { Hono } from "hono";
 import { handlePurge } from "./admin/purge";
-import { runAutoReloads } from "./cron/auto-reload";
 import { runLowBalanceAlerts } from "./cron/low-balance";
 import {
   getDailySpend,
@@ -26,7 +25,6 @@ import { forwardRequest, streamWithCount } from "./proxy/forward";
 import { resolveActive } from "./proxy/route";
 import { settle } from "./settlement/settle";
 import type { Env, Variables } from "./types";
-import { handleTopup } from "./x402/topup";
 
 const app = new Hono<{ Bindings: Env; Variables: Variables }>();
 
@@ -35,9 +33,6 @@ app.get("/healthz", (c) => c.json({ ok: true }));
 
 // Instant key revocation (shared-secret auth inside the handler).
 app.post("/admin/purge", handlePurge);
-
-// x402 crypto top-up: fund a prepaid balance with USDC (auth'd by proxy key).
-app.post("/v1/topup/:amount", authMiddleware, handleTopup);
 
 // All proxy traffic flows through here. The key is resolved by authMiddleware.
 app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
@@ -174,13 +169,7 @@ app.notFound((c) => c.json({ error: "not_found" }, 404));
 export default {
   fetch: app.fetch,
   scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): void {
-    // Auto-reload first: a successful charge lifts the balance, so the
-    // low-balance email that follows is correctly skipped.
-    ctx.waitUntil(
-      (async () => {
-        await runAutoReloads(env);
-        await runLowBalanceAlerts(env);
-      })(),
-    );
+    // Email users whose budget is running low.
+    ctx.waitUntil(runLowBalanceAlerts(env));
   },
 };

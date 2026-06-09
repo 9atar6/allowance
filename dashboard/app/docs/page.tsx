@@ -14,8 +14,8 @@ const toc = [
   { id: "key", label: "2. Create a key" },
   { id: "route", label: "3. Point your base URL" },
   { id: "streaming", label: "Streaming" },
-  { id: "limit", label: "When the balance runs out" },
-  { id: "funding", label: "Funding your balance" },
+  { id: "limit", label: "When the budget runs out" },
+  { id: "budget", label: "Setting a budget" },
   { id: "revoke", label: "Revoke a key" },
 ];
 
@@ -88,9 +88,10 @@ export default function Docs() {
               Quickstart
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-[var(--text-muted)]">
-              Allowance is a prepaid proxy for any pay-per-use API. You load a
-              balance, route your traffic through one key, and it stops at zero.
-              Here is the whole thing in three steps.
+              Allowance is a spend-control proxy for any pay-per-use API. You set
+              a budget, route your traffic through one key, and it stops at your
+              cap. Your providers still bill you directly — we never touch that
+              money. Here is the whole thing in three steps.
             </p>
 
             <div className="mt-12 space-y-14">
@@ -157,40 +158,35 @@ curl ${PROXY}/v1/proxy/chat/completions \\
                 </p>
               </Step>
 
-              <Step id="limit" title="When the balance runs out">
+              <Step id="limit" title="When the budget runs out">
                 <p>
-                  At zero, the proxy stops the request and returns{" "}
-                  <Mono>402 Payment Required</Mono> with a small JSON body. No
-                  overdraft, no surprise bill.
+                  At your cap, the proxy stops the request and returns{" "}
+                  <Mono>402 Payment Required</Mono> with a small JSON body — a
+                  hard stop, so a runaway agent can never blow past your limit.
                 </p>
                 <CodeBlock
                   label="402 response"
                   code={`{
-  "x402Version": 1,
   "error": "PAYMENT_REQUIRED",
-  "accepts": [
-    { "scheme": "prepaid", "maxAmountRequired": 0.01, "balanceRemaining": 0 }
-  ]
+  "budgetRemaining": 0
 }`}
                 />
               </Step>
 
-              <Step id="funding" title="Funding your balance">
+              <Step id="budget" title="Setting a budget">
                 <p>
-                  <strong className="text-[var(--text)]">People</strong> top up by card in
-                  the dashboard. <strong className="text-[var(--text)]">Agents</strong> top
-                  up programmatically with USDC over x402, with no card and no
-                  human needed.
+                  Open the dashboard and set a budget — it is{" "}
+                  <strong className="text-[var(--text)]">free</strong>, just a cap.
+                  Allowance never charges you and never pays your providers; they
+                  bill you directly as usual. The budget only decides when your
+                  apps and agents get cut off.
                 </p>
-                <CodeBlock
-                  label="bash"
-                  code={`# An agent tops itself up $5 in USDC.
-# With no payment attached, this returns 402 + payment details.
-# An x402 client (such as x402-fetch) signs and retries automatically.
-curl -X POST ${PROXY}/v1/topup/5 \\
-  -H "Authorization: Bearer alw_live_your_key"`}
-                />
-                <p>Top-up amounts: $5, $10, $25, $50, $100.</p>
+                <p>
+                  Add a <Mono>cost per call</Mono> to each connection (or pick a
+                  provider preset for real per-token pricing) so the budget tracks
+                  your true spend. Set caps per project and per key for finer
+                  control.
+                </p>
               </Step>
 
               <Step id="revoke" title="Revoke a leaked key">

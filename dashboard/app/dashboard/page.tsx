@@ -1,5 +1,4 @@
 import { ActivityTable, type ActivityRow } from "@/components/activity-table";
-import { AutoReloadSetting } from "@/components/auto-reload-setting";
 import { CollapsibleCard } from "@/components/collapsible-card";
 import {
   ConnectionsSection,
@@ -13,8 +12,8 @@ import {
   type ConnectionOption,
   type ProjectRow,
 } from "@/components/projects-section";
+import { SetBudget } from "@/components/set-budget";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { TopUp } from "@/components/top-up";
 import {
   UsageAnalytics,
   type DailyPoint,
@@ -64,7 +63,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ topup?: string; plan?: string }>;
 }) {
-  const { topup, plan: planParam } = await searchParams;
+  const { plan: planParam } = await searchParams;
   const supabase = await createClient();
 
   const now = new Date();
@@ -88,7 +87,7 @@ export default async function DashboardPage({
     supabase
       .from("wallets")
       .select(
-        "balance, currency, plan, current_period_end, low_balance_threshold, auto_reload_enabled, auto_reload_amount",
+        "balance, currency, plan, current_period_end, low_balance_threshold",
       )
       .single(),
     supabase
@@ -137,9 +136,6 @@ export default async function DashboardPage({
     wallet?.low_balance_threshold != null
       ? Number(wallet.low_balance_threshold)
       : null;
-  const autoReloadEnabled = Boolean(wallet?.auto_reload_enabled);
-  const autoReloadAmount =
-    wallet?.auto_reload_amount != null ? Number(wallet.auto_reload_amount) : null;
   const monthlyUsed = monthlyCount ?? 0;
   const monthlyLimit = monthlyQuota(plan);
   const endpointList = (endpoints ?? []) as Endpoint[];
@@ -263,32 +259,18 @@ export default async function DashboardPage({
       {/* Account: Balance + Plan share one panel, actions pinned to the bottom */}
       <CollapsibleCard title="Account">
         <div className="grid gap-0 md:grid-cols-2">
-        {/* Balance */}
+        {/* Budget (a free spend cap — your providers still bill you directly) */}
         <div className="flex flex-col pb-6 md:pb-0 md:pr-8">
-          <CardTitle>Balance</CardTitle>
+          <CardTitle>Budget left</CardTitle>
           <p className="mt-3 text-5xl font-semibold tracking-tight tabular-nums">
             {usd(Number(balance))}
           </p>
           <p className="mt-2 text-xs text-[var(--text-faint)]">
-            Calls stop with HTTP 402 when this reaches zero.
+            A spend cap you set. Calls stop with HTTP 402 when it reaches zero.
           </p>
           <div className="mt-auto pt-6">
-            <TopUp />
-            {topup === "success" && (
-              <p className="mt-2.5 text-sm text-accent">
-                Payment received. Balance updates within a few seconds.
-              </p>
-            )}
-            {topup === "cancelled" && (
-              <p className="mt-2.5 text-sm text-[var(--text-muted)]">
-                Top-up cancelled.
-              </p>
-            )}
+            <SetBudget current={Number(balance)} />
             <LowBalanceSetting current={lowThreshold} />
-            <AutoReloadSetting
-              enabled={autoReloadEnabled}
-              amount={autoReloadAmount}
-            />
           </div>
         </div>
 

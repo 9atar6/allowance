@@ -14,7 +14,7 @@ import {
 export const metadata = {
   title: "Allowance — One key. Every API. A hard cap.",
   description:
-    "Route all your API spend through one key, with a prepaid limit and an instant kill switch. Works with any API. Built for apps and AI agents.",
+    "Route all your API spend through one key, with a spending cap your apps and agents can never exceed and an instant kill switch. Works with any API.",
 };
 
 const PROXY = "https://api.allowance.dev";
@@ -27,8 +27,8 @@ curl ${PROXY}/v1/proxy/chat/completions \\
 const steps = [
   {
     n: "01",
-    title: "Load a balance",
-    body: "Add funds by card, or let an agent top up with USDC. That balance is the ceiling.",
+    title: "Set a budget",
+    body: "Tell Allowance how much your apps and agents may spend. That cap is the ceiling — nothing can ever go past it.",
   },
   {
     n: "02",
@@ -67,8 +67,8 @@ const plans = [
     features: [
       "1,000,000 requests / mo",
       "Unlimited projects + keys",
-      "Per-key limits, 90-day analytics",
-      "The x402 agent rail",
+      "Per-key + per-project limits",
+      "90-day analytics, email alerts",
     ],
     cta: "Upgrade",
     highlight: true,
@@ -106,7 +106,7 @@ export default function Landing() {
         </h1>
         <p className="mx-auto mt-8 max-w-xl text-[17px] leading-relaxed text-[var(--text-muted)]">
           Route every API your apps and agents call through one key. Set a
-          prepaid limit they can never exceed, and kill a leaked key in a click.
+          spending cap they can never exceed, and kill a leaked key in a click.
         </p>
         <div className="mt-10 flex items-center justify-center gap-3">
           <Link href="/login" className="btn-accent px-6 py-3">

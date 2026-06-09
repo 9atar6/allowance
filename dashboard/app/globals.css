@@ -97,7 +97,7 @@ body {
 .pressable {
   transition: box-shadow 0.18s ease, transform 0.18s ease, color 0.18s ease;
 }
-.pressable:hover { box-shadow: var(--raise-lg); }
+.pressable:hover { box-shadow: var(--raise); }
 .pressable:active { box-shadow: var(--inset-sm); transform: translateY(1px); }
 
 /* The single accent button. Subtle raise, accent text, no fill noise. */
@@ -109,7 +109,7 @@ body {
   box-shadow: var(--raise-sm);
   transition: box-shadow 0.18s ease, transform 0.18s ease, filter 0.18s ease;
 }
-.btn-accent:hover { filter: brightness(1.05); box-shadow: var(--raise); }
+.btn-accent:hover { filter: brightness(1.04); }
 .btn-accent:active { transform: translateY(1px); box-shadow: var(--inset-sm); }
 
 .text-accent { color: var(--accent); }

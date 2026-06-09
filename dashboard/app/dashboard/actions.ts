@@ -315,6 +315,20 @@ export async function detachService(projectServiceId: string): Promise<ActionRes
   return { ok: true };
 }
 
+/** Set the spend budget (USD). Free — this is a cap, not a payment. */
+export async function setBudget(amount: number): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated." };
+
+  const { error } = await supabase.rpc("set_budget", { p_amount: amount });
+  if (error) return { ok: false, error: "Could not set budget." };
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 /** Set the low-balance alert threshold (USD). null/0 disables alerts. */
 export async function setLowBalanceThreshold(
   value: number | null,
