@@ -72,6 +72,43 @@ export async function POST(req: NextRequest) {
         await ensureLagoProvisioned(userId, email);
       }
     }
+
+    // Auto-reload card setup (setup mode) → store the saved card + enable it.
+    if (session.mode === "setup" && session.metadata?.kind === "auto_reload") {
+      const userId = session.metadata?.user_id;
+      const amount = Number(session.metadata?.amount);
+      const setupIntentId =
+        typeof session.setup_intent === "string"
+          ? session.setup_intent
+          : session.setup_intent?.id;
+
+      if (userId && setupIntentId && amount > 0) {
+        const si = await stripe.setupIntents.retrieve(setupIntentId);
+        const pm =
+          typeof si.payment_method === "string"
+            ? si.payment_method
+            : si.payment_method?.id;
+        const customer =
+          (typeof si.customer === "string" ? si.customer : si.customer?.id) ??
+          (typeof session.customer === "string"
+            ? session.customer
+            : session.customer?.id);
+
+        if (pm && customer) {
+          const admin = createAdminClient();
+          const { error } = await admin.rpc("set_auto_reload", {
+            p_user_id: userId,
+            p_customer_id: customer,
+            p_payment_method_id: pm,
+            p_amount: amount,
+            p_enabled: true,
+          });
+          if (error) {
+            return NextResponse.json({ error: "auto_reload_failed" }, { status: 500 });
+          }
+        }
+      }
+    }
   }
 
   // ── Subscription lifecycle → mirror the plan onto the wallet ───────────────

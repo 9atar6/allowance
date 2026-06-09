@@ -3,6 +3,8 @@ import { CreateKeyButton } from "@/components/create-key-button";
 import { EndpointToggle } from "@/components/endpoint-toggle";
 import { InlineDelete } from "@/components/inline-delete";
 import { KeyList } from "@/components/key-list";
+import { AutoReloadSetting } from "@/components/auto-reload-setting";
+import { CollapsibleCard } from "@/components/collapsible-card";
 import { LowBalanceSetting } from "@/components/low-balance-setting";
 import { PlanCard } from "@/components/plan-card";
 import { ProjectsSection, type ProjectRow } from "@/components/projects-section";
@@ -68,7 +70,9 @@ export default async function DashboardPage({
   ] = await Promise.all([
     supabase
       .from("wallets")
-      .select("balance, currency, plan, current_period_end, low_balance_threshold")
+      .select(
+        "balance, currency, plan, current_period_end, low_balance_threshold, auto_reload_enabled, auto_reload_amount",
+      )
       .single(),
     supabase
       .from("endpoints")
@@ -109,6 +113,9 @@ export default async function DashboardPage({
     wallet?.low_balance_threshold != null
       ? Number(wallet.low_balance_threshold)
       : null;
+  const autoReloadEnabled = Boolean(wallet?.auto_reload_enabled);
+  const autoReloadAmount =
+    wallet?.auto_reload_amount != null ? Number(wallet.auto_reload_amount) : null;
   const monthlyUsed = monthlyCount ?? 0;
   const monthlyLimit = monthlyQuota(plan);
   const endpointList = (endpoints ?? []) as Endpoint[];
@@ -199,7 +206,8 @@ export default async function DashboardPage({
       </header>
 
       {/* Account: Balance + Plan share one panel, actions pinned to the bottom */}
-      <Card className="grid gap-0 md:grid-cols-2">
+      <CollapsibleCard title="Account">
+        <div className="grid gap-0 md:grid-cols-2">
         {/* Balance */}
         <div className="flex flex-col pb-6 md:pb-0 md:pr-8">
           <CardTitle>Balance</CardTitle>
@@ -222,6 +230,10 @@ export default async function DashboardPage({
               </p>
             )}
             <LowBalanceSetting current={lowThreshold} />
+            <AutoReloadSetting
+              enabled={autoReloadEnabled}
+              amount={autoReloadAmount}
+            />
           </div>
         </div>
 
@@ -244,14 +256,17 @@ export default async function DashboardPage({
             </p>
           )}
         </div>
-      </Card>
+        </div>
+      </CollapsibleCard>
 
       {/* Projects */}
-      <ProjectsSection
-        projects={projectList}
-        services={endpointList}
-        keys={keyList}
-      />
+      <CollapsibleCard title="Projects">
+        <ProjectsSection
+          projects={projectList}
+          services={endpointList}
+          keys={keyList}
+        />
+      </CollapsibleCard>
 
       {/* Ungrouped (legacy single-endpoint) services, only if any */}
       {standaloneEndpoints.length > 0 && (
@@ -309,34 +324,28 @@ export default async function DashboardPage({
       )}
 
       {/* Usage analytics (Pro) */}
-      {isPro ? (
-        <Card>
-          <CardTitle className="mb-5">Usage analytics</CardTitle>
+      <CollapsibleCard
+        title="Usage analytics"
+        aside={!isPro ? "Pro" : undefined}
+      >
+        {isPro ? (
           <UsageAnalytics
             daily={daily}
             services={serviceRows}
             serviceName={serviceName}
           />
-        </Card>
-      ) : (
-        <Card className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <CardTitle>Usage analytics</CardTitle>
-            <p className="mt-2 text-sm text-[var(--text-muted)]">
-              Daily spend, request trends, and per-service breakdowns — on Pro.
-            </p>
-          </div>
-          <span className="neu-inset-sm px-3 py-1 text-xs text-[var(--text-faint)]">
-            Pro
-          </span>
-        </Card>
-      )}
+        ) : (
+          <p className="text-sm text-[var(--text-muted)]">
+            Daily spend, request trends, and per-service breakdowns — upgrade to
+            Pro to unlock.
+          </p>
+        )}
+      </CollapsibleCard>
 
       {/* Activity: one ledger of top-ups + per-call charges */}
-      <Card>
-        <CardTitle className="mb-4">Activity</CardTitle>
+      <CollapsibleCard title="Activity">
         <ActivityTable rows={activityRows} />
-      </Card>
+      </CollapsibleCard>
     </main>
   );
 }

@@ -7,6 +7,7 @@
 
 import { Hono } from "hono";
 import { handlePurge } from "./admin/purge";
+import { runAutoReloads } from "./cron/auto-reload";
 import { runLowBalanceAlerts } from "./cron/low-balance";
 import {
   getDailySpend,
@@ -173,6 +174,13 @@ app.notFound((c) => c.json({ error: "not_found" }, 404));
 export default {
   fetch: app.fetch,
   scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): void {
-    ctx.waitUntil(runLowBalanceAlerts(env));
+    // Auto-reload first: a successful charge lifts the balance, so the
+    // low-balance email that follows is correctly skipped.
+    ctx.waitUntil(
+      (async () => {
+        await runAutoReloads(env);
+        await runLowBalanceAlerts(env);
+      })(),
+    );
   },
 };

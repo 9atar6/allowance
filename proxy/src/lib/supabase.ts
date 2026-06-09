@@ -52,6 +52,28 @@ export function markLowBalanceAlerted(
   return rpc<unknown>(env, "mark_low_balance_alerted", { p_user_id: userId });
 }
 
+export interface AutoReloadWallet {
+  user_id: string;
+  customer_id: string;
+  payment_method_id: string;
+  amount: number;
+}
+
+/** Wallets to auto-reload now (below threshold, card on file, not just tried). */
+export function walletsNeedingAutoReload(
+  env: Env,
+): Promise<AutoReloadWallet[]> {
+  return rpc<AutoReloadWallet[]>(env, "wallets_needing_auto_reload", {});
+}
+
+/** Latch an auto-reload attempt (guards against double charges). */
+export function markAutoReloadAttempted(
+  env: Env,
+  userId: string,
+): Promise<unknown> {
+  return rpc<unknown>(env, "mark_auto_reload_attempted", { p_user_id: userId });
+}
+
 /** Resolve a proxy key hash to its full edge context (or null = unknown key). */
 export function getProxyContext(
   env: Env,

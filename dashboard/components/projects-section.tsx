@@ -4,7 +4,6 @@ import { CreateProjectForm } from "@/components/create-project-form";
 import { CreateProjectKeyButton } from "@/components/create-project-key-button";
 import { InlineDelete } from "@/components/inline-delete";
 import { KeyList, type KeyItem } from "@/components/key-list";
-import { Card, CardTitle } from "@/components/ui/card";
 import { formatUsd } from "@/lib/format";
 
 export interface ProjectRow {
@@ -47,22 +46,19 @@ function GroupLabel({ children }: { children: string }) {
 
 export function ProjectsSection({ projects, services, keys }: Props) {
   return (
-    <Card>
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <CardTitle>Projects</CardTitle>
-        <p className="text-xs text-[var(--text-faint)]">
-          One key per project. Agents call services at{" "}
-          <code className="font-mono text-[var(--text-muted)]">
-            /v1/proxy/&lt;slug&gt;
-          </code>
-        </p>
-      </div>
+    <div>
+      <p className="text-xs text-[var(--text-faint)]">
+        One key per project. Agents call services at{" "}
+        <code className="font-mono text-[var(--text-muted)]">
+          /v1/proxy/&lt;slug&gt;
+        </code>
+      </p>
 
       <div className="mt-4">
         <CreateProjectForm />
       </div>
 
-      <div className="mt-6 space-y-4">
+      <div className="mt-6 space-y-5">
         {projects.length === 0 ? (
           <p className="text-sm text-[var(--text-faint)]">
             No projects yet. Create one above to get started.
@@ -102,7 +98,7 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                 </div>
 
                 {/* Services */}
-                <div className="mt-4 border-t border-white/5 pt-4">
+                <div className="mt-5 border-t border-white/10 pt-5">
                   <GroupLabel>Services</GroupLabel>
                   {projServices.length === 0 ? (
                     <p className="text-xs text-[var(--text-faint)]">
@@ -148,7 +144,7 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                 </div>
 
                 {/* Keys */}
-                <div className="mt-4 border-t border-white/5 pt-4">
+                <div className="mt-5 border-t border-white/10 pt-5">
                   <GroupLabel>Keys</GroupLabel>
                   <KeyList keys={projKeys} />
                   <div className="mt-3">
@@ -163,6 +159,6 @@ export function ProjectsSection({ projects, services, keys }: Props) {
           })
         )}
       </div>
-    </Card>
+    </div>
   );
 }

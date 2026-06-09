@@ -112,11 +112,41 @@ body {
 .font-mono { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 
 /* ── Focus, selection, scrollbar ──────────────────────────────────────────── */
-:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-  border-radius: 6px;
+/* No harsh browser outline anywhere — focus is shown as a soft accent ring
+   that blends with the neumorphic depth (set per surface below). */
+:focus { outline: none; }
+:focus-visible { outline: none; }
+
+/* Recessed fields: keep the inset, add a thin accent ring on focus. */
+.neu-inset:focus,
+.neu-inset:focus-within,
+.neu-inset-sm:focus,
+.neu-inset-sm:focus-within {
+  box-shadow: var(--inset), 0 0 0 1.5px var(--accent);
 }
+/* Raised controls: keep the lift, add an accent ring on keyboard focus. */
+.neu:focus-visible,
+.neu-sm:focus-visible,
+.btn-accent:focus-visible {
+  box-shadow: var(--raise-sm), 0 0 0 2px var(--accent);
+}
+
+/* Remove the ugly number-input spinner arrows everywhere. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Use our own chevron, not the default details triangle. */
+summary { list-style: none; }
+summary::-webkit-details-marker { display: none; }
+/* Chevron points down when open, right when collapsed. */
+details:not([open]) .chevron { transform: rotate(-90deg); }
 ::selection { background: rgba(124, 127, 255, 0.3); color: #fff; }
 ::-webkit-scrollbar { width: 11px; height: 11px; }
 ::-webkit-scrollbar-track { background: transparent; }

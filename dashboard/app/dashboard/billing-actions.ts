@@ -102,6 +102,53 @@ export async function startProCheckout(): Promise<SubResult> {
   }
 }
 
+// ── Auto-reload (save a card, charge it off-session when low) ────────────────
+
+/**
+ * Start a Stripe Checkout in SETUP mode to save a card for auto-reload. Nothing
+ * is charged here; the webhook stores the payment method + amount and enables
+ * auto-reload. The worker cron charges the saved card off-session when low.
+ */
+export async function startAutoReloadSetup(amount: number): Promise<SubResult> {
+  if (!(amount > 0)) return { ok: false, error: "Enter a reload amount." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated." };
+
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: "setup",
+      customer_email: user.email,
+      metadata: { user_id: user.id, kind: "auto_reload", amount: String(amount) },
+      success_url: `${origin}/dashboard?reload=on`,
+      cancel_url: `${origin}/dashboard?reload=cancelled`,
+    });
+    if (!session.url) return { ok: false, error: "Could not start setup." };
+    return { ok: true, url: session.url };
+  } catch {
+    return { ok: false, error: "Could not start setup." };
+  }
+}
+
+/** Turn auto-reload off (the saved card is kept for next time). */
+export async function disableAutoReload(): Promise<SubResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated." };
+
+  const { error } = await supabase.rpc("set_auto_reload_enabled", {
+    p_enabled: false,
+  });
+  if (error) return { ok: false, error: "Could not disable auto-reload." };
+  return { ok: true };
+}
+
 /**
  * Open the Stripe Billing Portal so a Pro user can update their card, view
  * invoices, or cancel. Requires a stored Stripe customer id (set by the webhook).

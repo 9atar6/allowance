@@ -35,6 +35,10 @@ export interface Env {
   RESEND_FROM?: string; // e.g. "Allowance <onboarding@resend.dev>"
   APP_URL?: string; // dashboard origin, for the top-up link in the email
 
+  // Auto-reload: off-session card charge when balance is low. Optional — if
+  // STRIPE_SECRET_KEY is unset, the auto-reload job no-ops.
+  STRIPE_SECRET_KEY?: string;
+
   // Shared secret for the /admin/purge endpoint (dashboard → worker). If unset,
   // purge is disabled and revocation falls back to TTL expiry.
   ADMIN_PURGE_SECRET?: string;
