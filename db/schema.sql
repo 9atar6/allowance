@@ -792,4 +792,122 @@ revoke all on function public.mark_auto_reload_attempted(uuid) from public;
 grant execute on function public.wallets_needing_auto_reload() to service_role;
 grant execute on function public.mark_auto_reload_attempted(uuid) to service_role;
 
+-- =============================================================================
+-- REUSABLE CONNECTIONS  (define an API once → attach it to many projects)
+--
+-- An "endpoint" is now a reusable connection (project_id/slug left null). A
+-- project attaches a connection via project_services with a per-project slug.
+-- =============================================================================
+create table if not exists public.project_services (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references auth.users (id) on delete cascade,
+  project_id  uuid not null references public.projects (id) on delete cascade,
+  endpoint_id uuid not null references public.endpoints (id) on delete cascade,
+  slug        text not null,
+  created_at  timestamptz not null default now(),
+  unique (project_id, slug),
+  unique (project_id, endpoint_id)
+);
+alter table public.project_services enable row level security;
+drop policy if exists "project_services_select_own" on public.project_services;
+create policy "project_services_select_own" on public.project_services
+  for select to authenticated using (user_id = auth.uid());
+drop policy if exists "project_services_delete_own" on public.project_services;
+create policy "project_services_delete_own" on public.project_services
+  for delete to authenticated using (user_id = auth.uid());
+-- Inserts go through attach_service (validates slug + cross-ownership).
+
+create or replace function public.attach_service(
+  p_project_id uuid, p_endpoint_id uuid, p_slug text
+) returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_user uuid := auth.uid(); v_id uuid;
+begin
+  if v_user is null then raise exception 'auth required'; end if;
+  if p_slug is null or p_slug !~ '^[a-z0-9-]{1,40}$' then
+    raise exception 'slug must match ^[a-z0-9-]{1,40}$';
+  end if;
+  if not exists (select 1 from public.projects where id = p_project_id and user_id = v_user) then
+    raise exception 'project not found';
+  end if;
+  if not exists (select 1 from public.endpoints where id = p_endpoint_id and user_id = v_user) then
+    raise exception 'connection not found';
+  end if;
+  insert into public.project_services (user_id, project_id, endpoint_id, slug)
+  values (v_user, p_project_id, p_endpoint_id, p_slug)
+  returning id into v_id;
+  return v_id;
+end; $$;
+revoke all on function public.attach_service(uuid,uuid,text) from public;
+grant execute on function public.attach_service(uuid,uuid,text) to authenticated;
+
+-- One-time migration: move existing project-bound endpoints into the new model
+-- (idempotent — safe to re-run; existing project keys keep working).
+insert into public.project_services (user_id, project_id, endpoint_id, slug)
+select e.user_id, e.project_id, e.id, e.slug
+from public.endpoints e
+where e.project_id is not null and e.slug is not null
+on conflict do nothing;
+update public.endpoints set project_id = null, slug = null where project_id is not null;
+
+-- get_proxy_context v5: project routes come from project_services (the new
+-- model) UNION any legacy project-bound endpoints (pre-migration safety).
+create or replace function public.get_proxy_context(p_key_hash text)
+returns jsonb language plpgsql security definer set search_path = public, vault, pg_temp as $$
+declare k record; v_routes jsonb;
+begin
+  select pk.user_id, w.balance, w.plan, pk.endpoint_id, pk.project_id, pk.daily_limit,
+         pj.monthly_budget
+  into k
+  from public.proxy_keys pk
+  join public.wallets w on w.user_id = pk.user_id
+  left join public.projects pj on pj.id = pk.project_id
+  where pk.key_hash = p_key_hash and pk.is_active;
+  if not found then return null; end if;
+
+  if k.project_id is not null then
+    with routes_cte as (
+      select ps.slug, e.id, e.target_url, e.cost_per_request, e.metering_mode,
+             e.input_token_cost, e.output_token_cost, e.vault_secret_id
+      from public.project_services ps
+      join public.endpoints e on e.id = ps.endpoint_id
+      where ps.project_id = k.project_id and e.is_active
+      union all
+      select e.slug, e.id, e.target_url, e.cost_per_request, e.metering_mode,
+             e.input_token_cost, e.output_token_cost, e.vault_secret_id
+      from public.endpoints e
+      where e.project_id = k.project_id and e.is_active and e.slug is not null
+    )
+    select jsonb_agg(jsonb_build_object(
+      'slug', slug, 'endpoint_id', id, 'target_url', target_url,
+      'cost_per_request', cost_per_request,
+      'metering_mode', coalesce(metering_mode, 'flat'),
+      'input_token_cost', coalesce(input_token_cost, 0),
+      'output_token_cost', coalesce(output_token_cost, 0),
+      'upstream_header', (select decrypted_secret from vault.decrypted_secrets where id = vault_secret_id)
+    ))
+    into v_routes from routes_cte;
+
+    return jsonb_build_object(
+      'user_id', k.user_id, 'balance', k.balance, 'plan', coalesce(k.plan, 'free'),
+      'daily_limit', k.daily_limit,
+      'project_id', k.project_id, 'monthly_budget', k.monthly_budget,
+      'routes', coalesce(v_routes, '[]'::jsonb)
+    );
+  end if;
+
+  return (
+    select jsonb_build_object(
+      'user_id', k.user_id, 'balance', k.balance, 'plan', coalesce(k.plan, 'free'),
+      'daily_limit', k.daily_limit,
+      'endpoint_id', e.id, 'target_url', e.target_url, 'cost_per_request', e.cost_per_request,
+      'metering_mode', coalesce(e.metering_mode, 'flat'),
+      'input_token_cost', coalesce(e.input_token_cost, 0),
+      'output_token_cost', coalesce(e.output_token_cost, 0),
+      'endpoint_active', coalesce(e.is_active, false),
+      'upstream_header', (select decrypted_secret from vault.decrypted_secrets where id = e.vault_secret_id)
+    )
+    from public.endpoints e where e.id = k.endpoint_id
+  );
+end; $$;
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';

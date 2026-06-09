@@ -1,13 +1,18 @@
 import { ActivityTable, type ActivityRow } from "@/components/activity-table";
-import { CreateKeyButton } from "@/components/create-key-button";
-import { EndpointToggle } from "@/components/endpoint-toggle";
-import { InlineDelete } from "@/components/inline-delete";
-import { KeyList } from "@/components/key-list";
 import { AutoReloadSetting } from "@/components/auto-reload-setting";
 import { CollapsibleCard } from "@/components/collapsible-card";
+import {
+  ConnectionsSection,
+  type ConnectionRow,
+} from "@/components/connections-section";
 import { LowBalanceSetting } from "@/components/low-balance-setting";
 import { PlanCard } from "@/components/plan-card";
-import { ProjectsSection, type ProjectRow } from "@/components/projects-section";
+import {
+  ProjectsSection,
+  type AttachmentRow,
+  type ConnectionOption,
+  type ProjectRow,
+} from "@/components/projects-section";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TopUp } from "@/components/top-up";
 import {
@@ -17,11 +22,11 @@ import {
 } from "@/components/usage-analytics";
 import { Wordmark } from "@/components/wordmark";
 import { Button } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
+import { CardTitle } from "@/components/ui/card";
 import { formatUsd as usd } from "@/lib/format";
 import { monthlyQuota, type PlanTier } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
-import { deleteService, signOut } from "./actions";
+import { signOut } from "./actions";
 
 interface Endpoint {
   id: string;
@@ -29,8 +34,19 @@ interface Endpoint {
   target_url: string;
   cost_per_request: number;
   is_active: boolean;
-  project_id: string | null;
-  slug: string | null;
+  metering_mode: string | null;
+}
+interface ProjectServiceRow {
+  id: string;
+  project_id: string;
+  slug: string;
+  endpoints: {
+    id: string;
+    name: string;
+    target_url: string;
+    cost_per_request: number;
+    metering_mode: string | null;
+  } | null;
 }
 interface ProxyKey {
   id: string;
@@ -64,6 +80,7 @@ export default async function DashboardPage({
     { data: usage },
     { data: txns },
     { data: projects },
+    { data: projectServices },
     { count: monthlyCount },
     { data: dailyRaw },
     { data: serviceRaw },
@@ -76,7 +93,7 @@ export default async function DashboardPage({
       .single(),
     supabase
       .from("endpoints")
-      .select("id, name, target_url, cost_per_request, is_active, project_id, slug")
+      .select("id, name, target_url, cost_per_request, is_active, metering_mode")
       .order("created_at", { ascending: false }),
     supabase
       .from("proxy_keys")
@@ -97,6 +114,13 @@ export default async function DashboardPage({
     supabase
       .from("projects")
       .select("id, name, monthly_budget, is_active")
+      .order("created_at", { ascending: false }),
+    // Attached services = connections mapped into projects with a slug.
+    supabase
+      .from("project_services")
+      .select(
+        "id, project_id, slug, endpoints ( id, name, target_url, cost_per_request, metering_mode )",
+      )
       .order("created_at", { ascending: false }),
     supabase
       .from("usage_events")
@@ -121,8 +145,39 @@ export default async function DashboardPage({
   const endpointList = (endpoints ?? []) as Endpoint[];
   const keyList = (keys ?? []) as ProxyKey[];
   const projectList = (projects ?? []) as ProjectRow[];
-  const standaloneEndpoints = endpointList.filter((e) => !e.project_id);
   const endpointNames = new Map(endpointList.map((e) => [e.id, e.name]));
+
+  // Connections (reusable APIs) = the endpoints list.
+  const connections: ConnectionRow[] = endpointList.map((e) => ({
+    id: e.id,
+    name: e.name,
+    target_url: e.target_url,
+    cost_per_request: Number(e.cost_per_request),
+    metering_mode: e.metering_mode,
+  }));
+  const connectionOptions: ConnectionOption[] = endpointList.map((e) => ({
+    id: e.id,
+    name: e.name,
+  }));
+
+  // Attachments (a connection mapped into a project under a slug).
+  const attachments: AttachmentRow[] = (
+    (projectServices ?? []) as unknown as ProjectServiceRow[]
+  )
+    .map((ps) => {
+      const ep = Array.isArray(ps.endpoints) ? ps.endpoints[0] : ps.endpoints;
+      if (!ep) return null;
+      return {
+        id: ps.id,
+        project_id: ps.project_id,
+        slug: ps.slug,
+        endpointName: ep.name,
+        endpointUrl: ep.target_url,
+        endpointCost: Number(ep.cost_per_request),
+        meteringMode: ep.metering_mode,
+      };
+    })
+    .filter((a): a is AttachmentRow => a !== null);
   const isPro = plan !== "free";
   const serviceName = (id: string | null) =>
     (id && endpointNames.get(id)) || "Unknown";
@@ -263,65 +318,16 @@ export default async function DashboardPage({
       <CollapsibleCard title="Projects">
         <ProjectsSection
           projects={projectList}
-          services={endpointList}
+          attachments={attachments}
+          connections={connectionOptions}
           keys={keyList}
         />
       </CollapsibleCard>
 
-      {/* Ungrouped (legacy single-endpoint) services, only if any */}
-      {standaloneEndpoints.length > 0 && (
-        <Card>
-          <details>
-            <summary className="cursor-pointer text-sm font-medium">
-              Ungrouped services ({standaloneEndpoints.length})
-            </summary>
-            <p className="mb-3 mt-1 text-xs text-[var(--text-faint)]">
-              Single services not in a project. New services are best added
-              inside a project above.
-            </p>
-            <ul className="space-y-3">
-              {standaloneEndpoints.map((e) => {
-                const endpointKeys = keyList
-                  .filter((k) => k.endpoint_id === e.id)
-                  .map((k) => ({
-                    id: k.id,
-                    keyPrefix: k.key_prefix,
-                    isActive: k.is_active,
-                    dailyLimit: k.daily_limit,
-                    name: k.name,
-                    createdAt: k.created_at,
-                  }));
-                return (
-                  <li
-                    key={e.id}
-                    className={`neu-inset p-4 ${e.is_active ? "" : "opacity-60"}`}
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium">{e.name}</p>
-                        <p className="truncate font-mono text-xs text-[var(--text-faint)]">
-                          {e.target_url}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 items-center gap-3">
-                        <span className="text-xs tabular-nums text-[var(--text-muted)]">
-                          {usd(Number(e.cost_per_request))}/call
-                        </span>
-                        <EndpointToggle endpointId={e.id} isActive={e.is_active} />
-                        <InlineDelete action={deleteService.bind(null, e.id)} label="delete" />
-                      </div>
-                    </div>
-                    <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/5 pt-3">
-                      <KeyList keys={endpointKeys} />
-                      <CreateKeyButton endpointId={e.id} />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </details>
-        </Card>
-      )}
+      {/* Connections (reusable APIs) */}
+      <CollapsibleCard title="Connections">
+        <ConnectionsSection connections={connections} />
+      </CollapsibleCard>
 
       {/* Usage analytics (Pro) */}
       <CollapsibleCard

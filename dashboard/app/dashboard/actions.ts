@@ -8,6 +8,8 @@ import { purgeProxyKeyCache } from "@/lib/proxy-admin";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
+  attachServiceSchema,
+  connectionSchema,
   endpointSchema,
   projectEndpointSchema,
   projectSchema,
@@ -233,6 +235,84 @@ export async function createProjectKey(
 
   revalidatePath("/dashboard");
   return { ok: true, generatedKey: key };
+}
+
+// ── Connections (reusable APIs) ──────────────────────────────────────────────
+
+/** Create a reusable connection (an API defined once, attached to projects). */
+export async function createConnection(formData: FormData): Promise<ActionResult> {
+  const parsed = connectionSchema.safeParse({
+    name: formData.get("name"),
+    targetUrl: formData.get("targetUrl"),
+    costPerRequest: formData.get("costPerRequest"),
+    headers: formData.get("headers"),
+    meteringMode: formData.get("meteringMode") ?? undefined,
+    inputTokenCost: formData.get("inputTokenCost") ?? undefined,
+    outputTokenCost: formData.get("outputTokenCost") ?? undefined,
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  const headers = parseHeaders(parsed.data.headers);
+  if (!headers) return { ok: false, error: 'Headers must be "Name: value" lines.' };
+
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("create_endpoint", {
+    p_name: parsed.data.name,
+    p_target_url: parsed.data.targetUrl,
+    p_cost_per_request: parsed.data.costPerRequest,
+    p_auth_headers: headers,
+    p_metering_mode: parsed.data.meteringMode,
+    p_input_token_cost: parsed.data.inputTokenCost,
+    p_output_token_cost: parsed.data.outputTokenCost,
+  });
+  if (error) return { ok: false, error: "Could not create connection." };
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Delete a connection (cascades to its project attachments). RLS-scoped. */
+export async function deleteConnection(endpointId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("endpoints").delete().eq("id", endpointId);
+  if (error) return { ok: false, error: "Could not delete connection." };
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Attach an existing connection to a project under a slug. */
+export async function attachService(formData: FormData): Promise<ActionResult> {
+  const parsed = attachServiceSchema.safeParse({
+    projectId: formData.get("projectId"),
+    endpointId: formData.get("endpointId"),
+    slug: formData.get("slug"),
+  });
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("attach_service", {
+    p_project_id: parsed.data.projectId,
+    p_endpoint_id: parsed.data.endpointId,
+    p_slug: parsed.data.slug,
+  });
+  if (error) {
+    return { ok: false, error: "Could not attach (slug taken, or already attached?)." };
+  }
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Detach a connection from a project (removes the route; keeps the connection). */
+export async function detachService(projectServiceId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("project_services")
+    .delete()
+    .eq("id", projectServiceId);
+  if (error) return { ok: false, error: "Could not detach service." };
+  revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 /** Set the low-balance alert threshold (USD). null/0 disables alerts. */

@@ -1,5 +1,5 @@
-import { deleteProject, deleteService } from "@/app/dashboard/actions";
-import { AddServiceForm } from "@/components/add-service-form";
+import { deleteProject, detachService } from "@/app/dashboard/actions";
+import { AttachServiceForm } from "@/components/attach-service-form";
 import { CreateProjectForm } from "@/components/create-project-form";
 import { CreateProjectKeyButton } from "@/components/create-project-key-button";
 import { InlineDelete } from "@/components/inline-delete";
@@ -12,13 +12,18 @@ export interface ProjectRow {
   monthly_budget: number | null;
   is_active: boolean;
 }
-export interface ServiceRow {
+export interface AttachmentRow {
+  id: string; // project_services id
+  project_id: string;
+  slug: string;
+  endpointName: string;
+  endpointUrl: string;
+  endpointCost: number;
+  meteringMode: string | null;
+}
+export interface ConnectionOption {
   id: string;
   name: string;
-  target_url: string;
-  cost_per_request: number;
-  slug: string | null;
-  project_id: string | null;
 }
 export interface ProjectKeyRow {
   id: string;
@@ -32,7 +37,8 @@ export interface ProjectKeyRow {
 
 interface Props {
   projects: ProjectRow[];
-  services: ServiceRow[];
+  attachments: AttachmentRow[];
+  connections: ConnectionOption[];
   keys: ProjectKeyRow[];
 }
 
@@ -44,7 +50,12 @@ function GroupLabel({ children }: { children: string }) {
   );
 }
 
-export function ProjectsSection({ projects, services, keys }: Props) {
+export function ProjectsSection({
+  projects,
+  attachments,
+  connections,
+  keys,
+}: Props) {
   return (
     <div>
       <p className="text-xs text-[var(--text-faint)]">
@@ -65,7 +76,9 @@ export function ProjectsSection({ projects, services, keys }: Props) {
           </p>
         ) : (
           projects.map((p) => {
-            const projServices = services.filter((s) => s.project_id === p.id);
+            const projAttachments = attachments.filter(
+              (a) => a.project_id === p.id,
+            );
             const projKeys: KeyItem[] = keys
               .filter((k) => k.project_id === p.id)
               .map((k) => ({
@@ -97,36 +110,40 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                   </div>
                 </div>
 
-                {/* Services */}
+                {/* Services (attached connections) */}
                 <div className="mt-5 border-t border-white/10 pt-5">
                   <GroupLabel>Services</GroupLabel>
-                  {projServices.length === 0 ? (
+                  {projAttachments.length === 0 ? (
                     <p className="text-xs text-[var(--text-faint)]">
-                      No services yet.
+                      No services attached yet.
                     </p>
                   ) : (
                     <ul className="space-y-1.5">
-                      {projServices.map((s) => (
+                      {projAttachments.map((a) => (
                         <li
-                          key={s.id}
+                          key={a.id}
                           className="flex items-center justify-between gap-3 text-xs"
                         >
                           <div className="flex min-w-0 items-center gap-2.5">
                             <code className="neu-sm shrink-0 px-2 py-0.5 font-mono text-[var(--accent)]">
-                              /{s.slug}
+                              /{a.slug}
                             </code>
-                            <span className="text-[var(--text)]">{s.name}</span>
+                            <span className="text-[var(--text)]">
+                              {a.endpointName}
+                            </span>
                             <span className="truncate font-mono text-[var(--text-faint)]">
-                              {s.target_url}
+                              {a.endpointUrl}
                             </span>
                           </div>
                           <div className="flex shrink-0 items-center gap-3">
                             <span className="tabular-nums text-[var(--text-faint)]">
-                              {formatUsd(Number(s.cost_per_request))}/call
+                              {a.meteringMode === "per_token"
+                                ? "per-token"
+                                : `${formatUsd(Number(a.endpointCost))}/call`}
                             </span>
                             <InlineDelete
-                              action={deleteService.bind(null, s.id)}
-                              label="remove"
+                              action={detachService.bind(null, a.id)}
+                              label="detach"
                             />
                           </div>
                         </li>
@@ -135,10 +152,10 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                   )}
                   <details className="mt-3">
                     <summary className="inline-flex cursor-pointer text-xs font-medium text-[var(--accent)]">
-                      + Add a service
+                      + Attach a service
                     </summary>
-                    <div className="neu mt-3 p-4">
-                      <AddServiceForm projectId={p.id} />
+                    <div className="mt-3">
+                      <AttachServiceForm projectId={p.id} connections={connections} />
                     </div>
                   </details>
                 </div>
