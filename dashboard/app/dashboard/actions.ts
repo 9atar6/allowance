@@ -77,6 +77,7 @@ export async function createProjectKey(
   projectId: string,
   dailyLimit: number | null,
   name?: string | null,
+  monthlyLimit?: number | null,
 ): Promise<ActionResult> {
   const supabase = await createClient();
   const {
@@ -102,6 +103,7 @@ export async function createProjectKey(
     p_project_id: projectId,
     p_daily_limit: dailyLimit,
     p_name: name?.trim() || null,
+    p_monthly_limit: monthlyLimit ?? null,
   });
   if (error) return { ok: false, error: "Could not create key." };
 

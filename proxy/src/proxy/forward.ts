@@ -7,7 +7,11 @@
 //   pass through chunk-by-chunk while we tally chunks for telemetry.
 // =============================================================================
 
-import { BODILESS_METHODS, STRIP_REQUEST_HEADERS } from "../config";
+import {
+  BODILESS_METHODS,
+  STRIP_REQUEST_HEADERS,
+  UPSTREAM_HEADERS_TIMEOUT_MS,
+} from "../config";
 import type { ActiveRequest, TokenUsage } from "../types";
 import { UsageExtractor } from "./usage-meter";
 
@@ -44,10 +48,25 @@ export function buildTargetUrl(
   return target.toString();
 }
 
-/** Forward the incoming request to the resolved upstream endpoint. */
+/** Thrown when the upstream fails to return response headers within the limit. */
+export class UpstreamTimeoutError extends Error {
+  constructor() {
+    super("upstream timed out before responding");
+    this.name = "UpstreamTimeoutError";
+  }
+}
+
+/**
+ * Forward the incoming request to the resolved upstream endpoint.
+ *
+ * The timeout guards time-to-first-byte (response headers) only: a hung
+ * provider can't pin the request open, but once headers arrive the timer is
+ * cleared so long-lived SSE streams are never cut mid-flight.
+ */
 export async function forwardRequest(
   req: Request,
   active: ActiveRequest,
+  timeoutMs: number = UPSTREAM_HEADERS_TIMEOUT_MS,
 ): Promise<Response> {
   const headers = new Headers(req.headers);
   for (const h of STRIP_REQUEST_HEADERS) headers.delete(h);
@@ -60,14 +79,29 @@ export async function forwardRequest(
   const method = req.method.toUpperCase();
   const url = buildTargetUrl(req.url, active.targetUrl, active.proxyPrefix);
 
-  return fetch(url, {
-    method,
-    headers,
-    body: BODILESS_METHODS.has(method) ? undefined : req.body,
-    // Required by Workers to stream a request body upstream.
-    // @ts-expect-error duplex isn't in the lib DOM RequestInit typings yet.
-    duplex: "half",
-  });
+  const aborter = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    aborter.abort();
+  }, timeoutMs);
+
+  try {
+    return await fetch(url, {
+      method,
+      headers,
+      body: BODILESS_METHODS.has(method) ? undefined : req.body,
+      signal: aborter.signal,
+      // Required by Workers to stream a request body upstream.
+      // @ts-expect-error duplex isn't in the lib DOM RequestInit typings yet.
+      duplex: "half",
+    });
+  } catch (err) {
+    if (timedOut) throw new UpstreamTimeoutError();
+    throw err;
+  } finally {
+    clearTimeout(timer); // headers arrived (or failed) — never abort the body
+  }
 }
 
 /**

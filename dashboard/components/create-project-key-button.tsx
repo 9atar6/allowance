@@ -12,14 +12,22 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [limit, setLimit] = useState("");
+  const [monthly, setMonthly] = useState("");
+
+  function parseLimit(raw: string): number | null {
+    const n = Number(raw);
+    return raw.trim() !== "" && Number.isFinite(n) && n > 0 ? n : null;
+  }
 
   function mint() {
     setError(null);
     startTransition(async () => {
-      const n = Number(limit);
-      const dailyLimit =
-        limit.trim() !== "" && Number.isFinite(n) && n > 0 ? n : null;
-      const res = await createProjectKey(projectId, dailyLimit, name || null);
+      const res = await createProjectKey(
+        projectId,
+        parseLimit(limit),
+        name || null,
+        parseLimit(monthly),
+      );
       if (!res.ok) setError(res.error ?? "Failed.");
       else setGenerated(res.generatedKey ?? null);
     });
@@ -56,8 +64,17 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
           type="number"
           step="0.01"
           min="0"
-          placeholder="Daily limit USD (optional)"
-          className="max-w-[200px]"
+          placeholder="$/day cap (optional)"
+          className="max-w-[160px]"
+        />
+        <Input
+          value={monthly}
+          onChange={(e) => setMonthly(e.target.value)}
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder="$/month cap (optional)"
+          className="max-w-[170px]"
         />
         <Button
           variant="ghost"

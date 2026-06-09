@@ -11,6 +11,7 @@
 
 import {
   addDailySpend,
+  addKeyMonthlySpend,
   addProjectSpend,
   incrMonthlyCount,
   updateCachedBalance,
@@ -33,6 +34,7 @@ export async function settle(
     usage: TokenUsage | null;
     // Which edge counters this request actually needs, so we skip unused writes.
     dailyLimit: number | null;
+    monthlyLimit: number | null;
     plan: PlanTier;
     monthlyBudget: number | null;
   },
@@ -68,6 +70,9 @@ export async function settle(
     // Conditional: only write the counters this request's limits actually use.
     if (params.dailyLimit != null) {
       await addDailySpend(env, ctx.keyHash, utcDateKey(), params.cost);
+    }
+    if (params.monthlyLimit != null) {
+      await addKeyMonthlySpend(env, ctx.keyHash, utcMonthKey(), params.cost);
     }
     if (params.plan === "free") {
       await incrMonthlyCount(env, ctx.userId, utcMonthKey());

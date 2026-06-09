@@ -9,7 +9,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:ci": "vitest run --coverage"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -27,6 +28,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "@vitest/coverage-v8": "^4.1.8",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.2",
     "vitest": "^4.1.8"

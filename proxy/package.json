@@ -8,13 +8,15 @@
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:ci": "vitest run --coverage"
   },
   "dependencies": {
     "hono": "^4.6.14"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",
+    "@vitest/coverage-v8": "^4.1.8",
     "typescript": "^5.7.2",
     "vitest": "^4.1.8",
     "wrangler": "^3.95.0"

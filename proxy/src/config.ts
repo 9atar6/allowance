@@ -17,6 +17,12 @@ export const KV_MONTH_PREFIX = "req:";
  */
 export const FREE_MONTHLY_REQUESTS = 5000;
 
+/** Max time to wait for upstream response HEADERS (streams are never cut). */
+export const UPSTREAM_HEADERS_TIMEOUT_MS = 60_000;
+
+/** Max request body size we forward (bytes). Larger requests get a 413. */
+export const MAX_BODY_BYTES = 10 * 1024 * 1024; // 10 MB
+
 /** Fallback TTL (seconds) if KV_CONTEXT_TTL_SECONDS is unset/invalid. */
 export const DEFAULT_CTX_TTL = 60;
 

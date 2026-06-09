@@ -933,4 +933,92 @@ grant execute on function public.set_budget(numeric) to authenticated;
 -- Disable any auto-reload left over from the prepaid experiment (no card charges).
 update public.wallets set auto_reload_enabled = false where auto_reload_enabled;
 
+-- =============================================================================
+-- PER-KEY MONTHLY LIMIT  (completes the limits story: key/day, key/month,
+-- project/month, account budget)
+-- =============================================================================
+alter table public.proxy_keys add column if not exists monthly_limit numeric(14, 6);
+
+-- issue_proxy_key v4: adds an optional per-key monthly USD cap.
+drop function if exists public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric,text);
+create or replace function public.issue_proxy_key(
+  p_user_id uuid, p_key_hash text, p_key_prefix text,
+  p_endpoint_id uuid default null, p_project_id uuid default null,
+  p_daily_limit numeric default null, p_name text default null,
+  p_monthly_limit numeric default null
+)
+returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_id uuid;
+begin
+  insert into public.proxy_keys
+    (user_id, key_hash, key_prefix, endpoint_id, project_id, daily_limit, name, monthly_limit)
+  values
+    (p_user_id, p_key_hash, p_key_prefix, p_endpoint_id, p_project_id,
+     p_daily_limit, nullif(btrim(p_name), ''), p_monthly_limit)
+  returning id into v_id;
+  return v_id;
+end; $$;
+revoke all on function public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric,text,numeric) from public;
+grant execute on function public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric,text,numeric) to service_role;
+
+-- get_proxy_context v6: also returns the key's monthly_limit (both key shapes).
+create or replace function public.get_proxy_context(p_key_hash text)
+returns jsonb language plpgsql security definer set search_path = public, vault, pg_temp as $$
+declare k record; v_routes jsonb;
+begin
+  select pk.user_id, w.balance, w.plan, pk.endpoint_id, pk.project_id,
+         pk.daily_limit, pk.monthly_limit, pj.monthly_budget
+  into k
+  from public.proxy_keys pk
+  join public.wallets w on w.user_id = pk.user_id
+  left join public.projects pj on pj.id = pk.project_id
+  where pk.key_hash = p_key_hash and pk.is_active;
+  if not found then return null; end if;
+
+  if k.project_id is not null then
+    with routes_cte as (
+      select ps.slug, e.id, e.target_url, e.cost_per_request, e.metering_mode,
+             e.input_token_cost, e.output_token_cost, e.vault_secret_id
+      from public.project_services ps
+      join public.endpoints e on e.id = ps.endpoint_id
+      where ps.project_id = k.project_id and e.is_active
+      union all
+      select e.slug, e.id, e.target_url, e.cost_per_request, e.metering_mode,
+             e.input_token_cost, e.output_token_cost, e.vault_secret_id
+      from public.endpoints e
+      where e.project_id = k.project_id and e.is_active and e.slug is not null
+    )
+    select jsonb_agg(jsonb_build_object(
+      'slug', slug, 'endpoint_id', id, 'target_url', target_url,
+      'cost_per_request', cost_per_request,
+      'metering_mode', coalesce(metering_mode, 'flat'),
+      'input_token_cost', coalesce(input_token_cost, 0),
+      'output_token_cost', coalesce(output_token_cost, 0),
+      'upstream_header', (select decrypted_secret from vault.decrypted_secrets where id = vault_secret_id)
+    ))
+    into v_routes from routes_cte;
+
+    return jsonb_build_object(
+      'user_id', k.user_id, 'balance', k.balance, 'plan', coalesce(k.plan, 'free'),
+      'daily_limit', k.daily_limit, 'monthly_limit', k.monthly_limit,
+      'project_id', k.project_id, 'monthly_budget', k.monthly_budget,
+      'routes', coalesce(v_routes, '[]'::jsonb)
+    );
+  end if;
+
+  return (
+    select jsonb_build_object(
+      'user_id', k.user_id, 'balance', k.balance, 'plan', coalesce(k.plan, 'free'),
+      'daily_limit', k.daily_limit, 'monthly_limit', k.monthly_limit,
+      'endpoint_id', e.id, 'target_url', e.target_url, 'cost_per_request', e.cost_per_request,
+      'metering_mode', coalesce(e.metering_mode, 'flat'),
+      'input_token_cost', coalesce(e.input_token_cost, 0),
+      'output_token_cost', coalesce(e.output_token_cost, 0),
+      'endpoint_active', coalesce(e.is_active, false),
+      'upstream_header', (select decrypted_secret from vault.decrypted_secrets where id = e.vault_secret_id)
+    )
+    from public.endpoints e where e.id = k.endpoint_id
+  );
+end; $$;
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';

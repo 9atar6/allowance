@@ -1,10 +1,37 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { recordErrorAndMaybeAlert } from "../src/lib/alert";
 import { base64ToBytes, bytesToBase64 } from "../src/lib/base64";
 import { decryptEdge, encryptEdge } from "../src/lib/edge-crypto";
 import { sha256Hex } from "../src/lib/hash";
 import { buildX402Body } from "../src/lib/x402";
-import { buildTargetUrl, streamWithCount } from "../src/proxy/forward";
-import { TEST_EDGE_KEY } from "./helpers";
+import {
+  buildTargetUrl,
+  forwardRequest,
+  streamWithCount,
+  UpstreamTimeoutError,
+} from "../src/proxy/forward";
+import type { ActiveRequest } from "../src/types";
+import { makeEnv, TEST_EDGE_KEY } from "./helpers";
+
+afterEach(() => vi.unstubAllGlobals());
+
+function activeReq(over: Partial<ActiveRequest> = {}): ActiveRequest {
+  return {
+    userId: "u",
+    keyHash: "h",
+    projectId: null,
+    balance: 10,
+    endpointId: "e",
+    targetUrl: "https://upstream.test/v1",
+    costPerRequest: 0.01,
+    meteringMode: "flat",
+    inputTokenCost: 0,
+    outputTokenCost: 0,
+    upstreamHeaders: { Authorization: "Bearer sk-upstream" },
+    proxyPrefix: "/v1/proxy",
+    ...over,
+  };
+}
 
 describe("sha256Hex", () => {
   it("matches the known vector for 'abc'", async () => {
@@ -101,6 +128,97 @@ describe("buildX402Body", () => {
     const accepts = body.accepts as Array<Record<string, unknown>>;
     expect(accepts[0].maxAmountRequired).toBe(0.01);
     expect(accepts[0].budgetRemaining).toBe(0.004);
+  });
+});
+
+describe("forwardRequest", () => {
+  it("strips our auth + cf headers and injects upstream credentials", async () => {
+    let seen: Headers | null = null;
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (_url: string, init?: RequestInit) => {
+        seen = new Headers(init?.headers);
+        return new Response("{}", { status: 200 });
+      }),
+    );
+
+    const req = new Request("https://proxy.test/v1/proxy/chat", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer alw_live_users_proxy_key",
+        "cf-connecting-ip": "1.2.3.4",
+        "x-custom": "kept",
+        "content-type": "application/json",
+      },
+      body: "{}",
+    });
+    await forwardRequest(req, activeReq());
+
+    expect(seen).not.toBeNull();
+    // Our proxy key must NEVER reach the upstream; their real key must.
+    expect(seen!.get("authorization")).toBe("Bearer sk-upstream");
+    expect(seen!.get("cf-connecting-ip")).toBeNull();
+    expect(seen!.get("x-custom")).toBe("kept");
+  });
+
+  it("throws UpstreamTimeoutError when headers never arrive", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        (_url: string, init?: RequestInit) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener("abort", () =>
+              reject(new DOMException("aborted", "AbortError")),
+            );
+          }),
+      ),
+    );
+
+    const req = new Request("https://proxy.test/v1/proxy/chat", { method: "GET" });
+    await expect(forwardRequest(req, activeReq(), 20)).rejects.toBeInstanceOf(
+      UpstreamTimeoutError,
+    );
+  });
+
+  it("does not convert a normal upstream failure into a timeout", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("network down");
+      }),
+    );
+    const req = new Request("https://proxy.test/v1/proxy/chat", { method: "GET" });
+    await expect(forwardRequest(req, activeReq(), 1000)).rejects.toBeInstanceOf(
+      TypeError,
+    );
+  });
+});
+
+describe("recordErrorAndMaybeAlert", () => {
+  it("alerts exactly once when the 5-min window crosses the threshold", async () => {
+    const webhookCalls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        webhookCalls.push(url);
+        return new Response("ok");
+      }),
+    );
+    const env = makeEnv({ ALERT_WEBHOOK_URL: "https://hooks.test/alert" });
+
+    for (let i = 0; i < 7; i++) {
+      await recordErrorAndMaybeAlert(env, `boom ${i}`);
+    }
+    // Threshold is 5: silent for 1–4, one alert at 5, silent again for 6–7.
+    expect(webhookCalls).toHaveLength(1);
+  });
+
+  it("is a no-op without a webhook configured", async () => {
+    const fetchFn = vi.fn(async () => new Response("ok"));
+    vi.stubGlobal("fetch", fetchFn);
+    const env = makeEnv();
+    for (let i = 0; i < 6; i++) await recordErrorAndMaybeAlert(env, "x");
+    expect(fetchFn).not.toHaveBeenCalled();
   });
 });
 

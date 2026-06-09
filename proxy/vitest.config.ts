@@ -8,5 +8,12 @@ export default defineConfig({
     environment: "node",
     globals: true,
     include: ["test/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      include: ["src/**"],
+      // Floors sit just under current coverage (≈83% lines) — they may only
+      // ratchet UP. CI fails if a change drops below.
+      thresholds: { lines: 78, statements: 78, functions: 72, branches: 70 },
+    },
   },
 });

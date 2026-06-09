@@ -13,5 +13,12 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["test/**/*.test.ts"],
+    coverage: {
+      provider: "v8",
+      include: ["lib/**"],
+      // Floors sit just under current coverage (≈55% lines — untested files are
+      // thin Supabase/Stripe client wrappers). Ratchet up as tests grow.
+      thresholds: { lines: 50, statements: 50, functions: 30, branches: 70 },
+    },
   },
 });

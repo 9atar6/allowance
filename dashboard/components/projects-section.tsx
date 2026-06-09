@@ -31,6 +31,7 @@ export interface ProjectKeyRow {
   is_active: boolean;
   project_id: string | null;
   daily_limit: number | null;
+  monthly_limit: number | null;
   name: string | null;
   created_at: string | null;
 }
@@ -86,6 +87,7 @@ export function ProjectsSection({
                 keyPrefix: k.key_prefix,
                 isActive: k.is_active,
                 dailyLimit: k.daily_limit,
+                monthlyLimit: k.monthly_limit,
                 name: k.name,
                 createdAt: k.created_at,
               }));
@@ -170,7 +172,8 @@ export function ProjectsSection({
                   <div className="mt-3">
                     <CreateProjectKeyButton projectId={p.id} />
                     <p className="mt-1.5 text-xs text-[var(--text-faint)]">
-                      Optional: cap how much each key can spend per day.
+                      Optional: cap how much each key can spend per day and per
+                      month.
                     </p>
                   </div>
                 </div>

@@ -88,6 +88,26 @@ describe("proxy handler", () => {
     expect(ctl.debitCalls).toHaveLength(0); // never charged
   });
 
+  it("413s when the request body exceeds the size limit", async () => {
+    const ctl = newCtl();
+    installFetch(ctl);
+    const { ctx } = makeCtx();
+
+    const big = new Request("https://proxy.test/v1/proxy/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${KEY}`,
+        "content-type": "application/json",
+        "content-length": String(11 * 1024 * 1024), // 11 MB > 10 MB cap
+      },
+      body: "{}",
+    });
+    const res = await app.fetch(big, makeEnv(), ctx);
+    expect(res.status).toBe(413);
+    expect(ctl.upstreamCalls).toHaveLength(0); // never forwarded
+    expect(ctl.debitCalls).toHaveLength(0); // never charged
+  });
+
   it("503s when the endpoint is inactive", async () => {
     const ctl = newCtl({ proxyContext: baseContext({ endpoint_active: false }) });
     installFetch(ctl);
@@ -262,6 +282,18 @@ describe("proxy handler", () => {
     expect(res.status).toBe(402);
     const body = (await res.json()) as { error: string };
     expect(body.error).toBe("daily_limit_reached");
+    expect(ctl.upstreamCalls).toHaveLength(0);
+  });
+
+  it("402s when the per-key monthly limit is exceeded", async () => {
+    const ctl = newCtl({ proxyContext: baseContext({ monthly_limit: 0.005 }) }); // < 0.01 cost
+    installFetch(ctl);
+    const { ctx } = makeCtx();
+
+    const res = await app.fetch(proxyRequest(), makeEnv(), ctx);
+    expect(res.status).toBe(402);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("monthly_limit_reached");
     expect(ctl.upstreamCalls).toHaveLength(0);
   });
 });

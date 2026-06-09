@@ -9,6 +9,7 @@ export interface KeyItem {
   keyPrefix: string;
   isActive: boolean;
   dailyLimit?: number | null;
+  monthlyLimit?: number | null;
   name?: string | null;
   createdAt?: string | null;
 }
@@ -58,6 +59,7 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
             <div className="mt-0.5 text-[var(--text-faint)]">
               {k.createdAt && <>Created {shortDate(k.createdAt)}</>}
               {k.dailyLimit != null && <> · ${k.dailyLimit}/day cap</>}
+              {k.monthlyLimit != null && <> · ${k.monthlyLimit}/mo cap</>}
             </div>
           </div>
           {k.isActive && (

@@ -121,6 +121,32 @@ export async function incrMonthlyCount(
   });
 }
 
+// ── Per-key monthly spend counter (for per-key monthly limits) ───────────────
+const keyMonthKey = (hash: string, month: string) => `mspend:${hash}:${month}`;
+
+/** USD spent by a key this month (best-effort edge counter; 0 if unset). */
+export async function getKeyMonthlySpend(
+  env: Env,
+  hash: string,
+  month: string,
+): Promise<number> {
+  const v = await env.WALLET_KV.get(keyMonthKey(hash, month));
+  return v ? Number(v) : 0;
+}
+
+/** Add to this month's per-key spend (called during settlement). */
+export async function addKeyMonthlySpend(
+  env: Env,
+  hash: string,
+  month: string,
+  amount: number,
+): Promise<void> {
+  const current = await getKeyMonthlySpend(env, hash, month);
+  await env.WALLET_KV.put(keyMonthKey(hash, month), String(current + amount), {
+    expirationTtl: MONTH_TTL_SECONDS,
+  });
+}
+
 // ── Per-project monthly spend counter (for the project-wide USD budget) ──────
 const projSpendKey = (projectId: string, month: string) =>
   `pspend:${projectId}:${month}`;
