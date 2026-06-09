@@ -25,7 +25,6 @@ function newCtl(over: Partial<FetchMock> = {}): FetchMock {
         headers: { "content-type": "application/json" },
       }),
     debitCalls: [],
-    lagoCalls: [],
     proxyContextCalls: [],
     upstreamCalls: [],
     ...over,

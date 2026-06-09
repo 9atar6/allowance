@@ -39,23 +39,13 @@
   // Non-secret config only. Secrets go through `wrangler secret put` (see below).
   "vars": {
     "SUPABASE_URL": "https://izcxmonodmfoebaazxxe.supabase.co",
-    "LAGO_API_URL": "https://api.getlago.com",
-    "LAGO_EVENT_CODE": "api_call",
     "KV_CONTEXT_TTL_SECONDS": "60",
     "APP_URL": "https://allowance-amber.vercel.app",
-    "RESEND_FROM": "Allowance <onboarding@resend.dev>",
-    // x402 top-up rail (Base Sepolia testnet, free x402.org facilitator).
-    // Receiving wallet is a self-transfer for testing — use a treasury in prod.
-    "X402_RECEIVING_WALLET": "0xFb34999aAbAf58799D06eeE7c78C5887A4dCaF23",
-    "X402_FACILITATOR_URL": "https://x402.org/facilitator",
-    "X402_NETWORK": "base-sepolia",
-    "X402_ASSET": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-    "X402_ASSET_DECIMALS": "6"
+    "RESEND_FROM": "Allowance <onboarding@resend.dev>"
   }
 
   // SECRETS — never commit these; set them per-environment:
   //   wrangler secret put SUPABASE_SERVICE_ROLE_KEY
-  //   wrangler secret put LAGO_API_KEY
   //   wrangler secret put EDGE_ENCRYPTION_KEY     # base64 of 32 random bytes
   //   wrangler secret put RESEND_API_KEY          # for low-balance alert emails
   //   wrangler secret put ALERT_WEBHOOK_URL       # optional Slack/Discord error alerts

@@ -1,6 +1,5 @@
 // Test doubles: in-memory KV, a fake ExecutionContext that captures waitUntil
-// tasks, and a fetch mock that stands in for Supabase RPCs, the upstream API,
-// and Lago.
+// tasks, and a fetch mock that stands in for Supabase RPCs and the upstream API.
 import { vi } from "vitest";
 import type { Env, RpcProxyContext, RpcRoute } from "../src/types";
 
@@ -34,9 +33,6 @@ export function makeEnv(overrides: Partial<Env> = {}): Env {
     WALLET_KV: makeKV(),
     SUPABASE_URL: "https://supabase.test",
     SUPABASE_SERVICE_ROLE_KEY: "test-service-role",
-    LAGO_API_URL: "https://lago.test",
-    LAGO_API_KEY: "test-lago",
-    LAGO_EVENT_CODE: "api_call",
     EDGE_ENCRYPTION_KEY: TEST_EDGE_KEY,
     KV_CONTEXT_TTL_SECONDS: "60",
     ...overrides,
@@ -60,7 +56,6 @@ export interface FetchMock {
   proxyContext: RpcProxyContext | null;
   makeUpstream: () => Response;
   debitCalls: Array<Record<string, unknown>>;
-  lagoCalls: string[];
   proxyContextCalls: string[];
   upstreamCalls: Array<{ url: string; method: string }>;
 }
@@ -88,10 +83,6 @@ export function installFetch(ctl: FetchMock) {
           init?.body ? JSON.parse(String(init.body)) : {},
         );
         return jsonResponse(true);
-      }
-      if (url.includes("lago.test")) {
-        ctl.lagoCalls.push(url);
-        return jsonResponse({});
       }
       ctl.upstreamCalls.push({ url, method });
       return ctl.makeUpstream();

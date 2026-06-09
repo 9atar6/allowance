@@ -23,11 +23,6 @@ export interface Env {
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
 
-  // Lago metering.
-  LAGO_API_URL: string;
-  LAGO_API_KEY: string;
-  LAGO_EVENT_CODE: string;
-
   // Edge credential encryption (base64 of 32 random bytes).
   EDGE_ENCRYPTION_KEY: string;
 
@@ -37,25 +32,12 @@ export interface Env {
   RESEND_FROM?: string; // e.g. "Allowance <onboarding@resend.dev>"
   APP_URL?: string; // dashboard origin, for the top-up link in the email
 
-  // Auto-reload: off-session card charge when balance is low. Optional — if
-  // STRIPE_SECRET_KEY is unset, the auto-reload job no-ops.
-  STRIPE_SECRET_KEY?: string;
-
   // Shared secret for the /admin/purge endpoint (dashboard → worker). If unset,
   // purge is disabled and revocation falls back to TTL expiry.
   ADMIN_PURGE_SECRET?: string;
 
   // Optional Slack/Discord-style incoming webhook for error alerts. No-op if unset.
   ALERT_WEBHOOK_URL?: string;
-
-  // x402 crypto top-up rail. All optional — if any is unset, /v1/topup 503s
-  // (dormant until configured).
-  X402_RECEIVING_WALLET?: string; // wallet address that receives USDC
-  X402_FACILITATOR_URL?: string; // e.g. https://x402.org/facilitator (testnet)
-  X402_FACILITATOR_API_KEY?: string; // bearer for CDP facilitator (optional)
-  X402_NETWORK?: string; // e.g. "base-sepolia" | "base"
-  X402_ASSET?: string; // USDC contract address on that network
-  X402_ASSET_DECIMALS?: string; // defaults to 6 (USDC)
 
   KV_CONTEXT_TTL_SECONDS: string;
 }
