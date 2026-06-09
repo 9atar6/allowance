@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/marketing/code-block";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { SiteNav } from "@/components/site-nav";
 import { Wordmark } from "@/components/wordmark";
 import {
   IconCap,
@@ -94,22 +94,7 @@ function Eyebrow({ children }: { children: string }) {
 export default function Landing() {
   return (
     <div className="min-h-screen">
-      {/* Nav */}
-      <header className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
-        <Wordmark />
-        <nav className="flex items-center gap-5 text-sm">
-          <Link
-            href="/docs"
-            className="text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
-          >
-            Docs
-          </Link>
-          <Link href="/login" className="btn-accent px-4 py-2 text-sm">
-            Sign in
-          </Link>
-          <ThemeToggle />
-        </nav>
-      </header>
+      <SiteNav />
 
       {/* Hero */}
       <section className="mx-auto max-w-3xl px-6 pt-20 pb-24 text-center animate-in">

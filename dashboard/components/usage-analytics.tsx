@@ -71,7 +71,7 @@ export function UsageAnalytics({ daily, services, serviceName }: Props) {
 
       {/* Top services */}
       {services.length > 0 && (
-        <div className="mt-7 border-t border-white/5 pt-5">
+        <div className="mt-7 border-t border-[var(--line)] pt-5">
           <p className="mb-2.5 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--text-faint)]">
             Top services · 30 days
           </p>

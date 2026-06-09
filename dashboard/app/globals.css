@@ -27,6 +27,9 @@
   --text-muted: #9a9da6;
   --text-faint: #6a6d76;
 
+  /* A clearly visible divider line (theme-aware: light on dark / dark on light). */
+  --line: rgba(255, 255, 255, 0.14);
+
   --r: 13px;   /* panel radius */
   --r-sm: 9px; /* control radius */
 }
@@ -45,6 +48,7 @@ html.light {
   --text: #2a2d35;
   --text-muted: #62656f;
   --text-faint: #9498a3;
+  --line: rgba(0, 0, 0, 0.12);
   color-scheme: light;
 }
 

@@ -111,7 +111,7 @@ export function ProjectsSection({
                 </div>
 
                 {/* Services (attached connections) */}
-                <div className="mt-5 border-t border-white/10 pt-5">
+                <div className="mt-5 border-t border-[var(--line)] pt-5">
                   <GroupLabel>Services</GroupLabel>
                   {projAttachments.length === 0 ? (
                     <p className="text-xs text-[var(--text-faint)]">
@@ -161,7 +161,7 @@ export function ProjectsSection({
                 </div>
 
                 {/* Keys */}
-                <div className="mt-5 border-t border-white/10 pt-5">
+                <div className="mt-5 border-t border-[var(--line)] pt-5">
                   <GroupLabel>Keys</GroupLabel>
                   <KeyList keys={projKeys} />
                   <div className="mt-3">

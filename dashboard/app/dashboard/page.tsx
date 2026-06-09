@@ -293,7 +293,7 @@ export default async function DashboardPage({
         </div>
 
         {/* Plan */}
-        <div className="flex flex-col border-t border-white/5 pt-6 md:border-l md:border-t-0 md:pl-8 md:pt-0">
+        <div className="flex flex-col border-t border-[var(--line)] pt-6 md:border-l md:border-t-0 md:pl-8 md:pt-0">
           <PlanCard
             plan={plan}
             used={monthlyUsed}

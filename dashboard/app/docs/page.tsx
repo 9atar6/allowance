@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/marketing/code-block";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { Wordmark } from "@/components/wordmark";
+import { SiteNav } from "@/components/site-nav";
 
 export const metadata = {
   title: "Allowance Docs",
@@ -61,19 +60,7 @@ function Step({
 export default function Docs() {
   return (
     <div className="min-h-screen text-[var(--text)]">
-      <header className="sticky top-0 z-20 bg-[var(--bg)]">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
-          <Link href="/">
-            <Wordmark />
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="btn-accent px-4 py-2 text-sm font-medium">
-              Sign in
-            </Link>
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
+      <SiteNav />
 
       <div className="mx-auto max-w-5xl px-6 py-12">
         <div className="grid gap-12 lg:grid-cols-[200px_1fr]">
@@ -216,7 +203,7 @@ curl -X POST ${PROXY}/v1/topup/5 \\
               </Step>
             </div>
 
-            <div className="mt-16 border-t border-white/5 pt-10">
+            <div className="mt-16 border-t border-[var(--line)] pt-10">
               <Link
                 href="/login"
                 className="btn-accent inline-block px-6 py-3 font-medium"

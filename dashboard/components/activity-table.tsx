@@ -34,7 +34,7 @@ export function ActivityTable({ rows }: { rows: ActivityRow[] }) {
         {rows.map((r) => {
           const credit = r.amount >= 0;
           return (
-            <tr key={r.id} className="border-t border-white/5">
+            <tr key={r.id} className="border-t border-[var(--line)]">
               <td className="py-2.5 text-[var(--text-muted)]">
                 {formatTimestamp(r.createdAt)}
               </td>

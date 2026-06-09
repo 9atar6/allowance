@@ -51,9 +51,9 @@ export function CodeBlock({ code, label = "bash" }: CodeBlockProps) {
     <div className="neu-inset overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2.5">
         <div className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
-          <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
-          <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
+          <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
+          <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
+          <span className="h-3 w-3 rounded-full bg-[#27c93f]" />
           <span className="ml-2 font-mono text-xs text-[var(--text-faint)]">
             {label}
           </span>
