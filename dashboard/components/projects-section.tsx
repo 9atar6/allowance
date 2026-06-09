@@ -41,16 +41,18 @@ export function ProjectsSection({ projects, services, keys }: Props) {
       <div className="mb-1 flex items-center justify-between">
         <CardTitle>Projects</CardTitle>
       </div>
-      <p className="mb-4 text-sm text-neutral-500">
+      <p className="mb-4 text-sm text-[var(--text-muted)]">
         Group services under one key. Agents call them at{" "}
-        <code className="text-neutral-400">/v1/proxy/&lt;slug&gt;/…</code>
+        <code className="font-mono text-[var(--indigo-bright)]">
+          /v1/proxy/&lt;slug&gt;/…
+        </code>
       </p>
 
       <CreateProjectForm />
 
-      <div className="mt-6 space-y-5">
+      <div className="mt-6 space-y-4">
         {projects.length === 0 ? (
-          <p className="text-sm text-neutral-500">No projects yet.</p>
+          <p className="text-sm text-[var(--text-faint)]">No projects yet.</p>
         ) : (
           projects.map((p) => {
             const projServices = services.filter((s) => s.project_id === p.id);
@@ -64,12 +66,14 @@ export function ProjectsSection({ projects, services, keys }: Props) {
               }));
 
             return (
-              <div key={p.id} className="rounded-lg border border-neutral-800 p-4">
+              <div key={p.id} className="rounded-xl neu p-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-white">{p.name}</p>
+                  <p className="font-display text-sm font-medium text-white">
+                    {p.name}
+                  </p>
                   <div className="flex items-center gap-3">
                     {p.monthly_budget != null && (
-                      <span className="text-xs tabular-nums text-neutral-400">
+                      <span className="text-xs tabular-nums text-[var(--text-muted)]">
                         {formatUsd(Number(p.monthly_budget))}/mo cap
                       </span>
                     )}
@@ -80,17 +84,23 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                 {/* Services */}
                 <div className="mt-3 space-y-1.5">
                   {projServices.length === 0 ? (
-                    <p className="text-xs text-neutral-600">No services yet.</p>
+                    <p className="text-xs text-[var(--text-faint)]">
+                      No services yet.
+                    </p>
                   ) : (
                     projServices.map((s) => (
                       <div key={s.id} className="flex items-center justify-between gap-3 text-xs">
                         <div className="min-w-0">
-                          <code className="text-emerald-400">/{s.slug}</code>
-                          <span className="ml-2 text-neutral-300">{s.name}</span>
-                          <span className="ml-2 truncate text-neutral-600">{s.target_url}</span>
+                          <code className="font-mono text-[var(--indigo-bright)]">
+                            /{s.slug}
+                          </code>
+                          <span className="ml-2 text-[var(--text)]">{s.name}</span>
+                          <span className="ml-2 truncate font-mono text-[var(--text-faint)]">
+                            {s.target_url}
+                          </span>
                         </div>
                         <div className="flex shrink-0 items-center gap-3">
-                          <span className="tabular-nums text-neutral-500">
+                          <span className="tabular-nums text-[var(--text-faint)]">
                             {formatUsd(Number(s.cost_per_request))}/call
                           </span>
                           <InlineDelete action={deleteService.bind(null, s.id)} label="remove" />
@@ -101,8 +111,8 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                 </div>
 
                 {/* Add a service (collapsed to stay compact) */}
-                <details className="mt-3 border-t border-neutral-800 pt-3">
-                  <summary className="cursor-pointer text-xs text-neutral-400 hover:text-neutral-200">
+                <details className="mt-3 border-t border-[var(--glass-border)] pt-3">
+                  <summary className="cursor-pointer text-xs text-[var(--text-muted)] transition-colors hover:text-white">
                     + Add a service
                   </summary>
                   <div className="mt-3">
@@ -111,7 +121,7 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                 </details>
 
                 {/* Keys */}
-                <div className="mt-3 space-y-2 border-t border-neutral-800 pt-3">
+                <div className="mt-3 space-y-2 border-t border-[var(--glass-border)] pt-3">
                   <KeyList keys={projKeys} />
                   <CreateProjectKeyButton projectId={p.id} />
                 </div>

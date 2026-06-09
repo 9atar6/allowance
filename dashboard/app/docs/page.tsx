@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/marketing/code-block";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata = {
   title: "Allowance Docs",
@@ -21,7 +20,7 @@ const toc = [
 
 function Mono({ children }: { children: string }) {
   return (
-    <code className="rounded bg-neutral-200 px-1.5 py-0.5 font-mono text-[0.85em] text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200">
+    <code className="rounded-md neu px-1.5 py-0.5 font-mono text-[0.85em] text-[var(--text)]">
       {children}
     </code>
   );
@@ -39,16 +38,18 @@ function Step({
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-24">
+    <section id={id} className="scroll-mt-28">
       <div className="flex items-center gap-3">
         {n && (
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/15 text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl neu font-mono text-sm text-[var(--indigo-bright)]">
             {n}
           </span>
         )}
-        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
+        <h2 className="font-display text-2xl font-semibold tracking-tight">
+          {title}
+        </h2>
       </div>
-      <div className="mt-4 space-y-4 text-[15px] leading-relaxed text-neutral-600 dark:text-neutral-300">
+      <div className="mt-4 space-y-4 text-[15px] leading-relaxed text-[var(--text-muted)]">
         {children}
       </div>
     </section>
@@ -57,21 +58,21 @@ function Step({
 
 export default function Docs() {
   return (
-    <div className="min-h-screen bg-neutral-100 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-50">
-      <header className="sticky top-0 z-10 border-b border-neutral-200/70 bg-neutral-100/80 backdrop-blur dark:border-neutral-800/70 dark:bg-neutral-900/80">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link href="/" className="text-lg font-semibold">
+    <div className="min-h-screen text-[var(--text)]">
+      <header className="sticky top-0 z-20">
+        <div className="mx-auto mt-4 flex max-w-5xl items-center justify-between rounded-2xl glass px-5 py-3">
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 font-display text-lg font-semibold"
+          >
+            <span className="grid h-7 w-7 place-items-center rounded-lg btn-glow text-[13px]">
+              A
+            </span>
             Allowance
           </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-            >
-              Sign in
-            </Link>
-            <ThemeToggle />
-          </div>
+          <Link href="/login" className="rounded-lg btn-glow px-4 py-2 text-sm font-medium">
+            Sign in
+          </Link>
         </div>
       </header>
 
@@ -79,15 +80,15 @@ export default function Docs() {
         <div className="grid gap-12 lg:grid-cols-[200px_1fr]">
           {/* Table of contents */}
           <aside className="hidden lg:block">
-            <nav className="sticky top-24 space-y-1 text-sm">
-              <p className="mb-3 font-medium text-neutral-900 dark:text-neutral-100">
+            <nav className="sticky top-28 space-y-1 text-sm">
+              <p className="mb-3 text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-faint)]">
                 On this page
               </p>
               {toc.map((t) => (
                 <a
                   key={t.id}
                   href={`#${t.id}`}
-                  className="block py-1 text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200"
+                  className="block py-1 text-[var(--text-muted)] transition-colors hover:text-white"
                 >
                   {t.label}
                 </a>
@@ -97,8 +98,10 @@ export default function Docs() {
 
           {/* Content */}
           <main className="min-w-0">
-            <h1 className="text-4xl font-semibold tracking-tight">Quickstart</h1>
-            <p className="mt-4 text-lg leading-relaxed text-neutral-600 dark:text-neutral-300">
+            <h1 className="font-display text-5xl font-semibold tracking-tight">
+              Quickstart
+            </h1>
+            <p className="mt-5 text-lg leading-relaxed text-[var(--text-muted)]">
               Allowance is a prepaid proxy for any pay-per-use API. You load a
               balance, route your traffic through one key, and it stops at zero.
               Here is the whole thing in three steps.
@@ -110,7 +113,7 @@ export default function Docs() {
                   In the{" "}
                   <Link
                     href="/dashboard"
-                    className="text-emerald-600 hover:underline dark:text-emerald-400"
+                    className="text-[var(--indigo-bright)] hover:underline"
                   >
                     dashboard
                   </Link>
@@ -127,10 +130,10 @@ export default function Docs() {
 
               <Step id="key" n="2" title="Create a key">
                 <p>
-                  Click <strong>Create proxy key</strong> on the service. You get
-                  one key, shown a single time, like <Mono>alw_live_...</Mono>.
-                  This is what your app or agent sends, in place of your real API
-                  key.
+                  Click <strong className="text-white">Create proxy key</strong> on
+                  the service. You get one key, shown a single time, like{" "}
+                  <Mono>alw_live_...</Mono>. This is what your app or agent sends,
+                  in place of your real API key.
                 </p>
               </Step>
 
@@ -188,9 +191,10 @@ curl ${PROXY}/v1/proxy/chat/completions \\
 
               <Step id="funding" title="Funding your balance">
                 <p>
-                  <strong>People</strong> top up by card in the dashboard.{" "}
-                  <strong>Agents</strong> top up programmatically with USDC over
-                  x402, with no card and no human needed.
+                  <strong className="text-white">People</strong> top up by card in
+                  the dashboard. <strong className="text-white">Agents</strong> top
+                  up programmatically with USDC over x402, with no card and no
+                  human needed.
                 </p>
                 <CodeBlock
                   label="bash"
@@ -205,18 +209,18 @@ curl -X POST ${PROXY}/v1/topup/5 \\
 
               <Step id="revoke" title="Revoke a leaked key">
                 <p>
-                  Click <strong>Revoke</strong> in the dashboard. The key stops
-                  working at the edge within seconds and every further request
-                  returns <Mono>401</Mono>. You can disable a whole service the
-                  same way.
+                  Click <strong className="text-white">Revoke</strong> in the
+                  dashboard. The key stops working at the edge within seconds and
+                  every further request returns <Mono>401</Mono>. You can disable a
+                  whole service the same way.
                 </p>
               </Step>
             </div>
 
-            <div className="mt-16 border-t border-neutral-200 pt-10 dark:border-neutral-800">
+            <div className="mt-16 border-t border-[var(--glass-border)] pt-10">
               <Link
                 href="/login"
-                className="inline-block rounded-lg bg-neutral-900 px-5 py-3 font-medium text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                className="inline-block rounded-xl btn-glow px-6 py-3 font-medium"
               >
                 Get started
               </Link>

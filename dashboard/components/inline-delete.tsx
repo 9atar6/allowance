@@ -35,7 +35,10 @@ export function InlineDelete({ action, label = "Remove", className }: Props) {
         type="button"
         onClick={run}
         disabled={pending}
-        className={className ?? "text-xs text-neutral-500 hover:text-red-400"}
+        className={
+          className ??
+          "text-xs text-[var(--text-faint)] transition-colors hover:text-red-400"
+        }
       >
         {pending ? "…" : armed ? "Confirm?" : label}
       </button>
@@ -43,7 +46,7 @@ export function InlineDelete({ action, label = "Remove", className }: Props) {
         <button
           type="button"
           onClick={() => setArmed(false)}
-          className="text-xs text-neutral-600 hover:text-neutral-400"
+          className="text-xs text-[var(--text-faint)] transition-colors hover:text-[var(--text-muted)]"
         >
           cancel
         </button>

@@ -24,7 +24,7 @@ export function EndpointToggle({ endpointId, isActive }: Props) {
   return (
     <span className="flex items-center gap-2">
       <span
-        className={`text-xs ${isActive ? "text-green-400" : "text-neutral-500"}`}
+        className={`text-xs ${isActive ? "text-[var(--indigo-bright)]" : "text-[var(--text-faint)]"}`}
       >
         {isActive ? "Active" : "Disabled"}
       </span>

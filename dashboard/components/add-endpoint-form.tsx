@@ -27,12 +27,12 @@ export function AddEndpointForm() {
       <Input name="name" placeholder="Endpoint name (e.g. OpenAI)" required />
       <Input name="targetUrl" placeholder="https://api.openai.com/v1" required />
 
-      <label className="block text-xs text-neutral-500">Metering</label>
+      <label className="block text-xs text-[var(--text-faint)]">Metering</label>
       <select
         name="meteringMode"
         value={mode}
         onChange={(e) => setMode(e.target.value as "flat" | "per_token")}
-        className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm text-neutral-100 focus:border-neutral-500 focus:outline-none"
+        className="w-full rounded-xl neu bg-[var(--obsidian-2)] px-3.5 py-2.5 text-sm text-[var(--text)] focus:border-[var(--indigo-bright)] focus:outline-none"
       >
         <option value="flat">Flat (per request)</option>
         <option value="per_token">Per token (OpenAI-style usage)</option>
@@ -76,7 +76,7 @@ export function AddEndpointForm() {
         placeholder={"Authorization: Bearer sk-...\nOpenAI-Organization: org-..."}
         required
       />
-      <p className="text-xs text-neutral-500">
+      <p className="text-xs text-[var(--text-faint)]">
         Credentials are encrypted in Supabase Vault. They are never stored or
         logged in plaintext.
       </p>

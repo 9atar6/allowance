@@ -15,13 +15,13 @@ interface Props {
 
 export function UsageTable({ rows, endpointName }: Props) {
   if (rows.length === 0) {
-    return <p className="text-sm text-neutral-500">No requests yet.</p>;
+    return <p className="text-sm text-[var(--text-faint)]">No requests yet.</p>;
   }
 
   return (
     <table className="w-full text-sm">
       <thead>
-        <tr className="text-left text-xs text-neutral-500">
+        <tr className="text-left text-xs text-[var(--text-faint)]">
           <th className="pb-2 font-normal">When</th>
           <th className="pb-2 font-normal">Endpoint</th>
           <th className="pb-2 text-right font-normal">Status</th>
@@ -30,13 +30,17 @@ export function UsageTable({ rows, endpointName }: Props) {
       </thead>
       <tbody>
         {rows.map((r) => (
-          <tr key={r.id} className="border-t border-neutral-800">
-            <td className="py-2 text-neutral-400">{formatTimestamp(r.createdAt)}</td>
-            <td className="py-2 text-neutral-300">{endpointName(r.endpointId)}</td>
-            <td className="py-2 text-right tabular-nums text-neutral-400">
+          <tr key={r.id} className="border-t border-[var(--glass-border)]">
+            <td className="py-2 text-[var(--text-muted)]">
+              {formatTimestamp(r.createdAt)}
+            </td>
+            <td className="py-2 text-[var(--text)]">
+              {endpointName(r.endpointId)}
+            </td>
+            <td className="py-2 text-right font-mono tabular-nums text-[var(--text-muted)]">
               {r.statusCode ?? "-"}
             </td>
-            <td className="py-2 text-right tabular-nums text-neutral-200">
+            <td className="py-2 text-right tabular-nums text-white">
               {formatUsd(r.cost)}
             </td>
           </tr>

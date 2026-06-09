@@ -40,7 +40,7 @@ export function PlanCard({ plan, used, limit }: Props) {
   const pct =
     limit && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   const barColor =
-    pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-emerald-500";
+    pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-400" : "bg-[var(--indigo-bright)]";
 
   return (
     <Card>
@@ -50,7 +50,7 @@ export function PlanCard({ plan, used, limit }: Props) {
           <p className="mt-1 text-sm">
             <span className="font-medium text-white">{planLabel(plan)}</span>
             {plan === "free" && (
-              <span className="text-neutral-500">
+              <span className="text-[var(--text-faint)]">
                 {" "}
                 · {FREE_MONTHLY_REQUESTS.toLocaleString()} requests/mo
               </span>
@@ -74,7 +74,7 @@ export function PlanCard({ plan, used, limit }: Props) {
 
       {/* Monthly usage meter */}
       <div className="mt-4">
-        <div className="flex justify-between text-xs text-neutral-500">
+        <div className="flex justify-between text-xs text-[var(--text-faint)]">
           <span>Requests this month</span>
           <span className="tabular-nums">
             {used.toLocaleString()}
@@ -82,7 +82,7 @@ export function PlanCard({ plan, used, limit }: Props) {
           </span>
         </div>
         {limit != null && (
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-neutral-800">
+          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/8">
             <div className={`h-full ${barColor}`} style={{ width: `${pct}%` }} />
           </div>
         )}

@@ -119,52 +119,80 @@ export default async function DashboardPage({
   }));
 
   return (
-    <main className="mx-auto max-w-4xl space-y-6 px-4 py-8">
-      <header className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-white">Allowance</h1>
-        <form action={signOut}>
-          <Button variant="ghost" type="submit" className="text-xs">
-            Sign out
-          </Button>
-        </form>
-      </header>
-
-      {/* Balance + top-up */}
-      <Card>
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <CardTitle>Balance</CardTitle>
-            <p className="mt-1 text-3xl font-semibold tabular-nums text-white">
-              {usd(Number(balance))}
-            </p>
-            <p className="mt-1 text-xs text-neutral-500">
-              Calls stop with HTTP 402 when this reaches zero.
-            </p>
-          </div>
-          <div className="w-full sm:w-auto">
-            <TopUp />
+    <main className="mx-auto max-w-5xl space-y-6 px-4 pb-16">
+      {/* Sticky glass top bar */}
+      <header className="sticky top-0 z-20 -mx-4 mb-2 px-4 pt-4">
+        <div className="flex items-center justify-between rounded-2xl glass px-5 py-3">
+          <span className="flex items-center gap-2.5 font-display text-lg font-semibold">
+            <span className="grid h-7 w-7 place-items-center rounded-lg btn-glow text-[13px]">
+              A
+            </span>
+            Allowance
+          </span>
+          <div className="flex items-center gap-3">
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                plan === "free"
+                  ? "neu text-[var(--text-muted)]"
+                  : "btn-glow"
+              }`}
+            >
+              {plan === "free" ? "Free" : plan === "pro" ? "Pro" : "Enterprise"}
+            </span>
+            <form action={signOut}>
+              <Button variant="ghost" type="submit" className="px-3 py-2 text-xs">
+                Sign out
+              </Button>
+            </form>
           </div>
         </div>
-        {topup === "success" && (
-          <p className="mt-3 text-sm text-green-400">
-            Payment received. Your balance updates within a few seconds.
-          </p>
-        )}
-        {topup === "cancelled" && (
-          <p className="mt-3 text-sm text-neutral-400">Top-up cancelled.</p>
-        )}
-      </Card>
+      </header>
 
-      {/* Plan + monthly usage */}
-      <PlanCard plan={plan} used={monthlyUsed} limit={monthlyLimit} />
-      {planParam === "upgraded" && (
-        <p className="-mt-3 text-sm text-green-400">
-          You are on Pro. Thanks for the support.
-        </p>
-      )}
-      {planParam === "cancelled" && (
-        <p className="-mt-3 text-sm text-neutral-400">Upgrade cancelled.</p>
-      )}
+      {/* Hero band: Balance + Plan side by side */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Balance + top-up */}
+        <Card className="flex flex-col justify-between">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <CardTitle>Balance</CardTitle>
+              <p className="mt-2 font-display text-5xl font-semibold tabular-nums text-white">
+                {usd(Number(balance))}
+              </p>
+              <p className="mt-2 text-xs text-[var(--text-faint)]">
+                Calls stop with HTTP 402 when this reaches zero.
+              </p>
+            </div>
+          </div>
+          <div className="mt-5">
+            <TopUp />
+          </div>
+          {topup === "success" && (
+            <p className="mt-3 text-sm text-[var(--indigo-bright)]">
+              Payment received. Your balance updates within a few seconds.
+            </p>
+          )}
+          {topup === "cancelled" && (
+            <p className="mt-3 text-sm text-[var(--text-muted)]">
+              Top-up cancelled.
+            </p>
+          )}
+        </Card>
+
+        {/* Plan + monthly usage */}
+        <div className="space-y-2">
+          <PlanCard plan={plan} used={monthlyUsed} limit={monthlyLimit} />
+          {planParam === "upgraded" && (
+            <p className="px-1 text-sm text-[var(--indigo-bright)]">
+              You are on Pro. Thanks for the support.
+            </p>
+          )}
+          {planParam === "cancelled" && (
+            <p className="px-1 text-sm text-[var(--text-muted)]">
+              Upgrade cancelled.
+            </p>
+          )}
+        </div>
+      </div>
 
       {/* Projects: the main way to add services + keys */}
       <ProjectsSection
@@ -180,7 +208,7 @@ export default async function DashboardPage({
             <summary className="cursor-pointer text-sm font-medium text-white">
               Ungrouped services ({standaloneEndpoints.length})
             </summary>
-            <p className="mb-3 mt-1 text-xs text-neutral-500">
+            <p className="mb-3 mt-1 text-xs text-[var(--text-faint)]">
               Single services not in a project. New services are best added
               inside a project above.
             </p>
@@ -197,26 +225,26 @@ export default async function DashboardPage({
                 return (
                   <li
                     key={e.id}
-                    className={`rounded-lg border border-neutral-800 p-3 ${
+                    className={`rounded-xl neu p-3.5 ${
                       e.is_active ? "" : "opacity-60"
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
                         <p className="text-sm font-medium text-white">{e.name}</p>
-                        <p className="truncate text-xs text-neutral-600">
+                        <p className="truncate font-mono text-xs text-[var(--text-faint)]">
                           {e.target_url}
                         </p>
                       </div>
                       <div className="flex shrink-0 items-center gap-3">
-                        <span className="text-xs tabular-nums text-neutral-400">
+                        <span className="text-xs tabular-nums text-[var(--text-muted)]">
                           {usd(Number(e.cost_per_request))}/call
                         </span>
                         <EndpointToggle endpointId={e.id} isActive={e.is_active} />
                         <InlineDelete action={deleteService.bind(null, e.id)} label="delete" />
                       </div>
                     </div>
-                    <div className="mt-2 flex items-center justify-between gap-2 border-t border-neutral-800 pt-2">
+                    <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[var(--glass-border)] pt-2.5">
                       <KeyList keys={endpointKeys} />
                       <CreateKeyButton endpointId={e.id} />
                     </div>

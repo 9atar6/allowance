@@ -23,7 +23,7 @@ export function TopUp() {
   }
 
   return (
-    <form action={onSubmit} className="mt-4">
+    <form action={onSubmit}>
       <div className="flex gap-2">
         <Input
           name="amount"

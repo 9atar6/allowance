@@ -8,36 +8,35 @@ import {
   IconStream,
   IconZap,
 } from "@/components/marketing/icons";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata = {
-  title: "Allowance: a prepaid debit card for your AI",
+  title: "Allowance — One key. Every API. A hard cap.",
   description:
-    "A prepaid account for the APIs your apps and AI agents pay to use. Load a balance, route everything through one key, stop at zero.",
+    "Route all your API spend through one key, with a prepaid limit and an instant kill switch. Works with any API. Built for apps and AI agents.",
 };
 
 const PROXY = "https://api.allowance.dev";
 
-const HERO_CODE = `# Keep your code the same. Point the base URL at Allowance.
+const HERO_CODE = `# Keep your code. Just point the base URL at Allowance.
 curl ${PROXY}/v1/proxy/chat/completions \\
   -H "Authorization: Bearer alw_live_your_key" \\
   -d '{ "model": "gpt-4o-mini", "messages": [ ... ] }'`;
 
 const steps = [
   {
-    n: "1",
+    n: "01",
     title: "Load a balance",
-    body: "Add money with a card, or with crypto (USDC) if you are an agent. That balance is the most anything can ever spend.",
+    body: "Add funds by card, or let an agent top up with USDC. That balance is the ceiling: nothing you run can ever spend past it.",
   },
   {
-    n: "2",
-    title: "Connect a service, get a key",
-    body: "Add the API you use and your login for it. We lock those credentials in a vault and give you one key to use instead.",
+    n: "02",
+    title: "Connect your APIs",
+    body: "Add the services you pay for and their secret keys. We seal them in a vault and hand you one Allowance key to use everywhere.",
   },
   {
-    n: "3",
-    title: "Route and relax",
-    body: "Send your traffic through Allowance. We pass it on, subtract the cost, and stop the moment the balance hits zero.",
+    n: "03",
+    title: "Route your traffic",
+    body: "Point your base URL at Allowance. We forward each call, meter the cost, and stop with a 402 the instant the balance hits zero.",
   },
 ];
 
@@ -45,32 +44,32 @@ const features = [
   {
     icon: IconCap,
     title: "A hard spending cap",
-    body: "At zero, the request stops with a 402. No overdraft, and no surprise bill at the end of the month.",
+    body: "At zero, the next request stops with a 402. No overdraft, and no surprise bill at the end of the month.",
   },
   {
     icon: IconPower,
-    title: "A one-click kill switch",
-    body: "If a key leaks, revoke it and it stops working within seconds. Disable a whole service the same way.",
+    title: "An instant kill switch",
+    body: "Revoke a key and it stops working within seconds. Disable an entire service the same way.",
   },
   {
     icon: IconLayers,
-    title: "Works with any service",
-    body: "Not just AI. Anything you pay for per use: maps, text messages, data feeds, your own internal tools.",
+    title: "Any API, one key",
+    body: "Not just AI. Maps, text messages, data feeds, your own internal tools. Anything billed per call.",
   },
   {
     icon: IconStream,
-    title: "Streaming included",
+    title: "Streaming, untouched",
     body: "Live token streams pass straight through, so your AI responses arrive in real time, exactly as usual.",
   },
   {
     icon: IconShield,
     title: "Your keys stay sealed",
-    body: "Your real API credentials are encrypted at rest and never written to a log. Apps only ever see the Allowance key.",
+    body: "Real credentials are encrypted at rest and never written to a log. Clients only ever see the Allowance key.",
   },
   {
     icon: IconZap,
-    title: "Fast by design",
-    body: "Keys and balances are checked at the network edge, so the extra step adds almost nothing to each request.",
+    title: "Edge-fast by design",
+    body: "Keys and balances are checked at the network edge, so the extra hop adds almost nothing to each call.",
   },
 ];
 
@@ -121,64 +120,77 @@ const plans = [
 
 function Eyebrow({ children }: { children: string }) {
   return (
-    <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--indigo-bright)]">
       {children}
     </p>
   );
 }
 
+function Wordmark() {
+  return (
+    <span className="flex items-center gap-2.5 font-display text-lg font-semibold">
+      <span className="grid h-7 w-7 place-items-center rounded-lg btn-glow text-[13px]">
+        A
+      </span>
+      Allowance
+    </span>
+  );
+}
+
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-neutral-100 text-neutral-900 dark:bg-neutral-900 dark:text-neutral-50">
+    <div className="min-h-screen text-[var(--text)]">
       {/* Nav */}
-      <header className="sticky top-0 z-10 border-b border-neutral-200/70 bg-neutral-100/80 backdrop-blur dark:border-neutral-800/70 dark:bg-neutral-900/80">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <span className="text-lg font-semibold">Allowance</span>
-          <nav className="flex items-center gap-4 text-sm">
+      <header className="sticky top-0 z-20">
+        <div className="mx-auto mt-4 flex max-w-5xl items-center justify-between rounded-2xl glass px-5 py-3">
+          <Wordmark />
+          <nav className="flex items-center gap-2 text-sm">
             <Link
               href="/docs"
-              className="text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+              className="rounded-lg px-3 py-2 text-[var(--text-muted)] transition-colors hover:text-white"
             >
               Docs
             </Link>
             <Link
               href="/login"
-              className="rounded-lg bg-neutral-900 px-4 py-2 font-medium text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+              className="rounded-lg btn-glow px-4 py-2 font-medium"
             >
               Sign in
             </Link>
-            <ThemeToggle />
           </nav>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="mx-auto max-w-5xl px-6 pt-20 pb-16 text-center">
-        <Eyebrow>Prepaid spending for AI and APIs</Eyebrow>
-        <h1 className="mx-auto mt-5 max-w-3xl text-5xl font-semibold leading-[1.1] tracking-tight sm:text-6xl">
-          A prepaid debit card for your AI.
-        </h1>
-        <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-neutral-600 dark:text-neutral-300">
-          Allowance is a prepaid account for the online services your apps and AI
-          agents pay to use. Load a balance, connect any service, and run it all
-          through a single key. We count every request, stop the instant you hit
-          zero, and let you kill a leaked key on the spot.
-        </p>
-        <div className="mt-9 flex items-center justify-center gap-3">
-          <Link
-            href="/login"
-            className="rounded-lg bg-neutral-900 px-5 py-3 font-medium text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-          >
-            Get started
-          </Link>
-          <Link
-            href="/docs"
-            className="rounded-lg border border-neutral-300 px-5 py-3 font-medium hover:border-neutral-400 dark:border-neutral-700 dark:hover:border-neutral-500"
-          >
-            Read the docs
-          </Link>
+      <section className="mx-auto max-w-5xl px-6 pt-24 pb-20 text-center">
+        <div className="animate-in">
+          <Eyebrow>Spend control for APIs and AI agents</Eyebrow>
+          <h1 className="mx-auto mt-6 max-w-4xl font-display text-6xl font-semibold leading-[1.04] sm:text-7xl">
+            One key. Every API.
+            <br />
+            <span className="text-aurora">A hard cap.</span>
+          </h1>
+          <p className="mx-auto mt-7 max-w-2xl text-lg leading-relaxed text-[var(--text-muted)]">
+            Route every API your apps and agents call through a single Allowance
+            key. Set a prepaid limit they can never exceed, watch every request,
+            and kill a leaked key in one click.
+          </p>
+          <div className="mt-10 flex items-center justify-center gap-3">
+            <Link
+              href="/login"
+              className="rounded-xl btn-glow px-6 py-3 font-medium"
+            >
+              Get started
+            </Link>
+            <Link
+              href="/docs"
+              className="rounded-xl neu px-6 py-3 font-medium text-[var(--text-muted)] transition-colors hover:text-white"
+            >
+              Read the docs
+            </Link>
+          </div>
         </div>
-        <div className="mx-auto mt-14 max-w-2xl text-left">
+        <div className="mx-auto mt-16 max-w-2xl text-left animate-in" style={{ animationDelay: "0.15s" }}>
           <CodeBlock code={HERO_CODE} label="your terminal" />
         </div>
       </section>
@@ -187,21 +199,18 @@ export default function Landing() {
       <section className="mx-auto max-w-5xl px-6 py-20">
         <div className="text-center">
           <Eyebrow>How it works</Eyebrow>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+          <h2 className="mt-4 font-display text-4xl font-semibold">
             Three steps to a budget you control
           </h2>
         </div>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <div className="mt-14 grid gap-5 md:grid-cols-3">
           {steps.map((s) => (
-            <div
-              key={s.n}
-              className="rounded-2xl border border-neutral-200 bg-white p-7 dark:border-neutral-800 dark:bg-neutral-800/40"
-            >
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/15 text-base font-semibold text-emerald-600 dark:text-emerald-400">
+            <div key={s.n} className="glass glass-hover rounded-[var(--radius)] p-7">
+              <span className="font-mono text-sm text-[var(--indigo-bright)]">
                 {s.n}
-              </div>
-              <h3 className="mt-5 text-lg font-medium">{s.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
+              </span>
+              <h3 className="mt-4 font-display text-xl font-medium">{s.title}</h3>
+              <p className="mt-2.5 text-sm leading-relaxed text-[var(--text-muted)]">
                 {s.body}
               </p>
             </div>
@@ -210,30 +219,28 @@ export default function Landing() {
       </section>
 
       {/* Two rails */}
-      <section className="border-y border-neutral-200 bg-white py-20 dark:border-neutral-800 dark:bg-neutral-950/40">
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="text-center">
-            <Eyebrow>Two ways to fund it</Eyebrow>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight">
-              Built for people and the bots they run
-            </h2>
+      <section className="mx-auto max-w-5xl px-6 py-20">
+        <div className="text-center">
+          <Eyebrow>Built for both</Eyebrow>
+          <h2 className="mt-4 font-display text-4xl font-semibold">
+            People and the bots they run
+          </h2>
+        </div>
+        <div className="mt-14 grid gap-5 md:grid-cols-2">
+          <div className="glass glass-hover rounded-[var(--radius)] p-8">
+            <h3 className="font-display text-xl font-medium">For people</h3>
+            <p className="mt-3 leading-relaxed text-[var(--text-muted)]">
+              Top up by card in a clean dashboard. See your balance, every
+              charge, and recent activity at a glance. Add services and mint keys
+              in seconds.
+            </p>
           </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-2">
-            <div className="rounded-2xl border border-neutral-200 p-8 dark:border-neutral-800">
-              <h3 className="text-lg font-medium">For people</h3>
-              <p className="mt-3 leading-relaxed text-neutral-600 dark:text-neutral-300">
-                Top up by card in a simple dashboard. See your balance, every
-                charge, and your recent activity. Add services and create keys in
-                seconds.
-              </p>
-            </div>
-            <div className="rounded-2xl border border-neutral-200 p-8 dark:border-neutral-800">
-              <h3 className="text-lg font-medium">For agents</h3>
-              <p className="mt-3 leading-relaxed text-neutral-600 dark:text-neutral-300">
-                An AI agent can top itself up with USDC over the x402 payment
-                standard and keep working, with no card and no human in the loop.
-              </p>
-            </div>
+          <div className="glass glass-hover rounded-[var(--radius)] p-8">
+            <h3 className="font-display text-xl font-medium">For agents</h3>
+            <p className="mt-3 leading-relaxed text-[var(--text-muted)]">
+              An agent that hits its cap can top itself up with USDC over the
+              x402 standard and keep working. No card, no human in the loop.
+            </p>
           </div>
         </div>
       </section>
@@ -242,23 +249,25 @@ export default function Landing() {
       <section className="mx-auto max-w-5xl px-6 py-20">
         <div className="text-center">
           <Eyebrow>Why Allowance</Eyebrow>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+          <h2 className="mt-4 font-display text-4xl font-semibold">
             A budget and a kill switch, built in
           </h2>
         </div>
-        <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-14 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {features.map((f) => {
             const Icon = f.icon;
             return (
               <div
                 key={f.title}
-                className="rounded-2xl border border-neutral-200 bg-white p-6 transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-800/40 dark:hover:border-neutral-700"
+                className="glass glass-hover rounded-[var(--radius)] p-6"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                <div className="grid h-11 w-11 place-items-center rounded-xl neu text-[var(--indigo-bright)]">
                   <Icon />
                 </div>
-                <h3 className="mt-4 font-medium">{f.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
+                <h3 className="mt-5 font-display text-lg font-medium">
+                  {f.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--text-muted)]">
                   {f.body}
                 </p>
               </div>
@@ -268,99 +277,100 @@ export default function Landing() {
       </section>
 
       {/* Pricing */}
-      <section className="border-y border-neutral-200 bg-white py-20 dark:border-neutral-800 dark:bg-neutral-950/40">
-        <div className="mx-auto max-w-5xl px-6">
-          <div className="text-center">
-            <Eyebrow>Pricing</Eyebrow>
-            <h2 className="mt-3 text-3xl font-semibold tracking-tight">
-              Fair, and free to start
-            </h2>
-            <p className="mx-auto mt-4 max-w-2xl text-neutral-600 dark:text-neutral-300">
-              We never mark up your AI. You pay for the gateway, the controls,
-              and the analytics. The cost of the services you call stays between
-              you and them.
-            </p>
-          </div>
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {plans.map((p) => (
-              <div
-                key={p.name}
-                className={`flex flex-col rounded-2xl border p-7 ${
+      <section className="mx-auto max-w-5xl px-6 py-20">
+        <div className="text-center">
+          <Eyebrow>Pricing</Eyebrow>
+          <h2 className="mt-4 font-display text-4xl font-semibold">
+            Fair, and free to start
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-[var(--text-muted)]">
+            We never mark up your AI. You pay for the gateway, the controls, and
+            the analytics. The cost of the services you call stays between you
+            and them.
+          </p>
+        </div>
+        <div className="mt-14 grid gap-5 md:grid-cols-3">
+          {plans.map((p) => (
+            <div
+              key={p.name}
+              className={`relative flex flex-col rounded-[var(--radius)] p-7 ${
+                p.highlight
+                  ? "glass-strong ring-1 ring-[var(--indigo)]/40"
+                  : "glass glass-hover"
+              }`}
+            >
+              {p.highlight && (
+                <span className="absolute -top-3 left-7 rounded-full btn-glow px-3 py-1 text-xs font-medium">
+                  Most popular
+                </span>
+              )}
+              <h3 className="font-display text-lg font-medium">{p.name}</h3>
+              <div className="mt-3 flex items-baseline gap-1">
+                <span className="font-display text-5xl font-semibold tracking-tight">
+                  {p.price}
+                </span>
+                <span className="text-sm text-[var(--text-faint)]">
+                  {p.cadence}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-[var(--text-muted)]">{p.blurb}</p>
+              <ul className="mt-6 space-y-2.5 text-sm">
+                {p.features.map((f) => (
+                  <li key={f} className="flex gap-2.5">
+                    <span className="text-[var(--indigo-bright)]">✓</span>
+                    <span className="text-[var(--text-muted)]">{f}</span>
+                  </li>
+                ))}
+              </ul>
+              <Link
+                href="/login"
+                className={`mt-7 rounded-xl px-4 py-2.5 text-center text-sm font-medium transition-colors ${
                   p.highlight
-                    ? "border-emerald-500/60 bg-white shadow-sm dark:bg-neutral-800/60"
-                    : "border-neutral-200 dark:border-neutral-800"
+                    ? "btn-glow"
+                    : "neu text-[var(--text-muted)] hover:text-white"
                 }`}
               >
-                <h3 className="text-lg font-medium">{p.name}</h3>
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-4xl font-semibold tracking-tight">
-                    {p.price}
-                  </span>
-                  <span className="text-sm text-neutral-500">{p.cadence}</span>
-                </div>
-                <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
-                  {p.blurb}
-                </p>
-                <ul className="mt-6 space-y-2.5 text-sm">
-                  {p.features.map((f) => (
-                    <li key={f} className="flex gap-2">
-                      <span className="text-emerald-600 dark:text-emerald-400">
-                        ✓
-                      </span>
-                      <span className="text-neutral-700 dark:text-neutral-300">
-                        {f}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  href="/login"
-                  className={`mt-7 rounded-lg px-4 py-2.5 text-center text-sm font-medium ${
-                    p.highlight
-                      ? "bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-                      : "border border-neutral-300 hover:border-neutral-400 dark:border-neutral-700 dark:hover:border-neutral-500"
-                  }`}
-                >
-                  {p.cta}
-                </Link>
-              </div>
-            ))}
-          </div>
+                {p.cta}
+              </Link>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* CTA */}
-      <section className="mx-auto max-w-5xl px-6 py-24 text-center">
-        <h2 className="text-4xl font-semibold tracking-tight">
-          Give your agents an allowance.
-        </h2>
-        <p className="mx-auto mt-4 max-w-xl text-lg text-neutral-600 dark:text-neutral-300">
-          Set a budget your apps and agents can never blow past. It takes about
-          two minutes to start.
-        </p>
-        <Link
-          href="/login"
-          className="mt-8 inline-block rounded-lg bg-neutral-900 px-6 py-3 font-medium text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
-        >
-          Get started
-        </Link>
+      <section className="mx-auto max-w-3xl px-6 py-24">
+        <div className="glass-strong rounded-[28px] px-8 py-16 text-center">
+          <h2 className="font-display text-5xl font-semibold leading-tight">
+            Give your agents an <span className="text-aurora">allowance</span>.
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl text-lg text-[var(--text-muted)]">
+            Set a budget your apps and agents can never blow past. It takes about
+            two minutes to start.
+          </p>
+          <Link
+            href="/login"
+            className="mt-9 inline-block rounded-xl btn-glow px-7 py-3.5 font-medium"
+          >
+            Get started
+          </Link>
+        </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-neutral-200 dark:border-neutral-800">
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-neutral-500 sm:flex-row">
-          <span>Allowance</span>
+      <footer className="border-t border-[var(--glass-border)]">
+        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-6 py-8 text-sm text-[var(--text-faint)] sm:flex-row">
+          <Wordmark />
           <div className="flex gap-6">
-            <Link href="/docs" className="hover:text-neutral-900 dark:hover:text-neutral-300">
+            <Link href="/docs" className="transition-colors hover:text-white">
               Docs
             </Link>
             <a
               href="https://github.com/9atar6/allowance"
-              className="hover:text-neutral-900 dark:hover:text-neutral-300"
+              className="transition-colors hover:text-white"
             >
               GitHub
             </a>
-            <Link href="/login" className="hover:text-neutral-900 dark:hover:text-neutral-300">
+            <Link href="/login" className="transition-colors hover:text-white">
               Sign in
             </Link>
           </div>

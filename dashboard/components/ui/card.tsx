@@ -6,10 +6,7 @@ export function Card({
 }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn(
-        "rounded-xl border border-neutral-800 bg-neutral-950 p-6",
-        className,
-      )}
+      className={cn("glass rounded-[var(--radius)] p-6", className)}
       {...props}
     />
   );
@@ -21,7 +18,10 @@ export function CardTitle({
 }: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
     <h2
-      className={cn("text-sm font-medium text-neutral-400", className)}
+      className={cn(
+        "text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-faint)]",
+        className,
+      )}
       {...props}
     />
   );

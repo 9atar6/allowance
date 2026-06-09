@@ -17,7 +17,7 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
   const [revoking, setRevoking] = useState<string | null>(null);
 
   if (keys.length === 0) {
-    return <p className="text-xs text-neutral-600">No keys yet.</p>;
+    return <p className="text-xs text-[var(--text-faint)]">No keys yet.</p>;
   }
 
   function revoke(id: string) {
@@ -34,12 +34,16 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
     <ul className="space-y-1">
       {keys.map((k) => (
         <li key={k.id} className="flex items-center justify-between text-xs">
-          <code className="text-neutral-400">
+          <code className="font-mono text-[var(--text-muted)]">
             {k.keyPrefix}…{" "}
             {k.dailyLimit != null && (
-              <span className="text-neutral-500">· ${k.dailyLimit}/day</span>
+              <span className="text-[var(--text-faint)]">
+                · ${k.dailyLimit}/day
+              </span>
             )}{" "}
-            {!k.isActive && <span className="text-neutral-600">(revoked)</span>}
+            {!k.isActive && (
+              <span className="text-[var(--text-faint)]">(revoked)</span>
+            )}
           </code>
           {k.isActive && (
             <Button
