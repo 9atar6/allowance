@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
   const [pending, startTransition] = useTransition();
   const [generated, setGenerated] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [limit, setLimit] = useState("");
 
@@ -15,7 +16,8 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
     setError(null);
     startTransition(async () => {
       const n = Number(limit);
-      const dailyLimit = limit.trim() !== "" && Number.isFinite(n) && n > 0 ? n : null;
+      const dailyLimit =
+        limit.trim() !== "" && Number.isFinite(n) && n > 0 ? n : null;
       const res = await createProjectKey(projectId, dailyLimit);
       if (!res.ok) setError(res.error ?? "Failed.");
       else setGenerated(res.generatedKey ?? null);
@@ -24,25 +26,32 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
 
   if (generated) {
     return (
-      <div className="rounded-md border border-amber-700/50 bg-amber-950/30 p-3">
-        <p className="mb-1 text-xs font-medium text-amber-400">
-          Copy this key now. It is shown only once.
+      <div className="neu-inset p-4">
+        <p className="mb-2 text-xs font-medium text-[var(--text-muted)]">
+          Copy this key now — it is shown only once.
         </p>
-        <code className="block break-all text-xs text-amber-200">{generated}</code>
-        <Button
-          variant="ghost"
-          className="mt-2 text-xs"
-          onClick={() => navigator.clipboard.writeText(generated)}
-        >
-          Copy
-        </Button>
+        <div className="flex items-center gap-2">
+          <code className="min-w-0 flex-1 truncate font-mono text-xs text-[var(--accent)]">
+            {generated}
+          </code>
+          <Button
+            onClick={() => {
+              navigator.clipboard.writeText(generated);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            }}
+            className="shrink-0 px-3 py-2 text-xs"
+          >
+            {copied ? "Copied" : "Copy"}
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Input
           value={limit}
           onChange={(e) => setLimit(e.target.value)}
@@ -50,7 +59,7 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
           step="0.01"
           min="0"
           placeholder="Daily limit USD (optional)"
-          className="max-w-[200px]"
+          className="max-w-[220px]"
         />
         <Button
           variant="ghost"
@@ -58,10 +67,10 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
           disabled={pending}
           className="shrink-0 text-xs"
         >
-          {pending ? "Minting…" : "Create project key"}
+          {pending ? "Minting…" : "New key"}
         </Button>
       </div>
-      {error && <p className="mt-1 text-xs text-red-400">{error}</p>}
+      {error && <p className="mt-1.5 text-xs text-red-400">{error}</p>}
     </div>
   );
 }

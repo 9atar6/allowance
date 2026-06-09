@@ -7,7 +7,7 @@ import {
   type SubResult,
 } from "@/app/dashboard/billing-actions";
 import { Button } from "@/components/ui/button";
-import { Card, CardTitle } from "@/components/ui/card";
+import { CardTitle } from "@/components/ui/card";
 import {
   FREE_MONTHLY_REQUESTS,
   PRO_PRICE_USD,
@@ -22,6 +22,7 @@ interface Props {
   periodEnd?: string | null;
 }
 
+/** The "Plan" half of the account card. Fills its column; action pinned bottom. */
 export function PlanCard({ plan, used, limit, periodEnd }: Props) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -30,11 +31,8 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
     setError(null);
     start(async () => {
       const res = await action();
-      if (res.ok && res.url) {
-        window.location.href = res.url;
-      } else {
-        setError(res.error ?? "Something went wrong.");
-      }
+      if (res.ok && res.url) window.location.href = res.url;
+      else setError(res.error ?? "Something went wrong.");
     });
   }
 
@@ -42,7 +40,6 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
     limit && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   const barColor =
     pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-400" : "bg-[var(--accent)]";
-
   const remaining = limit != null ? Math.max(0, limit - used) : null;
   const renews = periodEnd
     ? new Date(periodEnd).toLocaleDateString(undefined, {
@@ -50,7 +47,6 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
         day: "numeric",
       })
     : null;
-  // A meaningful closing line so the card reads complete, not padded.
   const footer =
     plan === "pro" && renews
       ? `Renews ${renews}`
@@ -59,36 +55,14 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
         : null;
 
   return (
-    <Card>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <CardTitle>Plan</CardTitle>
-          <p className="mt-1 text-sm">
-            <span className="font-medium text-[var(--text)]">{planLabel(plan)}</span>
-            {plan === "free" && (
-              <span className="text-[var(--text-faint)]">
-                {" "}
-                · {FREE_MONTHLY_REQUESTS.toLocaleString()} requests/mo
-              </span>
-            )}
-          </p>
-        </div>
-        {plan === "free" ? (
-          <Button onClick={() => go(startProCheckout)} disabled={pending}>
-            {pending ? "Starting…" : `Upgrade to Pro — $${PRO_PRICE_USD}/mo`}
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            onClick={() => go(openBillingPortal)}
-            disabled={pending}
-          >
-            {pending ? "Opening…" : "Manage billing"}
-          </Button>
-        )}
+    <div className="flex h-full flex-col">
+      <div className="flex items-center gap-2">
+        <CardTitle>Plan</CardTitle>
+        <span className="text-sm font-medium text-[var(--text)]">
+          {planLabel(plan)}
+        </span>
       </div>
 
-      {/* Monthly usage meter */}
       <div className="mt-4">
         <div className="flex justify-between text-xs text-[var(--text-faint)]">
           <span>Requests this month</span>
@@ -99,21 +73,43 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
         </div>
         {limit != null && (
           <div className="neu-inset-sm mt-2 h-2 w-full overflow-hidden rounded-full">
-            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+            <div
+              className={`h-full rounded-full ${barColor}`}
+              style={{ width: `${pct}%` }}
+            />
           </div>
         )}
         {footer && (
-          <p className="mt-3 text-xs text-[var(--text-faint)]">{footer}</p>
+          <p className="mt-2.5 text-xs text-[var(--text-faint)]">{footer}</p>
         )}
         {plan === "free" && used >= FREE_MONTHLY_REQUESTS && (
           <p className="mt-2 text-xs text-red-400">
-            Free limit reached. Calls return HTTP 402 until you upgrade or the
-            month resets.
+            Free limit reached. Calls return 402 until you upgrade.
           </p>
         )}
       </div>
 
-      {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
-    </Card>
+      <div className="mt-auto pt-6">
+        {plan === "free" ? (
+          <Button
+            onClick={() => go(startProCheckout)}
+            disabled={pending}
+            className="w-full"
+          >
+            {pending ? "Starting…" : `Upgrade to Pro — $${PRO_PRICE_USD}/mo`}
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            onClick={() => go(openBillingPortal)}
+            disabled={pending}
+            className="w-full"
+          >
+            {pending ? "Opening…" : "Manage billing"}
+          </Button>
+        )}
+        {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+      </div>
+    </div>
   );
 }

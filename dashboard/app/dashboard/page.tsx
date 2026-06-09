@@ -1,15 +1,14 @@
-import { Card, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { ActivityTable, type ActivityRow } from "@/components/activity-table";
 import { CreateKeyButton } from "@/components/create-key-button";
 import { EndpointToggle } from "@/components/endpoint-toggle";
 import { InlineDelete } from "@/components/inline-delete";
 import { KeyList } from "@/components/key-list";
 import { PlanCard } from "@/components/plan-card";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { ProjectsSection, type ProjectRow } from "@/components/projects-section";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { TopUp } from "@/components/top-up";
-import { TransactionsTable, type TxnRow } from "@/components/transactions-table";
-import { UsageTable, type UsageRow } from "@/components/usage-table";
+import { Button } from "@/components/ui/button";
+import { Card, CardTitle } from "@/components/ui/card";
 import { formatUsd as usd } from "@/lib/format";
 import { monthlyQuota, type PlanTier } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
@@ -41,7 +40,6 @@ export default async function DashboardPage({
   const { topup, plan: planParam } = await searchParams;
   const supabase = await createClient();
 
-  // Start of the current UTC month — matches the worker's monthly counter window.
   const now = new Date();
   const monthStart = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
@@ -69,21 +67,22 @@ export default async function DashboardPage({
       .from("proxy_keys")
       .select("id, key_prefix, is_active, endpoint_id, project_id, daily_limit")
       .order("created_at", { ascending: false }),
+    // Request-level detail, used to enrich debit rows in the activity feed.
     supabase
       .from("usage_events")
-      .select("id, endpoint_id, cost, status_code, created_at")
+      .select("request_id, endpoint_id, status_code")
       .order("created_at", { ascending: false })
-      .limit(8),
+      .limit(200),
+    // The money ledger — the spine of the activity feed.
     supabase
       .from("wallet_transactions")
-      .select("id, type, amount, balance_after, created_at")
+      .select("id, type, amount, balance_after, created_at, external_ref, metadata")
       .order("created_at", { ascending: false })
-      .limit(8),
+      .limit(12),
     supabase
       .from("projects")
       .select("id, name, monthly_budget, is_active")
       .order("created_at", { ascending: false }),
-    // Requests this month (RLS-scoped). head:true → count only, no rows.
     supabase
       .from("usage_events")
       .select("id", { count: "exact", head: true })
@@ -92,36 +91,46 @@ export default async function DashboardPage({
 
   const balance = wallet?.balance ?? 0;
   const plan = ((wallet?.plan as PlanTier | undefined) ?? "free") as PlanTier;
+  const periodEnd = (wallet?.current_period_end as string | null) ?? null;
   const monthlyUsed = monthlyCount ?? 0;
   const monthlyLimit = monthlyQuota(plan);
-  const periodEnd = (wallet?.current_period_end as string | null) ?? null;
   const endpointList = (endpoints ?? []) as Endpoint[];
   const keyList = (keys ?? []) as ProxyKey[];
   const projectList = (projects ?? []) as ProjectRow[];
-
-  // Standalone endpoints/keys (not tied to a project) for the simple section.
   const standaloneEndpoints = endpointList.filter((e) => !e.project_id);
-
-  // Map raw rows → typed view models (numeric columns can arrive as strings).
   const endpointNames = new Map(endpointList.map((e) => [e.id, e.name]));
-  const endpointName = (id: string | null) =>
-    (id && endpointNames.get(id)) || "-";
 
-  const usageRows: UsageRow[] = (usage ?? []).map((u) => ({
-    id: u.id as string,
-    endpointId: u.endpoint_id as string | null,
-    cost: Number(u.cost),
-    statusCode: u.status_code as number | null,
-    createdAt: u.created_at as string,
-  }));
+  // Map request_id → request detail, to enrich debit rows.
+  const usageByReq = new Map<string, { status: number | null; endpointId: string | null }>();
+  for (const u of usage ?? []) {
+    if (u.request_id) {
+      usageByReq.set(u.request_id as string, {
+        status: u.status_code as number | null,
+        endpointId: u.endpoint_id as string | null,
+      });
+    }
+  }
 
-  const txnRows: TxnRow[] = (txns ?? []).map((t) => ({
-    id: t.id as string,
-    type: t.type as string,
-    amount: Number(t.amount),
-    balanceAfter: Number(t.balance_after),
-    createdAt: t.created_at as string,
-  }));
+  // One ledger: top-ups (credits) + per-call charges (debits), newest first.
+  const activityRows: ActivityRow[] = (txns ?? []).map((t) => {
+    const amount = Number(t.amount);
+    const credit = amount >= 0;
+    const ref = (t.external_ref as string | null) ?? null;
+    const u = ref ? usageByReq.get(ref) : undefined;
+    const meta = (t.metadata ?? {}) as { endpoint_id?: string };
+    const endpointId = meta.endpoint_id ?? u?.endpointId ?? null;
+    const label = credit
+      ? "Top-up"
+      : (endpointId && endpointNames.get(endpointId)) || "Request";
+    return {
+      id: t.id as string,
+      createdAt: t.created_at as string,
+      label,
+      status: u?.status ?? null,
+      amount,
+      balanceAfter: Number(t.balance_after),
+    };
+  });
 
   return (
     <main className="mx-auto max-w-5xl space-y-8 px-6 pb-20">
@@ -152,36 +161,34 @@ export default async function DashboardPage({
         </div>
       </header>
 
-      {/* Hero band: Balance + Plan side by side */}
-      <div className="grid items-start gap-6 lg:grid-cols-2">
-        {/* Balance + top-up */}
-        <Card className="flex flex-col justify-between">
-          <div>
-            <CardTitle>Balance</CardTitle>
-            <p className="mt-3 text-5xl font-semibold tracking-tight tabular-nums">
-              {usd(Number(balance))}
-            </p>
-            <p className="mt-2 text-xs text-[var(--text-faint)]">
-              Calls stop with HTTP 402 when this reaches zero.
-            </p>
-          </div>
-          <div className="mt-6">
+      {/* Account: Balance + Plan share one panel, actions pinned to the bottom */}
+      <Card className="grid gap-0 md:grid-cols-2">
+        {/* Balance */}
+        <div className="flex flex-col pb-6 md:pb-0 md:pr-8">
+          <CardTitle>Balance</CardTitle>
+          <p className="mt-3 text-5xl font-semibold tracking-tight tabular-nums">
+            {usd(Number(balance))}
+          </p>
+          <p className="mt-2 text-xs text-[var(--text-faint)]">
+            Calls stop with HTTP 402 when this reaches zero.
+          </p>
+          <div className="mt-auto pt-6">
             <TopUp />
+            {topup === "success" && (
+              <p className="mt-2.5 text-sm text-accent">
+                Payment received. Balance updates within a few seconds.
+              </p>
+            )}
+            {topup === "cancelled" && (
+              <p className="mt-2.5 text-sm text-[var(--text-muted)]">
+                Top-up cancelled.
+              </p>
+            )}
           </div>
-          {topup === "success" && (
-            <p className="mt-3 text-sm text-accent">
-              Payment received. Your balance updates within a few seconds.
-            </p>
-          )}
-          {topup === "cancelled" && (
-            <p className="mt-3 text-sm text-[var(--text-muted)]">
-              Top-up cancelled.
-            </p>
-          )}
-        </Card>
+        </div>
 
-        {/* Plan + monthly usage */}
-        <div className="space-y-2">
+        {/* Plan */}
+        <div className="flex flex-col border-t border-white/5 pt-6 md:border-l md:border-t-0 md:pl-8 md:pt-0">
           <PlanCard
             plan={plan}
             used={monthlyUsed}
@@ -189,26 +196,26 @@ export default async function DashboardPage({
             periodEnd={periodEnd}
           />
           {planParam === "upgraded" && (
-            <p className="px-1 text-sm text-accent">
+            <p className="mt-2.5 text-sm text-accent">
               You are on Pro. Thanks for the support.
             </p>
           )}
           {planParam === "cancelled" && (
-            <p className="px-1 text-sm text-[var(--text-muted)]">
+            <p className="mt-2.5 text-sm text-[var(--text-muted)]">
               Upgrade cancelled.
             </p>
           )}
         </div>
-      </div>
+      </Card>
 
-      {/* Projects: the main way to add services + keys */}
+      {/* Projects */}
       <ProjectsSection
         projects={projectList}
         services={endpointList}
         keys={keyList}
       />
 
-      {/* Ungrouped (legacy single-endpoint) services, collapsed, only if any */}
+      {/* Ungrouped (legacy single-endpoint) services, only if any */}
       {standaloneEndpoints.length > 0 && (
         <Card>
           <details>
@@ -261,17 +268,11 @@ export default async function DashboardPage({
         </Card>
       )}
 
-      {/* Activity: usage + transactions side by side */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardTitle className="mb-4">Recent usage</CardTitle>
-          <UsageTable rows={usageRows} endpointName={endpointName} />
-        </Card>
-        <Card>
-          <CardTitle className="mb-4">Transactions</CardTitle>
-          <TransactionsTable rows={txnRows} />
-        </Card>
-      </div>
+      {/* Activity: one ledger of top-ups + per-call charges */}
+      <Card>
+        <CardTitle className="mb-4">Activity</CardTitle>
+        <ActivityTable rows={activityRows} />
+      </Card>
     </main>
   );
 }
