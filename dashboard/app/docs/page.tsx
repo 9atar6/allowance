@@ -20,7 +20,7 @@ const toc = [
 
 function Mono({ children }: { children: string }) {
   return (
-    <code className="rounded-md neu px-1.5 py-0.5 font-mono text-[0.85em] text-[var(--text)]">
+    <code className="neu-inset-sm px-1.5 py-0.5 font-mono text-[0.85em] text-[var(--text)]">
       {children}
     </code>
   );
@@ -41,11 +41,11 @@ function Step({
     <section id={id} className="scroll-mt-28">
       <div className="flex items-center gap-3">
         {n && (
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl neu font-mono text-sm text-[var(--indigo-bright)]">
+          <span className="neu-sm grid h-8 w-8 shrink-0 place-items-center font-mono text-sm text-[var(--accent)]">
             {n}
           </span>
         )}
-        <h2 className="font-display text-2xl font-semibold tracking-tight">
+        <h2 className="text-2xl font-semibold tracking-tight">
           {title}
         </h2>
       </div>
@@ -59,18 +59,18 @@ function Step({
 export default function Docs() {
   return (
     <div className="min-h-screen text-[var(--text)]">
-      <header className="sticky top-0 z-20">
-        <div className="mx-auto mt-4 flex max-w-5xl items-center justify-between rounded-2xl glass px-5 py-3">
+      <header className="sticky top-0 z-20 bg-[var(--bg)]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-6">
           <Link
             href="/"
-            className="flex items-center gap-2.5 font-display text-lg font-semibold"
+            className="flex items-center gap-2.5 text-lg font-semibold"
           >
-            <span className="grid h-7 w-7 place-items-center rounded-lg btn-glow text-[13px]">
+            <span className="neu-sm grid h-7 w-7 place-items-center text-[13px] text-accent">
               A
             </span>
             Allowance
           </Link>
-          <Link href="/login" className="rounded-lg btn-glow px-4 py-2 text-sm font-medium">
+          <Link href="/login" className="btn-accent px-4 py-2 text-sm font-medium">
             Sign in
           </Link>
         </div>
@@ -98,7 +98,7 @@ export default function Docs() {
 
           {/* Content */}
           <main className="min-w-0">
-            <h1 className="font-display text-5xl font-semibold tracking-tight">
+            <h1 className="text-5xl font-semibold tracking-tight">
               Quickstart
             </h1>
             <p className="mt-5 text-lg leading-relaxed text-[var(--text-muted)]">
@@ -113,7 +113,7 @@ export default function Docs() {
                   In the{" "}
                   <Link
                     href="/dashboard"
-                    className="text-[var(--indigo-bright)] hover:underline"
+                    className="text-[var(--accent)] hover:underline"
                   >
                     dashboard
                   </Link>
@@ -217,10 +217,10 @@ curl -X POST ${PROXY}/v1/topup/5 \\
               </Step>
             </div>
 
-            <div className="mt-16 border-t border-[var(--glass-border)] pt-10">
+            <div className="mt-16 border-t border-white/5 pt-10">
               <Link
                 href="/login"
-                className="inline-block rounded-xl btn-glow px-6 py-3 font-medium"
+                className="btn-accent inline-block px-6 py-3 font-medium"
               >
                 Get started
               </Link>

@@ -43,7 +43,7 @@ export function ProjectsSection({ projects, services, keys }: Props) {
       </div>
       <p className="mb-4 text-sm text-[var(--text-muted)]">
         Group services under one key. Agents call them at{" "}
-        <code className="font-mono text-[var(--indigo-bright)]">
+        <code className="font-mono text-[var(--accent)]">
           /v1/proxy/&lt;slug&gt;/…
         </code>
       </p>
@@ -66,9 +66,9 @@ export function ProjectsSection({ projects, services, keys }: Props) {
               }));
 
             return (
-              <div key={p.id} className="rounded-xl neu p-4">
+              <div key={p.id} className="neu-inset p-5">
                 <div className="flex items-center justify-between">
-                  <p className="font-display text-sm font-medium text-white">
+                  <p className="text-sm font-medium text-white">
                     {p.name}
                   </p>
                   <div className="flex items-center gap-3">
@@ -91,7 +91,7 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                     projServices.map((s) => (
                       <div key={s.id} className="flex items-center justify-between gap-3 text-xs">
                         <div className="min-w-0">
-                          <code className="font-mono text-[var(--indigo-bright)]">
+                          <code className="font-mono text-[var(--accent)]">
                             /{s.slug}
                           </code>
                           <span className="ml-2 text-[var(--text)]">{s.name}</span>
@@ -111,7 +111,7 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                 </div>
 
                 {/* Add a service (collapsed to stay compact) */}
-                <details className="mt-3 border-t border-[var(--glass-border)] pt-3">
+                <details className="mt-3 border-t border-white/5 pt-3">
                   <summary className="cursor-pointer text-xs text-[var(--text-muted)] transition-colors hover:text-white">
                     + Add a service
                   </summary>
@@ -121,7 +121,7 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                 </details>
 
                 {/* Keys */}
-                <div className="mt-3 space-y-2 border-t border-[var(--glass-border)] pt-3">
+                <div className="mt-3 space-y-2 border-t border-white/5 pt-3">
                   <KeyList keys={projKeys} />
                   <CreateProjectKeyButton projectId={p.id} />
                 </div>

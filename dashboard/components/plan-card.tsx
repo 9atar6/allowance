@@ -40,7 +40,7 @@ export function PlanCard({ plan, used, limit }: Props) {
   const pct =
     limit && limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
   const barColor =
-    pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-400" : "bg-[var(--indigo-bright)]";
+    pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-400" : "bg-[var(--accent)]";
 
   return (
     <Card>
@@ -82,8 +82,8 @@ export function PlanCard({ plan, used, limit }: Props) {
           </span>
         </div>
         {limit != null && (
-          <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/8">
-            <div className={`h-full ${barColor}`} style={{ width: `${pct}%` }} />
+          <div className="neu-inset-sm mt-2 h-2 w-full overflow-hidden rounded-full">
+            <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
           </div>
         )}
         {plan === "free" && used >= FREE_MONTHLY_REQUESTS && (

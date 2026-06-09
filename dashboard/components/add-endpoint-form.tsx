@@ -32,7 +32,7 @@ export function AddEndpointForm() {
         name="meteringMode"
         value={mode}
         onChange={(e) => setMode(e.target.value as "flat" | "per_token")}
-        className="w-full rounded-xl neu bg-[var(--obsidian-2)] px-3.5 py-2.5 text-sm text-[var(--text)] focus:border-[var(--indigo-bright)] focus:outline-none"
+        className="w-full neu-inset bg-[var(--bg-deep)] px-3.5 py-2.5 text-sm text-[var(--text)] focus:outline-none"
       >
         <option value="flat">Flat (per request)</option>
         <option value="per_token">Per token (OpenAI-style usage)</option>

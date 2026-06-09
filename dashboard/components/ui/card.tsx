@@ -4,12 +4,7 @@ export function Card({
   className,
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn("glass rounded-[var(--radius)] p-6", className)}
-      {...props}
-    />
-  );
+  return <div className={cn("neu p-7", className)} {...props} />;
 }
 
 export function CardTitle({
@@ -19,7 +14,7 @@ export function CardTitle({
   return (
     <h2
       className={cn(
-        "text-xs font-medium uppercase tracking-[0.14em] text-[var(--text-faint)]",
+        "text-[11px] font-medium uppercase tracking-[0.18em] text-[var(--text-faint)]",
         className,
       )}
       {...props}

@@ -9,26 +9,24 @@ import { sendMagicLink, signInWithProvider, type LoginState } from "./actions";
 const initial: LoginState = { status: "idle" };
 
 const oauthBtn =
-  "flex w-full items-center justify-center gap-2.5 rounded-xl neu px-4 py-3 text-sm font-medium text-[var(--text)] transition-colors hover:border-[var(--glass-border-bright)] hover:text-white";
+  "neu-sm pressable flex w-full items-center justify-center gap-2.5 px-4 py-3 text-sm font-medium text-[var(--text)]";
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(sendMagicLink, initial);
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
-      <Card className="glass-strong w-full max-w-sm p-8 animate-in">
+      <Card className="w-full max-w-sm animate-in">
         <div className="flex items-center gap-2.5">
-          <span className="grid h-8 w-8 place-items-center rounded-lg btn-glow font-display text-sm font-semibold">
+          <span className="neu-sm grid h-8 w-8 place-items-center text-sm font-semibold text-accent">
             A
           </span>
-          <h1 className="font-display text-xl font-semibold text-white">
-            Allowance
-          </h1>
+          <h1 className="text-lg font-semibold tracking-tight">Allowance</h1>
         </div>
-        <CardTitle className="mt-5 mb-6">Sign in to your account</CardTitle>
+        <CardTitle className="mt-6 mb-6">Sign in</CardTitle>
 
         {/* OAuth */}
-        <div className="space-y-2">
+        <div className="space-y-2.5">
           <form action={signInWithProvider}>
             <input type="hidden" name="provider" value="github" />
             <button type="submit" className={oauthBtn}>
@@ -53,15 +51,15 @@ export default function LoginPage() {
         </div>
 
         {/* Divider */}
-        <div className="my-5 flex items-center gap-3 text-xs text-[var(--text-faint)]">
-          <span className="h-px flex-1 bg-[var(--glass-border)]" />
+        <div className="my-6 flex items-center gap-3 text-xs text-[var(--text-faint)]">
+          <span className="h-px flex-1 bg-white/5" />
           or
-          <span className="h-px flex-1 bg-[var(--glass-border)]" />
+          <span className="h-px flex-1 bg-white/5" />
         </div>
 
         {/* Magic link */}
         {state.status === "sent" ? (
-          <p className="text-sm text-green-400">{state.message}</p>
+          <p className="text-sm text-accent">{state.message}</p>
         ) : (
           <form action={action} className="space-y-3">
             <Input

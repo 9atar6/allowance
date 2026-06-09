@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 
-// Lightweight shell-syntax coloring on the obsidian terminal.
+// Lightweight, restrained shell-syntax coloring.
 function classify(tok: string): string {
-  if (/^["']/.test(tok)) return "text-amber-300";
-  if (/^https?:\/\//.test(tok)) return "text-[var(--indigo-bright)]";
-  if (/^-{1,2}[A-Za-z]/.test(tok)) return "text-sky-400";
+  if (/^["']/.test(tok)) return "text-[var(--text)]";
+  if (/^https?:\/\//.test(tok)) return "text-[var(--accent)]";
+  if (/^-{1,2}[A-Za-z]/.test(tok)) return "text-[var(--text-muted)]";
   return "";
 }
 
@@ -48,12 +48,12 @@ export function CodeBlock({ code, label = "bash" }: CodeBlockProps) {
   }
 
   return (
-    <div className="glass-strong overflow-hidden rounded-2xl">
-      <div className="flex items-center justify-between border-b border-[var(--glass-border)] px-4 py-2.5">
+    <div className="neu-inset overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2.5">
         <div className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-full bg-[#ff5f56]" />
-          <span className="h-3 w-3 rounded-full bg-[#ffbd2e]" />
-          <span className="h-3 w-3 rounded-full bg-[#27c93f]" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
+          <span className="h-2.5 w-2.5 rounded-full bg-white/10" />
           <span className="ml-2 font-mono text-xs text-[var(--text-faint)]">
             {label}
           </span>
@@ -61,12 +61,12 @@ export function CodeBlock({ code, label = "bash" }: CodeBlockProps) {
         <button
           type="button"
           onClick={copy}
-          className="rounded-lg px-2 py-1 font-mono text-xs text-[var(--text-faint)] transition-colors hover:bg-white/5 hover:text-white"
+          className="font-mono text-xs text-[var(--text-faint)] transition-colors hover:text-[var(--text)]"
         >
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <pre className="overflow-x-auto px-5 py-4 text-[13px] leading-relaxed text-[var(--text)]">
+      <pre className="overflow-x-auto px-5 pb-4 text-[13px] leading-relaxed text-[var(--text-muted)]">
         <code className="font-mono">
           {code.split("\n").map((line, i) => (
             <Line key={i} line={line} />

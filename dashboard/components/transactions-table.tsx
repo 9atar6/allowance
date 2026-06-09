@@ -27,7 +27,7 @@ export function TransactionsTable({ rows }: { rows: TxnRow[] }) {
       </thead>
       <tbody>
         {rows.map((r) => (
-          <tr key={r.id} className="border-t border-[var(--glass-border)]">
+          <tr key={r.id} className="border-t border-white/5">
             <td className="py-2 text-[var(--text-muted)]">
               {formatTimestamp(r.createdAt)}
             </td>
@@ -35,7 +35,7 @@ export function TransactionsTable({ rows }: { rows: TxnRow[] }) {
             <td
               className={`py-2 text-right tabular-nums ${
                 r.amount >= 0
-                  ? "text-[var(--indigo-bright)]"
+                  ? "text-[var(--accent)]"
                   : "text-[var(--text)]"
               }`}
             >

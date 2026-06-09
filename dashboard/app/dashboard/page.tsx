@@ -119,32 +119,30 @@ export default async function DashboardPage({
   }));
 
   return (
-    <main className="mx-auto max-w-5xl space-y-6 px-4 pb-16">
-      {/* Sticky glass top bar */}
-      <header className="sticky top-0 z-20 -mx-4 mb-2 px-4 pt-4">
-        <div className="flex items-center justify-between rounded-2xl glass px-5 py-3">
-          <span className="flex items-center gap-2.5 font-display text-lg font-semibold">
-            <span className="grid h-7 w-7 place-items-center rounded-lg btn-glow text-[13px]">
-              A
-            </span>
-            Allowance
+    <main className="mx-auto max-w-5xl space-y-8 px-6 pb-20">
+      {/* Top bar */}
+      <header className="flex items-center justify-between py-7">
+        <span className="flex items-center gap-2.5 text-[15px] font-semibold tracking-tight">
+          <span className="neu-sm grid h-7 w-7 place-items-center text-[13px] text-accent">
+            A
           </span>
-          <div className="flex items-center gap-3">
-            <span
-              className={`rounded-full px-3 py-1 text-xs font-medium ${
-                plan === "free"
-                  ? "neu text-[var(--text-muted)]"
-                  : "btn-glow"
-              }`}
-            >
-              {plan === "free" ? "Free" : plan === "pro" ? "Pro" : "Enterprise"}
-            </span>
-            <form action={signOut}>
-              <Button variant="ghost" type="submit" className="px-3 py-2 text-xs">
-                Sign out
-              </Button>
-            </form>
-          </div>
+          Allowance
+        </span>
+        <div className="flex items-center gap-3">
+          <span
+            className={`px-3 py-1 text-xs font-medium ${
+              plan === "free"
+                ? "neu-inset-sm text-[var(--text-muted)]"
+                : "btn-accent"
+            }`}
+          >
+            {plan === "free" ? "Free" : plan === "pro" ? "Pro" : "Enterprise"}
+          </span>
+          <form action={signOut}>
+            <Button variant="ghost" type="submit" className="px-3 py-2 text-xs">
+              Sign out
+            </Button>
+          </form>
         </div>
       </header>
 
@@ -152,22 +150,20 @@ export default async function DashboardPage({
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Balance + top-up */}
         <Card className="flex flex-col justify-between">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <CardTitle>Balance</CardTitle>
-              <p className="mt-2 font-display text-5xl font-semibold tabular-nums text-white">
-                {usd(Number(balance))}
-              </p>
-              <p className="mt-2 text-xs text-[var(--text-faint)]">
-                Calls stop with HTTP 402 when this reaches zero.
-              </p>
-            </div>
+          <div>
+            <CardTitle>Balance</CardTitle>
+            <p className="mt-3 text-5xl font-semibold tracking-tight tabular-nums">
+              {usd(Number(balance))}
+            </p>
+            <p className="mt-2 text-xs text-[var(--text-faint)]">
+              Calls stop with HTTP 402 when this reaches zero.
+            </p>
           </div>
-          <div className="mt-5">
+          <div className="mt-6">
             <TopUp />
           </div>
           {topup === "success" && (
-            <p className="mt-3 text-sm text-[var(--indigo-bright)]">
+            <p className="mt-3 text-sm text-accent">
               Payment received. Your balance updates within a few seconds.
             </p>
           )}
@@ -182,7 +178,7 @@ export default async function DashboardPage({
         <div className="space-y-2">
           <PlanCard plan={plan} used={monthlyUsed} limit={monthlyLimit} />
           {planParam === "upgraded" && (
-            <p className="px-1 text-sm text-[var(--indigo-bright)]">
+            <p className="px-1 text-sm text-accent">
               You are on Pro. Thanks for the support.
             </p>
           )}
@@ -205,7 +201,7 @@ export default async function DashboardPage({
       {standaloneEndpoints.length > 0 && (
         <Card>
           <details>
-            <summary className="cursor-pointer text-sm font-medium text-white">
+            <summary className="cursor-pointer text-sm font-medium">
               Ungrouped services ({standaloneEndpoints.length})
             </summary>
             <p className="mb-3 mt-1 text-xs text-[var(--text-faint)]">
@@ -225,13 +221,11 @@ export default async function DashboardPage({
                 return (
                   <li
                     key={e.id}
-                    className={`rounded-xl neu p-3.5 ${
-                      e.is_active ? "" : "opacity-60"
-                    }`}
+                    className={`neu-inset p-4 ${e.is_active ? "" : "opacity-60"}`}
                   >
                     <div className="flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-white">{e.name}</p>
+                        <p className="text-sm font-medium">{e.name}</p>
                         <p className="truncate font-mono text-xs text-[var(--text-faint)]">
                           {e.target_url}
                         </p>
@@ -244,7 +238,7 @@ export default async function DashboardPage({
                         <InlineDelete action={deleteService.bind(null, e.id)} label="delete" />
                       </div>
                     </div>
-                    <div className="mt-2.5 flex items-center justify-between gap-2 border-t border-[var(--glass-border)] pt-2.5">
+                    <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/5 pt-3">
                       <KeyList keys={endpointKeys} />
                       <CreateKeyButton endpointId={e.id} />
                     </div>
@@ -259,11 +253,11 @@ export default async function DashboardPage({
       {/* Activity: usage + transactions side by side */}
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
-          <CardTitle className="mb-3">Recent usage</CardTitle>
+          <CardTitle className="mb-4">Recent usage</CardTitle>
           <UsageTable rows={usageRows} endpointName={endpointName} />
         </Card>
         <Card>
-          <CardTitle className="mb-3">Transactions</CardTitle>
+          <CardTitle className="mb-4">Transactions</CardTitle>
           <TransactionsTable rows={txnRows} />
         </Card>
       </div>

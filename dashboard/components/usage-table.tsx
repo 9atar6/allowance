@@ -30,7 +30,7 @@ export function UsageTable({ rows, endpointName }: Props) {
       </thead>
       <tbody>
         {rows.map((r) => (
-          <tr key={r.id} className="border-t border-[var(--glass-border)]">
+          <tr key={r.id} className="border-t border-white/5">
             <td className="py-2 text-[var(--text-muted)]">
               {formatTimestamp(r.createdAt)}
             </td>

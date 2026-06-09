@@ -6,16 +6,16 @@ type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 export function Button({ className, variant = "primary", ...props }: Props) {
   const styles = {
-    primary: "btn-glow",
-    ghost: "neu text-[var(--text-muted)] hover:text-white",
+    primary: "btn-accent",
+    ghost: "neu-sm pressable text-[var(--text-muted)] hover:text-[var(--text)]",
     danger:
-      "bg-red-500/90 text-white hover:bg-red-500 shadow-[0_10px_30px_-12px_rgba(239,68,68,0.6)]",
+      "neu-sm pressable text-red-400 hover:text-red-300",
   }[variant];
 
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center rounded-xl px-4 py-2.5 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
+        "inline-flex items-center justify-center px-4 py-2.5 text-sm font-medium disabled:pointer-events-none disabled:opacity-50",
         styles,
         className,
       )}

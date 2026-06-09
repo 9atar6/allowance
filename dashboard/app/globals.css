@@ -1,193 +1,121 @@
 @import "tailwindcss";
 
 /* =============================================================================
-   Liquid Obsidian — design system
-   Deep obsidian canvas · frosted glass panels · electric-indigo aurora.
-   The whole product is dark-first; glass reads best on near-black.
+   Soft Machine — monochrome neumorphism
+   One charcoal tone. Surfaces are extruded or recessed with soft dual shadows,
+   never borders or glass. Sharp-ish corners, generous space, one quiet accent.
    ============================================================================= */
 
-@custom-variant dark (&:where(.dark, .dark *));
-
 :root {
-  /* Canvas */
-  --obsidian: #06070b;
-  --obsidian-2: #0b0d14;
+  /* Single base tone. Everything is this color, shaped only by light. */
+  --bg: #1e2024;
+  --bg-deep: #191b1e;
 
-  /* Indigo accent story */
-  --indigo: #6366f1;
-  --indigo-bright: #818cf8;
-  --indigo-glow: rgba(99, 102, 241, 0.45);
-  --violet: #7c3aed;
+  /* Soft dual-shadow extrusion (dark lower-right, faint light upper-left). */
+  --raise: 7px 7px 16px rgba(0, 0, 0, 0.55), -6px -6px 14px rgba(255, 255, 255, 0.022);
+  --raise-sm: 4px 4px 9px rgba(0, 0, 0, 0.5), -3px -3px 8px rgba(255, 255, 255, 0.02);
+  --raise-lg: 12px 12px 28px rgba(0, 0, 0, 0.6), -9px -9px 22px rgba(255, 255, 255, 0.025);
+  --inset: inset 4px 4px 10px rgba(0, 0, 0, 0.55), inset -4px -4px 10px rgba(255, 255, 255, 0.022);
+  --inset-sm: inset 3px 3px 7px rgba(0, 0, 0, 0.5), inset -2px -2px 6px rgba(255, 255, 255, 0.02);
 
-  /* Glass */
-  --glass-bg: rgba(255, 255, 255, 0.035);
-  --glass-bg-strong: rgba(255, 255, 255, 0.06);
-  --glass-border: rgba(255, 255, 255, 0.09);
-  --glass-border-bright: rgba(255, 255, 255, 0.16);
+  /* One restrained accent. Used sparingly: primary action + key numbers. */
+  --accent: #7c7fff;
+  --accent-dim: #6366cc;
 
-  /* Text */
-  --text: #f4f5fb;
-  --text-muted: #a3a3b2;
-  --text-faint: #6b6b7b;
+  /* Text — kept high-contrast on purpose (neumorphism's usual weak point). */
+  --text: #eceef2;
+  --text-muted: #9a9da6;
+  --text-faint: #6a6d76;
 
-  --radius: 18px;
-}
-
-* {
-  border-color: var(--glass-border);
+  --r: 13px;   /* panel radius */
+  --r-sm: 9px; /* control radius */
 }
 
 html {
-  background: var(--obsidian);
+  background: var(--bg);
   color-scheme: dark;
 }
-
 body {
   min-height: 100vh;
-  background: var(--obsidian);
+  background: var(--bg);
   color: var(--text);
-  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-  letter-spacing: -0.011em;
+  letter-spacing: -0.012em;
 }
 
-/* ── Background atmosphere ─────────────────────────────────────────────────
-   Two fixed layers behind all content: a slow-drifting indigo/violet aurora
-   and a fine film grain. This is the signature anchor of the whole product. */
-.atmosphere {
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  overflow: hidden;
-  pointer-events: none;
-}
-.aurora {
-  position: absolute;
-  inset: -30%;
-  background:
-    radial-gradient(38% 42% at 18% 16%, rgba(99, 102, 241, 0.30), transparent 70%),
-    radial-gradient(34% 38% at 84% 22%, rgba(124, 58, 237, 0.22), transparent 70%),
-    radial-gradient(46% 50% at 62% 88%, rgba(56, 70, 230, 0.18), transparent 72%);
-  filter: blur(34px);
-  animation: aurora-drift 26s ease-in-out infinite alternate;
-}
-.grain {
-  position: absolute;
-  inset: 0;
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-
-@keyframes aurora-drift {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  50%  { transform: translate3d(3%, -2%, 0) scale(1.08); }
-  100% { transform: translate3d(-2%, 3%, 0) scale(1.04); }
-}
-
-/* ── Glass surfaces ───────────────────────────────────────────────────────── */
-.glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.06),
-    0 16px 40px -24px rgba(0, 0, 0, 0.8);
-}
-.glass-strong {
-  background: var(--glass-bg-strong);
-  border: 1px solid var(--glass-border-bright);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
-    0 24px 60px -28px rgba(0, 0, 0, 0.85);
-}
-.glass-hover {
-  transition: border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
-}
-.glass-hover:hover {
-  border-color: var(--glass-border-bright);
-  transform: translateY(-2px);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
-    0 28px 64px -26px rgba(0, 0, 0, 0.9),
-    0 0 0 1px rgba(99, 102, 241, 0.08);
-}
-
-/* Neumorphic-tactile interactive control (soft extruded glass). */
+/* ── Surfaces ─────────────────────────────────────────────────────────────── */
 .neu {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
-  border: 1px solid var(--glass-border);
-  box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.08),
-    inset 0 -1px 0 0 rgba(0, 0, 0, 0.4);
+  background: var(--bg);
+  border-radius: var(--r);
+  box-shadow: var(--raise);
+}
+.neu-sm {
+  background: var(--bg);
+  border-radius: var(--r-sm);
+  box-shadow: var(--raise-sm);
+}
+.neu-lg {
+  background: var(--bg);
+  border-radius: 18px;
+  box-shadow: var(--raise-lg);
+}
+.neu-inset {
+  background: var(--bg-deep);
+  border-radius: var(--r-sm);
+  box-shadow: var(--inset);
+}
+.neu-inset-sm {
+  background: var(--bg-deep);
+  border-radius: var(--r-sm);
+  box-shadow: var(--inset-sm);
 }
 
-/* Indigo glow button. */
-.btn-glow {
-  background: linear-gradient(180deg, var(--indigo-bright), var(--indigo));
-  color: #fff;
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.25) inset,
-    0 10px 30px -10px var(--indigo-glow);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+/* Pressable: raised, sinks on press. */
+.pressable {
+  transition: box-shadow 0.18s ease, transform 0.18s ease, color 0.18s ease;
 }
-.btn-glow:hover {
-  filter: brightness(1.06);
-  box-shadow:
-    0 1px 0 0 rgba(255, 255, 255, 0.3) inset,
-    0 14px 38px -10px var(--indigo-glow);
-}
-.btn-glow:active { transform: translateY(1px); }
+.pressable:hover { box-shadow: var(--raise-lg); }
+.pressable:active { box-shadow: var(--inset-sm); transform: translateY(1px); }
 
-.font-display {
-  font-family: var(--font-display), var(--font-body), sans-serif;
-  letter-spacing: -0.03em;
+/* The single accent button. Subtle raise, accent text, no fill noise. */
+.btn-accent {
+  background: var(--accent);
+  color: #11121a;
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  box-shadow: var(--raise-sm);
+  transition: box-shadow 0.18s ease, transform 0.18s ease, filter 0.18s ease;
 }
-.font-mono {
-  font-family: var(--font-mono), ui-monospace, monospace;
-}
+.btn-accent:hover { filter: brightness(1.05); box-shadow: var(--raise); }
+.btn-accent:active { transform: translateY(1px); box-shadow: var(--inset-sm); }
 
-/* Indigo gradient text for accents. */
-.text-aurora {
-  background: linear-gradient(120deg, #c7d2fe, var(--indigo-bright) 45%, var(--violet));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+.text-accent { color: var(--accent); }
+.font-mono { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 
 /* ── Focus, selection, scrollbar ──────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid var(--indigo-bright);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 6px;
 }
-::selection {
-  background: rgba(129, 140, 248, 0.35);
-  color: #fff;
-}
-::-webkit-scrollbar { width: 10px; height: 10px; }
+::selection { background: rgba(124, 127, 255, 0.3); color: #fff; }
+::-webkit-scrollbar { width: 11px; height: 11px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
   border-radius: 99px;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
   background-clip: padding-box;
 }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.16); background-clip: padding-box; }
 
-/* ── Motion: one entrance, restrained ─────────────────────────────────────── */
-@keyframes fade-up {
-  from { opacity: 0; transform: translateY(14px); }
+/* ── Motion: a single quiet entrance ──────────────────────────────────────── */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-in {
-  animation: fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
+.animate-in { animation: rise 0.5s ease both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurora { animation: none; }
   .animate-in { animation: none; }
 }
