@@ -235,6 +235,24 @@ export async function createProjectKey(
   return { ok: true, generatedKey: key };
 }
 
+/** Set the low-balance alert threshold (USD). null/0 disables alerts. */
+export async function setLowBalanceThreshold(
+  value: number | null,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated." };
+
+  const { error } = await supabase.rpc("set_low_balance_threshold", {
+    p_threshold: value,
+  });
+  if (error) return { ok: false, error: "Could not save the threshold." };
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 /** Delete a service (endpoint). RLS scopes it to the owner. */
 export async function deleteService(endpointId: string): Promise<ActionResult> {
   const supabase = await createClient();

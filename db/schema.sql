@@ -683,4 +683,48 @@ revoke all on function public.my_service_usage(int) from public;
 grant execute on function public.my_daily_usage(int) to authenticated;
 grant execute on function public.my_service_usage(int) to authenticated;
 
+-- =============================================================================
+-- LOW-BALANCE ALERTS  (email when balance drops below a user-set threshold)
+-- =============================================================================
+alter table public.wallets add column if not exists low_balance_threshold numeric(14, 6);
+alter table public.wallets add column if not exists low_balance_alerted_at timestamptz;
+
+-- User sets their own threshold (null/0 disables). Clears the alert latch.
+create or replace function public.set_low_balance_threshold(p_threshold numeric)
+returns void language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if auth.uid() is null then raise exception 'auth required'; end if;
+  update public.wallets
+     set low_balance_threshold = case when coalesce(p_threshold, 0) > 0 then p_threshold else null end,
+         low_balance_alerted_at = null,
+         updated_at = now()
+   where user_id = auth.uid();
+end; $$;
+revoke all on function public.set_low_balance_threshold(numeric) from public;
+grant execute on function public.set_low_balance_threshold(numeric) to authenticated;
+
+-- service_role: wallets that are below threshold and not alerted in the last 24h.
+create or replace function public.wallets_needing_low_balance_alert()
+returns table(user_id uuid, email text, balance numeric, threshold numeric)
+language sql security definer set search_path = public, auth, pg_temp as $$
+  select w.user_id, u.email, w.balance, w.low_balance_threshold
+  from public.wallets w
+  join auth.users u on u.id = w.user_id
+  where w.low_balance_threshold is not null
+    and w.balance < w.low_balance_threshold
+    and (w.low_balance_alerted_at is null
+         or w.low_balance_alerted_at < now() - interval '24 hours');
+$$;
+
+-- service_role: latch the alert so we email at most once per 24h while low.
+create or replace function public.mark_low_balance_alerted(p_user_id uuid)
+returns void language sql security definer set search_path = public, pg_temp as $$
+  update public.wallets set low_balance_alerted_at = now() where user_id = p_user_id;
+$$;
+
+revoke all on function public.wallets_needing_low_balance_alert() from public;
+revoke all on function public.mark_low_balance_alerted(uuid) from public;
+grant execute on function public.wallets_needing_low_balance_alert() to service_role;
+grant execute on function public.mark_low_balance_alerted(uuid) to service_role;
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';

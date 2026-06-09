@@ -7,6 +7,7 @@
 
 import { Hono } from "hono";
 import { handlePurge } from "./admin/purge";
+import { runLowBalanceAlerts } from "./cron/low-balance";
 import {
   getDailySpend,
   getMonthlyCount,
@@ -168,4 +169,10 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
 
 app.notFound((c) => c.json({ error: "not_found" }, 404));
 
-export default app;
+// fetch handler (HTTP) + scheduled handler (cron: low-balance alerts).
+export default {
+  fetch: app.fetch,
+  scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): void {
+    ctx.waitUntil(runLowBalanceAlerts(env));
+  },
+};

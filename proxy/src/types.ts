@@ -29,6 +29,12 @@ export interface Env {
   // Edge credential encryption (base64 of 32 random bytes).
   EDGE_ENCRYPTION_KEY: string;
 
+  // Low-balance alert email (Resend). All optional — if RESEND_API_KEY is unset,
+  // the scheduled alert job no-ops.
+  RESEND_API_KEY?: string;
+  RESEND_FROM?: string; // e.g. "Allowance <onboarding@resend.dev>"
+  APP_URL?: string; // dashboard origin, for the top-up link in the email
+
   // Shared secret for the /admin/purge endpoint (dashboard → worker). If unset,
   // purge is disabled and revocation falls back to TTL expiry.
   ADMIN_PURGE_SECRET?: string;

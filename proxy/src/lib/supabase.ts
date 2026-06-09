@@ -30,6 +30,28 @@ async function rpc<T>(
   return (await res.json()) as T;
 }
 
+export interface LowBalanceWallet {
+  user_id: string;
+  email: string;
+  balance: number;
+  threshold: number;
+}
+
+/** Wallets below their alert threshold (and not alerted in the last 24h). */
+export function walletsNeedingLowBalanceAlert(
+  env: Env,
+): Promise<LowBalanceWallet[]> {
+  return rpc<LowBalanceWallet[]>(env, "wallets_needing_low_balance_alert", {});
+}
+
+/** Latch a wallet's low-balance alert so we don't email it again for 24h. */
+export function markLowBalanceAlerted(
+  env: Env,
+  userId: string,
+): Promise<unknown> {
+  return rpc<unknown>(env, "mark_low_balance_alerted", { p_user_id: userId });
+}
+
 /** Resolve a proxy key hash to its full edge context (or null = unknown key). */
 export function getProxyContext(
   env: Env,

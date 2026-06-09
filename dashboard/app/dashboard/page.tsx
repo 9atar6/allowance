@@ -3,6 +3,7 @@ import { CreateKeyButton } from "@/components/create-key-button";
 import { EndpointToggle } from "@/components/endpoint-toggle";
 import { InlineDelete } from "@/components/inline-delete";
 import { KeyList } from "@/components/key-list";
+import { LowBalanceSetting } from "@/components/low-balance-setting";
 import { PlanCard } from "@/components/plan-card";
 import { ProjectsSection, type ProjectRow } from "@/components/projects-section";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -67,7 +68,7 @@ export default async function DashboardPage({
   ] = await Promise.all([
     supabase
       .from("wallets")
-      .select("balance, currency, plan, current_period_end")
+      .select("balance, currency, plan, current_period_end, low_balance_threshold")
       .single(),
     supabase
       .from("endpoints")
@@ -104,6 +105,10 @@ export default async function DashboardPage({
   const balance = wallet?.balance ?? 0;
   const plan = ((wallet?.plan as PlanTier | undefined) ?? "free") as PlanTier;
   const periodEnd = (wallet?.current_period_end as string | null) ?? null;
+  const lowThreshold =
+    wallet?.low_balance_threshold != null
+      ? Number(wallet.low_balance_threshold)
+      : null;
   const monthlyUsed = monthlyCount ?? 0;
   const monthlyLimit = monthlyQuota(plan);
   const endpointList = (endpoints ?? []) as Endpoint[];
@@ -216,6 +221,7 @@ export default async function DashboardPage({
                 Top-up cancelled.
               </p>
             )}
+            <LowBalanceSetting current={lowThreshold} />
           </div>
         </div>
 
