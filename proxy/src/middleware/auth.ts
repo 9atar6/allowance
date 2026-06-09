@@ -10,7 +10,12 @@
 // =============================================================================
 
 import { createMiddleware } from "hono/factory";
-import { getCachedContext, putCachedContext } from "../cache/context";
+import {
+  cacheNegativeKey,
+  getCachedContext,
+  isKeyNegativelyCached,
+  putCachedContext,
+} from "../cache/context";
 import { decryptEdge, encryptEdge } from "../lib/edge-crypto";
 import { sha256Hex } from "../lib/hash";
 import { logEvent } from "../lib/log";
@@ -186,8 +191,13 @@ export const authMiddleware = createMiddleware<{
 
   // ── Cache miss → single DB round-trip, then re-warm ───────────────────────
   if (!resolved) {
+    // Bad/revoked keys are negatively cached, so a flood can't hit the DB.
+    if (await isKeyNegativelyCached(c.env, keyHash)) {
+      return c.json({ error: "invalid_api_key" }, 401);
+    }
     const ctx = await getProxyContext(c.env, keyHash);
     if (!ctx) {
+      await cacheNegativeKey(c.env, keyHash);
       return c.json({ error: "invalid_api_key" }, 401);
     }
     await putCachedContext(c.env, keyHash, await rpcToCached(c.env, ctx));

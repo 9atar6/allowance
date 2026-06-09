@@ -39,6 +39,22 @@ export async function purgeCachedContext(env: Env, hash: string): Promise<void> 
   await env.WALLET_KV.delete(keyFor(hash));
 }
 
+// ── Negative cache: short-lived marker for keys the DB said are invalid, so a
+// flood of bad/revoked keys can't hammer the database (cost + DoS protection). ─
+const NEG_TTL_SECONDS = 60;
+const negKey = (hash: string) => `neg:${hash}`;
+
+export async function isKeyNegativelyCached(
+  env: Env,
+  hash: string,
+): Promise<boolean> {
+  return (await env.WALLET_KV.get(negKey(hash))) !== null;
+}
+
+export async function cacheNegativeKey(env: Env, hash: string): Promise<void> {
+  await env.WALLET_KV.put(negKey(hash), "1", { expirationTtl: NEG_TTL_SECONDS });
+}
+
 // ── Per-key daily spend counter (for per-key daily limits) ───────────────────
 const SPEND_TTL_SECONDS = 60 * 60 * 48; // 2 days, so yesterday's key expires
 
