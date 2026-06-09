@@ -68,7 +68,7 @@ export function ProjectsSection({ projects, services, keys }: Props) {
             return (
               <div key={p.id} className="neu-inset p-5">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-white">
+                  <p className="text-sm font-medium text-[var(--text)]">
                     {p.name}
                   </p>
                   <div className="flex items-center gap-3">
@@ -112,7 +112,7 @@ export function ProjectsSection({ projects, services, keys }: Props) {
 
                 {/* Add a service (collapsed to stay compact) */}
                 <details className="mt-3 border-t border-white/5 pt-3">
-                  <summary className="cursor-pointer text-xs text-[var(--text-muted)] transition-colors hover:text-white">
+                  <summary className="cursor-pointer text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--text)]">
                     + Add a service
                   </summary>
                   <div className="mt-3">

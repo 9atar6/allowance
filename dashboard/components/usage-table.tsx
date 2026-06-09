@@ -40,7 +40,7 @@ export function UsageTable({ rows, endpointName }: Props) {
             <td className="py-2 text-right font-mono tabular-nums text-[var(--text-muted)]">
               {r.statusCode ?? "-"}
             </td>
-            <td className="py-2 text-right tabular-nums text-white">
+            <td className="py-2 text-right tabular-nums text-[var(--text)]">
               {formatUsd(r.cost)}
             </td>
           </tr>

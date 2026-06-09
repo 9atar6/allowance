@@ -31,9 +31,27 @@
   --r-sm: 9px; /* control radius */
 }
 
+/* Light mode: classic soft-UI. Light grey base, white highlight, grey shadow. */
+html.light {
+  --bg: #e7e8ed;
+  --bg-deep: #dfe1e8;
+  --raise: 7px 7px 15px rgba(170, 174, 186, 0.7), -6px -6px 13px rgba(255, 255, 255, 0.95);
+  --raise-sm: 4px 4px 9px rgba(170, 174, 186, 0.6), -3px -3px 8px rgba(255, 255, 255, 0.9);
+  --raise-lg: 12px 12px 26px rgba(170, 174, 186, 0.65), -9px -9px 20px rgba(255, 255, 255, 0.95);
+  --inset: inset 4px 4px 9px rgba(170, 174, 186, 0.75), inset -4px -4px 9px rgba(255, 255, 255, 0.95);
+  --inset-sm: inset 3px 3px 6px rgba(170, 174, 186, 0.7), inset -2px -2px 5px rgba(255, 255, 255, 0.9);
+  --accent: #5b5ef0;
+  --accent-dim: #4d50d8;
+  --text: #2a2d35;
+  --text-muted: #62656f;
+  --text-faint: #9498a3;
+  color-scheme: light;
+}
+
 html {
   background: var(--bg);
   color-scheme: dark;
+  transition: background 0.3s ease;
 }
 body {
   min-height: 100vh;
@@ -81,7 +99,7 @@ body {
 /* The single accent button. Subtle raise, accent text, no fill noise. */
 .btn-accent {
   background: var(--accent);
-  color: #11121a;
+  color: #fff;
   border-radius: var(--r-sm);
   font-weight: 600;
   box-shadow: var(--raise-sm);
@@ -103,7 +121,7 @@ body {
 ::-webkit-scrollbar { width: 11px; height: 11px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(130, 130, 150, 0.32);
   border-radius: 99px;
   border: 3px solid transparent;
   background-clip: padding-box;

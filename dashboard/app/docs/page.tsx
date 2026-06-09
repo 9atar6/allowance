@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/marketing/code-block";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export const metadata = {
   title: "Allowance Docs",
@@ -70,9 +71,12 @@ export default function Docs() {
             </span>
             Allowance
           </Link>
-          <Link href="/login" className="btn-accent px-4 py-2 text-sm font-medium">
-            Sign in
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/login" className="btn-accent px-4 py-2 text-sm font-medium">
+              Sign in
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -88,7 +92,7 @@ export default function Docs() {
                 <a
                   key={t.id}
                   href={`#${t.id}`}
-                  className="block py-1 text-[var(--text-muted)] transition-colors hover:text-white"
+                  className="block py-1 text-[var(--text-muted)] transition-colors hover:text-[var(--text)]"
                 >
                   {t.label}
                 </a>
@@ -130,7 +134,7 @@ export default function Docs() {
 
               <Step id="key" n="2" title="Create a key">
                 <p>
-                  Click <strong className="text-white">Create proxy key</strong> on
+                  Click <strong className="text-[var(--text)]">Create proxy key</strong> on
                   the service. You get one key, shown a single time, like{" "}
                   <Mono>alw_live_...</Mono>. This is what your app or agent sends,
                   in place of your real API key.
@@ -191,8 +195,8 @@ curl ${PROXY}/v1/proxy/chat/completions \\
 
               <Step id="funding" title="Funding your balance">
                 <p>
-                  <strong className="text-white">People</strong> top up by card in
-                  the dashboard. <strong className="text-white">Agents</strong> top
+                  <strong className="text-[var(--text)]">People</strong> top up by card in
+                  the dashboard. <strong className="text-[var(--text)]">Agents</strong> top
                   up programmatically with USDC over x402, with no card and no
                   human needed.
                 </p>
@@ -209,7 +213,7 @@ curl -X POST ${PROXY}/v1/topup/5 \\
 
               <Step id="revoke" title="Revoke a leaked key">
                 <p>
-                  Click <strong className="text-white">Revoke</strong> in the
+                  Click <strong className="text-[var(--text)]">Revoke</strong> in the
                   dashboard. The key stops working at the edge within seconds and
                   every further request returns <Mono>401</Mono>. You can disable a
                   whole service the same way.

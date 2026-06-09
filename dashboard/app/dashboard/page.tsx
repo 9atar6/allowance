@@ -5,6 +5,7 @@ import { EndpointToggle } from "@/components/endpoint-toggle";
 import { InlineDelete } from "@/components/inline-delete";
 import { KeyList } from "@/components/key-list";
 import { PlanCard } from "@/components/plan-card";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { ProjectsSection, type ProjectRow } from "@/components/projects-section";
 import { TopUp } from "@/components/top-up";
 import { TransactionsTable, type TxnRow } from "@/components/transactions-table";
@@ -56,7 +57,10 @@ export default async function DashboardPage({
     { data: projects },
     { count: monthlyCount },
   ] = await Promise.all([
-    supabase.from("wallets").select("balance, currency, plan").single(),
+    supabase
+      .from("wallets")
+      .select("balance, currency, plan, current_period_end")
+      .single(),
     supabase
       .from("endpoints")
       .select("id, name, target_url, cost_per_request, is_active, project_id, slug")
@@ -90,6 +94,7 @@ export default async function DashboardPage({
   const plan = ((wallet?.plan as PlanTier | undefined) ?? "free") as PlanTier;
   const monthlyUsed = monthlyCount ?? 0;
   const monthlyLimit = monthlyQuota(plan);
+  const periodEnd = (wallet?.current_period_end as string | null) ?? null;
   const endpointList = (endpoints ?? []) as Endpoint[];
   const keyList = (keys ?? []) as ProxyKey[];
   const projectList = (projects ?? []) as ProjectRow[];
@@ -138,6 +143,7 @@ export default async function DashboardPage({
           >
             {plan === "free" ? "Free" : plan === "pro" ? "Pro" : "Enterprise"}
           </span>
+          <ThemeToggle />
           <form action={signOut}>
             <Button variant="ghost" type="submit" className="px-3 py-2 text-xs">
               Sign out
@@ -147,7 +153,7 @@ export default async function DashboardPage({
       </header>
 
       {/* Hero band: Balance + Plan side by side */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         {/* Balance + top-up */}
         <Card className="flex flex-col justify-between">
           <div>
@@ -176,7 +182,12 @@ export default async function DashboardPage({
 
         {/* Plan + monthly usage */}
         <div className="space-y-2">
-          <PlanCard plan={plan} used={monthlyUsed} limit={monthlyLimit} />
+          <PlanCard
+            plan={plan}
+            used={monthlyUsed}
+            limit={monthlyLimit}
+            periodEnd={periodEnd}
+          />
           {planParam === "upgraded" && (
             <p className="px-1 text-sm text-accent">
               You are on Pro. Thanks for the support.

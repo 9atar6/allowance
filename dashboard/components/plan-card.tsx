@@ -19,9 +19,10 @@ interface Props {
   plan: PlanTier;
   used: number;
   limit: number | null;
+  periodEnd?: string | null;
 }
 
-export function PlanCard({ plan, used, limit }: Props) {
+export function PlanCard({ plan, used, limit, periodEnd }: Props) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -42,13 +43,28 @@ export function PlanCard({ plan, used, limit }: Props) {
   const barColor =
     pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-400" : "bg-[var(--accent)]";
 
+  const remaining = limit != null ? Math.max(0, limit - used) : null;
+  const renews = periodEnd
+    ? new Date(periodEnd).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      })
+    : null;
+  // A meaningful closing line so the card reads complete, not padded.
+  const footer =
+    plan === "pro" && renews
+      ? `Renews ${renews}`
+      : remaining != null
+        ? `${remaining.toLocaleString()} requests left this month`
+        : null;
+
   return (
     <Card>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <CardTitle>Plan</CardTitle>
           <p className="mt-1 text-sm">
-            <span className="font-medium text-white">{planLabel(plan)}</span>
+            <span className="font-medium text-[var(--text)]">{planLabel(plan)}</span>
             {plan === "free" && (
               <span className="text-[var(--text-faint)]">
                 {" "}
@@ -85,6 +101,9 @@ export function PlanCard({ plan, used, limit }: Props) {
           <div className="neu-inset-sm mt-2 h-2 w-full overflow-hidden rounded-full">
             <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
           </div>
+        )}
+        {footer && (
+          <p className="mt-3 text-xs text-[var(--text-faint)]">{footer}</p>
         )}
         {plan === "free" && used >= FREE_MONTHLY_REQUESTS && (
           <p className="mt-2 text-xs text-red-400">

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/marketing/code-block";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   IconCap,
   IconLayers,
@@ -116,6 +117,7 @@ export default function Landing() {
           <Link href="/login" className="btn-accent px-4 py-2 text-sm">
             Sign in
           </Link>
+          <ThemeToggle />
         </nav>
       </header>
 
