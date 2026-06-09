@@ -86,7 +86,7 @@ export default function Terms() {
 
           <H2>8. Contact</H2>
           <p>
-            Questions about these terms: <strong>support@allowance.dev</strong>.
+            Questions about these terms: <strong>axelacan@gmail.com</strong>.
           </p>
         </div>
       </main>

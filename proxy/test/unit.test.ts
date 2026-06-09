@@ -89,18 +89,18 @@ describe("buildTargetUrl", () => {
 });
 
 describe("buildX402Body", () => {
-  it("reports the cost and remaining balance", () => {
+  it("reports the cost and remaining budget", () => {
     const body = buildX402Body({
       resource: "/v1/proxy/chat",
       balance: 0.004,
       cost: 0.01,
-      topUpUrl: "https://app.test/billing",
+      topUpUrl: "https://app.test/dashboard",
     });
     expect(body.x402Version).toBe(1);
     expect(body.error).toBe("PAYMENT_REQUIRED");
     const accepts = body.accepts as Array<Record<string, unknown>>;
     expect(accepts[0].maxAmountRequired).toBe(0.01);
-    expect(accepts[0].balanceRemaining).toBe(0.004);
+    expect(accepts[0].budgetRemaining).toBe(0.004);
   });
 });
 

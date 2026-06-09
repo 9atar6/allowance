@@ -5,14 +5,12 @@
 export type PlanTier = "free" | "pro" | "enterprise";
 
 export const FREE_MONTHLY_REQUESTS = 5_000;
-export const PRO_MONTHLY_REQUESTS = 1_000_000;
 export const PRO_PRICE_USD = 20;
 
-/** Included monthly request quota for a plan. null = custom/unlimited. */
+/** Included monthly request quota for a plan. null = uncapped. */
 export function monthlyQuota(plan: PlanTier): number | null {
   if (plan === "free") return FREE_MONTHLY_REQUESTS;
-  if (plan === "pro") return PRO_MONTHLY_REQUESTS;
-  return null; // enterprise
+  return null; // pro + enterprise: no monthly request cap (matches the worker)
 }
 
 export function planLabel(plan: PlanTier): string {

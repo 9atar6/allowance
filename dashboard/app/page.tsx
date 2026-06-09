@@ -17,7 +17,8 @@ export const metadata = {
     "Route all your API spend through one key, with a spending cap your apps and agents can never exceed and an instant kill switch. Works with any API.",
 };
 
-const PROXY = "https://api.allowance.dev";
+// The live proxy host. Swap to a vanity domain (api.allowance.dev) once owned.
+const PROXY = "https://api-wallet-proxy.6rataq.workers.dev";
 
 const HERO_CODE = `# Keep your code. Point the base URL at Allowance.
 curl ${PROXY}/v1/proxy/chat/completions \\
@@ -51,12 +52,18 @@ const features = [
   { icon: IconZap, title: "Edge-fast", body: "Checked at the edge. The extra hop is negligible." },
 ];
 
+// Only claims that are actually enforced/built today. Update as features land.
 const plans = [
   {
     name: "Free",
     price: "$0",
     cadence: "",
-    features: ["5,000 requests / mo", "Spend cap + kill switch", "One project"],
+    features: [
+      "5,000 requests / mo",
+      "Hard budget cap + kill switch",
+      "Projects, keys, per-key limits",
+      "Low-budget email alerts",
+    ],
     cta: "Start free",
     highlight: false,
   },
@@ -65,10 +72,9 @@ const plans = [
     price: "$20",
     cadence: "/mo",
     features: [
-      "1,000,000 requests / mo",
-      "Unlimited projects + keys",
-      "Per-key + per-project limits",
-      "90-day analytics, email alerts",
+      "Everything in Free",
+      "No monthly request cap",
+      "Usage analytics (trends + top services)",
     ],
     cta: "Upgrade",
     highlight: true,
@@ -77,7 +83,7 @@ const plans = [
     name: "Enterprise",
     price: "Custom",
     cadence: "",
-    features: ["Volume pricing", "SSO + team seats", "SLA + support"],
+    features: ["Custom limits", "Team features on request", "Priority support"],
     cta: "Contact us",
     highlight: false,
   },

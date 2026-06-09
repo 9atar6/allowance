@@ -7,7 +7,8 @@ export const metadata = {
   description: "Quickstart: route any API through Allowance in three steps.",
 };
 
-const PROXY = "https://api.allowance.dev";
+// The live proxy host. Swap to a vanity domain (api.allowance.dev) once owned.
+const PROXY = "https://api-wallet-proxy.6rataq.workers.dev";
 
 const toc = [
   { id: "connect", label: "1. Connect a service" },
@@ -168,8 +169,17 @@ curl ${PROXY}/v1/proxy/chat/completions \\
                 <CodeBlock
                   label="402 response"
                   code={`{
+  "x402Version": 1,
   "error": "PAYMENT_REQUIRED",
-  "budgetRemaining": 0
+  "message": "Allowance budget is exhausted for this key.",
+  "accepts": [
+    {
+      "scheme": "budget",
+      "maxAmountRequired": 0.01,
+      "budgetRemaining": 0,
+      "payTo": "https://allowance-amber.vercel.app/dashboard"
+    }
+  ]
 }`}
                 />
               </Step>

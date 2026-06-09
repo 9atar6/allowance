@@ -35,6 +35,44 @@ describe("UsageExtractor", () => {
     expect(m.result()).toEqual({ promptTokens: 100, completionTokens: 50 });
   });
 
+  it("extracts Anthropic usage split across message_start and message_delta", () => {
+    // Anthropic streaming: input_tokens arrive in message_start (nested under
+    // message.usage), final output_tokens in message_delta. Must merge.
+    const m = feed([
+      'data: {"type":"message_start","message":{"id":"m1","usage":{"input_tokens":25,"output_tokens":1}}}\n\n',
+      'data: {"type":"content_block_delta","delta":{"text":"hi"}}\n\n',
+      'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},"usage":{"output_tokens":90}}\n\n',
+    ]);
+    expect(m.result()).toEqual({ promptTokens: 25, completionTokens: 90 });
+  });
+
+  it("parses Anthropic usage from a non-streaming JSON body", () => {
+    const m = feed(['{"id":"m1","usage":{"input_tokens":40,"output_tokens":12}}']);
+    expect(m.result()).toEqual({ promptTokens: 40, completionTokens: 12 });
+  });
+
+  it("parses Gemini usageMetadata (streaming, last cumulative frame wins)", () => {
+    const m = feed([
+      'data: {"candidates":[{"content":{}}],"usageMetadata":{"promptTokenCount":7,"candidatesTokenCount":3}}\n\n',
+      'data: {"candidates":[{"content":{}}],"usageMetadata":{"promptTokenCount":7,"candidatesTokenCount":21,"totalTokenCount":28}}\n\n',
+    ]);
+    expect(m.result()).toEqual({ promptTokens: 7, completionTokens: 21 });
+  });
+
+  it("parses Gemini usageMetadata from a non-streaming JSON body", () => {
+    const m = feed([
+      '{"candidates":[],"usageMetadata":{"promptTokenCount":11,"candidatesTokenCount":4,"totalTokenCount":15}}',
+    ]);
+    expect(m.result()).toEqual({ promptTokens: 11, completionTokens: 4 });
+  });
+
+  it("returns null when only one side was ever seen", () => {
+    // A lone message_delta with output_tokens but no input_tokens must not
+    // fabricate a usage object with a missing half.
+    const m = feed(['data: {"type":"message_delta","usage":{"output_tokens":9}}\n\n']);
+    expect(m.result()).toBeNull();
+  });
+
   it("returns null when no usage is present", () => {
     const m = feed(['data: {"choices":[{"delta":{"content":"hi"}}]}\n\n', "data: [DONE]\n\n"]);
     expect(m.result()).toBeNull();

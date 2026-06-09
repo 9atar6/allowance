@@ -82,7 +82,7 @@ export default function Privacy() {
           <H2>Contact</H2>
           <p>
             Privacy questions or deletion requests:{" "}
-            <strong>support@allowance.dev</strong>.
+            <strong>axelacan@gmail.com</strong>.
           </p>
         </div>
       </main>

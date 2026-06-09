@@ -68,7 +68,7 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
           error: "free_quota_reached",
           limit: FREE_MONTHLY_REQUESTS,
           used: usedThisMonth,
-          upgradeUrl: "https://app.allowance.dev/billing",
+          upgradeUrl: "https://allowance-amber.vercel.app/dashboard",
         },
         402,
       );
@@ -115,7 +115,7 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
         resource: new URL(c.req.url).pathname,
         balance: ctx.balance,
         cost: active.costPerRequest,
-        topUpUrl: "https://app.allowance.dev/billing",
+        topUpUrl: "https://allowance-amber.vercel.app/dashboard",
       }),
       402,
     );
