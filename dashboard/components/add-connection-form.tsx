@@ -121,7 +121,10 @@ export function AddConnectionForm() {
           Billed per token at list price. We read usage from each response.
         </p>
       ) : (
-        <Field label="Cost per call (USD)" hint="Deducted per request. Blank = free.">
+        <Field
+          label="Cost per call (USD)"
+          hint="What we subtract from your balance each time this API is called. Set it to roughly what the API charges you, so your balance tracks real spend. Blank = free."
+        >
           <Input
             name="costPerRequest"
             type="number"

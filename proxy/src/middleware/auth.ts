@@ -19,6 +19,7 @@ import {
 import { decryptEdge, encryptEdge } from "../lib/edge-crypto";
 import { sha256Hex } from "../lib/hash";
 import { logEvent } from "../lib/log";
+import { withinIpRateLimit } from "../lib/rate-limit";
 import { getProxyContext } from "../lib/supabase";
 import type {
   CachedProxyContext,
@@ -165,6 +166,12 @@ export const authMiddleware = createMiddleware<{
   Bindings: Env;
   Variables: Variables;
 }>(async (c, next) => {
+  // Pre-auth IP throttle: stops raw floods before any key resolution / DB work.
+  const ip = c.req.header("cf-connecting-ip") ?? "unknown";
+  if (!(await withinIpRateLimit(c.env, ip))) {
+    return c.json({ error: "rate_limited" }, 429);
+  }
+
   const key = extractBearer(c.req.header("Authorization"));
   if (!key) {
     return c.json({ error: "missing_api_key" }, 401);

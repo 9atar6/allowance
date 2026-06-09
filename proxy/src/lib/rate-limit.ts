@@ -13,3 +13,13 @@ export async function withinRateLimit(env: Env, key: string): Promise<boolean> {
   const { success } = await env.RATE_LIMITER.limit({ key });
   return success;
 }
+
+/**
+ * Pre-auth limiter keyed by client IP. Runs BEFORE key resolution so a flood of
+ * bad/random keys can't reach the DB. Fails OPEN if the binding is unset.
+ */
+export async function withinIpRateLimit(env: Env, ip: string): Promise<boolean> {
+  if (!env.RATE_LIMITER_IP) return true;
+  const { success } = await env.RATE_LIMITER_IP.limit({ key: ip });
+  return success;
+}

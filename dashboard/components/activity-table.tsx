@@ -21,13 +21,13 @@ export function ActivityTable({ rows }: { rows: ActivityRow[] }) {
 
   return (
     <table className="w-full text-sm">
-      <thead>
+      <thead className="sticky top-0 bg-[var(--bg)]">
         <tr className="text-left text-xs text-[var(--text-faint)]">
-          <th className="pb-3 font-normal">When</th>
-          <th className="pb-3 font-normal">Activity</th>
-          <th className="pb-3 text-right font-normal">Status</th>
-          <th className="pb-3 text-right font-normal">Amount</th>
-          <th className="pb-3 text-right font-normal">Balance</th>
+          <th className="pb-3 pt-1 font-normal">When</th>
+          <th className="pb-3 pt-1 font-normal">Activity</th>
+          <th className="pb-3 pt-1 text-right font-normal">Status</th>
+          <th className="pb-3 pt-1 text-right font-normal">Amount</th>
+          <th className="pb-3 pt-1 text-right font-normal">Balance</th>
         </tr>
       </thead>
       <tbody>

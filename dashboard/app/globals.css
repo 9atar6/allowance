@@ -116,23 +116,17 @@ body {
 .font-mono { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 
 /* ── Focus, selection, scrollbar ──────────────────────────────────────────── */
-/* No harsh browser outline anywhere — focus is shown as a soft accent ring
-   that blends with the neumorphic depth (set per surface below). */
+/* No browser outline and NO colored ring on fields — clicking an input or
+   select shows only the caret. Keyboard users still get a neutral (never blue)
+   ring on buttons/links/summaries for accessibility. */
 :focus { outline: none; }
 :focus-visible { outline: none; }
 
-/* Recessed fields: keep the inset, add a thin accent ring on focus. */
-.neu-inset:focus,
-.neu-inset:focus-within,
-.neu-inset-sm:focus,
-.neu-inset-sm:focus-within {
-  box-shadow: var(--inset), 0 0 0 1.5px var(--accent);
-}
-/* Raised controls: keep the lift, add an accent ring on keyboard focus. */
-.neu:focus-visible,
-.neu-sm:focus-visible,
-.btn-accent:focus-visible {
-  box-shadow: var(--raise-sm), 0 0 0 2px var(--accent);
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  box-shadow: 0 0 0 2px var(--text-faint);
+  border-radius: 8px;
 }
 
 /* Remove the ugly number-input spinner arrows everywhere. */

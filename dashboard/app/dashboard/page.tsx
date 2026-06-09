@@ -110,7 +110,7 @@ export default async function DashboardPage({
       .from("wallet_transactions")
       .select("id, type, amount, balance_after, created_at, external_ref, metadata")
       .order("created_at", { ascending: false })
-      .limit(12),
+      .limit(50),
     supabase
       .from("projects")
       .select("id, name, monthly_budget, is_active")
@@ -314,7 +314,12 @@ export default async function DashboardPage({
         </div>
       </CollapsibleCard>
 
-      {/* Projects */}
+      {/* Connections (reusable APIs) — define an API first, then attach it */}
+      <CollapsibleCard title="Connections">
+        <ConnectionsSection connections={connections} />
+      </CollapsibleCard>
+
+      {/* Projects — attach connections + mint keys */}
       <CollapsibleCard title="Projects">
         <ProjectsSection
           projects={projectList}
@@ -322,11 +327,6 @@ export default async function DashboardPage({
           connections={connectionOptions}
           keys={keyList}
         />
-      </CollapsibleCard>
-
-      {/* Connections (reusable APIs) */}
-      <CollapsibleCard title="Connections">
-        <ConnectionsSection connections={connections} />
       </CollapsibleCard>
 
       {/* Usage analytics (Pro) */}
@@ -348,9 +348,11 @@ export default async function DashboardPage({
         )}
       </CollapsibleCard>
 
-      {/* Activity: one ledger of top-ups + per-call charges */}
+      {/* Activity: one ledger of top-ups + per-call charges (scrolls if long) */}
       <CollapsibleCard title="Activity">
-        <ActivityTable rows={activityRows} />
+        <div className="max-h-96 overflow-y-auto pr-1">
+          <ActivityTable rows={activityRows} />
+        </div>
       </CollapsibleCard>
     </main>
   );

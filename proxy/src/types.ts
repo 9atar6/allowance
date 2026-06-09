@@ -16,6 +16,8 @@ export interface Env {
 
   // Per-key edge rate limiter. Optional so the worker fails OPEN if unbound.
   RATE_LIMITER?: RateLimit;
+  // Per-IP pre-auth limiter (blocks raw floods before key resolution).
+  RATE_LIMITER_IP?: RateLimit;
 
   // Supabase (service_role — backend only, never exposed).
   SUPABASE_URL: string;
