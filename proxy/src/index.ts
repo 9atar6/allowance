@@ -157,6 +157,9 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
         durationMs: Date.now() - startedAt,
         cost,
         usage,
+        dailyLimit: ctx.dailyLimit,
+        plan: ctx.plan,
+        monthlyBudget: ctx.monthlyBudget,
       });
     }),
   );

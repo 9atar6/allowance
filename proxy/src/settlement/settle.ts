@@ -5,7 +5,8 @@
 // Flow:
 //   1. Atomic debit in Postgres (authoritative, idempotent on requestId).
 //   2. Refresh the KV balance snapshot.
-//   3. Emit the Lago usage event.
+//   3. Bump only the edge counters that are actually enforced for this request
+//      (skipping unused writes keeps per-request KV cost low).
 // =============================================================================
 
 import {
@@ -18,8 +19,7 @@ import {
 } from "../cache/context";
 import { logEvent } from "../lib/log";
 import { debitWallet } from "../lib/supabase";
-import type { ActiveRequest, Env, TokenUsage } from "../types";
-import { sendLagoEvent } from "./lago";
+import type { ActiveRequest, Env, PlanTier, TokenUsage } from "../types";
 
 export async function settle(
   env: Env,
@@ -31,6 +31,10 @@ export async function settle(
     durationMs: number;
     cost: number; // computed (flat or per-token) by the handler
     usage: TokenUsage | null;
+    // Which edge counters this request actually needs, so we skip unused writes.
+    dailyLimit: number | null;
+    plan: PlanTier;
+    monthlyBudget: number | null;
   },
 ): Promise<void> {
   try {
@@ -58,24 +62,19 @@ export async function settle(
       return;
     }
 
-    // Keep the edge snapshot in sync so the next call sees the new balance.
+    // Always: keep the edge balance snapshot fresh so the next call sees it.
     await updateCachedBalance(env, ctx.keyHash, ctx.balance - params.cost);
-    // Bump the per-key daily spend counter (for per-key daily limits).
-    await addDailySpend(env, ctx.keyHash, utcDateKey(), params.cost);
-    // Bump the per-user monthly request counter (for the free-plan cap).
-    await incrMonthlyCount(env, ctx.userId, utcMonthKey());
-    // Bump the per-project monthly spend (for the project-wide budget).
-    if (ctx.projectId) {
+
+    // Conditional: only write the counters this request's limits actually use.
+    if (params.dailyLimit != null) {
+      await addDailySpend(env, ctx.keyHash, utcDateKey(), params.cost);
+    }
+    if (params.plan === "free") {
+      await incrMonthlyCount(env, ctx.userId, utcMonthKey());
+    }
+    if (ctx.projectId && params.monthlyBudget != null) {
       await addProjectSpend(env, ctx.projectId, utcMonthKey(), params.cost);
     }
-
-    await sendLagoEvent(env, {
-      userId: ctx.userId,
-      requestId: params.requestId,
-      cost: params.cost,
-      chunkCount: params.chunkCount,
-      statusCode: params.statusCode,
-    });
 
     logEvent({
       event: "settled",
