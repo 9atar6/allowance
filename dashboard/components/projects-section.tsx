@@ -27,6 +27,8 @@ export interface ProjectKeyRow {
   is_active: boolean;
   project_id: string | null;
   daily_limit: number | null;
+  name: string | null;
+  created_at: string | null;
 }
 
 interface Props {
@@ -75,6 +77,8 @@ export function ProjectsSection({ projects, services, keys }: Props) {
                 keyPrefix: k.key_prefix,
                 isActive: k.is_active,
                 dailyLimit: k.daily_limit,
+                name: k.name,
+                createdAt: k.created_at,
               }));
 
             return (

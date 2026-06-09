@@ -45,8 +45,12 @@ export const projectEndpointSchema = z.object({
     .string()
     .trim()
     .regex(/^[a-z0-9-]{1,40}$/, "Slug: lowercase letters, numbers, hyphens only"),
-  costPerRequest: z.coerce.number().positive().max(1000),
+  // Flat fee (and the per-token fallback when usage is absent).
+  costPerRequest: z.coerce.number().min(0).max(1000),
   headers: z.string().trim().min(1),
+  meteringMode: z.enum(["flat", "per_token"]).default("flat"),
+  inputTokenCost: z.coerce.number().min(0).max(1).default(0),
+  outputTokenCost: z.coerce.number().min(0).max(1).default(0),
 });
 
 export type EndpointInput = z.infer<typeof endpointSchema>;

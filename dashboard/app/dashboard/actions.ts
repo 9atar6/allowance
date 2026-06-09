@@ -167,6 +167,9 @@ export async function createProjectEndpoint(formData: FormData): Promise<ActionR
     slug: formData.get("slug"),
     costPerRequest: formData.get("costPerRequest"),
     headers: formData.get("headers"),
+    meteringMode: formData.get("meteringMode") ?? undefined,
+    inputTokenCost: formData.get("inputTokenCost") ?? undefined,
+    outputTokenCost: formData.get("outputTokenCost") ?? undefined,
   });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
@@ -183,6 +186,9 @@ export async function createProjectEndpoint(formData: FormData): Promise<ActionR
     p_target_url: parsed.data.targetUrl,
     p_cost_per_request: parsed.data.costPerRequest,
     p_auth_headers: headers,
+    p_metering_mode: parsed.data.meteringMode,
+    p_input_token_cost: parsed.data.inputTokenCost,
+    p_output_token_cost: parsed.data.outputTokenCost,
     p_project_id: parsed.data.projectId,
     p_slug: parsed.data.slug,
   });
@@ -196,6 +202,7 @@ export async function createProjectEndpoint(formData: FormData): Promise<ActionR
 export async function createProjectKey(
   projectId: string,
   dailyLimit: number | null,
+  name?: string | null,
 ): Promise<ActionResult> {
   const supabase = await createClient();
   const {
@@ -220,6 +227,7 @@ export async function createProjectKey(
     p_key_prefix: keyPrefix,
     p_project_id: projectId,
     p_daily_limit: dailyLimit,
+    p_name: name?.trim() || null,
   });
   if (error) return { ok: false, error: "Could not create key." };
 

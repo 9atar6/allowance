@@ -9,6 +9,15 @@ export interface KeyItem {
   keyPrefix: string;
   isActive: boolean;
   dailyLimit?: number | null;
+  name?: string | null;
+  createdAt?: string | null;
+}
+
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 export function KeyList({ keys }: { keys: KeyItem[] }) {
@@ -33,22 +42,28 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
   return (
     <ul className="space-y-1">
       {keys.map((k) => (
-        <li key={k.id} className="flex items-center justify-between text-xs">
-          <code className="font-mono text-[var(--text-muted)]">
-            {k.keyPrefix}…{" "}
-            {k.dailyLimit != null && (
-              <span className="text-[var(--text-faint)]">
-                · ${k.dailyLimit}/day
-              </span>
-            )}{" "}
-            {!k.isActive && (
-              <span className="text-[var(--text-faint)]">(revoked)</span>
-            )}
-          </code>
+        <li key={k.id} className="flex items-center justify-between gap-2 text-xs">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              {k.name && (
+                <span className="font-medium text-[var(--text)]">{k.name}</span>
+              )}
+              <code className="font-mono text-[var(--text-muted)]">
+                {k.keyPrefix}…
+              </code>
+              {!k.isActive && (
+                <span className="text-[var(--text-faint)]">(revoked)</span>
+              )}
+            </div>
+            <div className="mt-0.5 text-[var(--text-faint)]">
+              {k.createdAt && <>Created {shortDate(k.createdAt)}</>}
+              {k.dailyLimit != null && <> · ${k.dailyLimit}/day cap</>}
+            </div>
+          </div>
           {k.isActive && (
             <Button
               variant="danger"
-              className="px-2 py-1 text-xs"
+              className="shrink-0 px-2.5 py-1.5 text-xs"
               disabled={pending && revoking === k.id}
               onClick={() => revoke(k.id)}
             >

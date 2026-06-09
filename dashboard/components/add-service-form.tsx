@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { createProjectEndpoint } from "@/app/dashboard/actions";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { findPreset, PROVIDER_PRESETS } from "@/lib/providers";
 
 function slugify(s: string): string {
   return s
@@ -39,9 +40,23 @@ function Field({
 export function AddServiceForm({ projectId }: { projectId: string }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [presetId, setPresetId] = useState("");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [slugEdited, setSlugEdited] = useState(false);
+  const [url, setUrl] = useState("");
+
+  const preset = presetId ? findPreset(presetId) : undefined;
+  const perToken = preset?.metering === "per_token";
+
+  function applyPreset(id: string) {
+    setPresetId(id);
+    const p = findPreset(id);
+    if (!p) return;
+    setName(p.label);
+    setUrl(p.baseUrl);
+    if (!slugEdited) setSlug(slugify(p.label));
+  }
 
   function onSubmit(formData: FormData) {
     setError(null);
@@ -51,9 +66,11 @@ export function AddServiceForm({ projectId }: { projectId: string }) {
       if (!res.ok) {
         setError(res.error ?? "Something went wrong.");
       } else {
+        setPresetId("");
         setName("");
         setSlug("");
         setSlugEdited(false);
+        setUrl("");
       }
     });
   }
@@ -61,6 +78,24 @@ export function AddServiceForm({ projectId }: { projectId: string }) {
   return (
     <form action={onSubmit} className="space-y-4">
       <input type="hidden" name="projectId" value={projectId} />
+      <input type="hidden" name="meteringMode" value={preset?.metering ?? "flat"} />
+      <input type="hidden" name="inputTokenCost" value={preset?.inputTokenCost ?? 0} />
+      <input type="hidden" name="outputTokenCost" value={preset?.outputTokenCost ?? 0} />
+
+      <Field label="Provider" hint="Pick one to auto-fill the URL and pricing, or choose Custom.">
+        <select
+          value={presetId}
+          onChange={(e) => applyPreset(e.target.value)}
+          className="w-full neu-inset bg-[var(--bg-deep)] px-3.5 py-2.5 text-sm text-[var(--text)] focus:outline-none"
+        >
+          <option value="">Custom</option>
+          {PROVIDER_PRESETS.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+      </Field>
 
       <Field label="Service name">
         <Input
@@ -76,7 +111,13 @@ export function AddServiceForm({ projectId }: { projectId: string }) {
       </Field>
 
       <Field label="Base URL">
-        <Input name="targetUrl" placeholder="https://api.openai.com/v1" required />
+        <Input
+          name="targetUrl"
+          value={url}
+          onChange={(e) => setUrl(e.target.value)}
+          placeholder="https://api.openai.com/v1"
+          required
+        />
       </Field>
 
       <Field
@@ -90,6 +131,13 @@ export function AddServiceForm({ projectId }: { projectId: string }) {
           required
         />
       </Field>
+
+      {perToken ? (
+        <p className="neu-inset-sm px-3 py-2 text-xs text-[var(--text-muted)]">
+          Billed per token at {preset?.label.split(" · ")[1] ?? "provider"} list
+          price. We read usage from each response.
+        </p>
+      ) : null}
 
       <details className="group">
         <summary className="cursor-pointer text-xs text-[var(--text-muted)] transition-colors hover:text-[var(--text)]">
@@ -108,15 +156,17 @@ export function AddServiceForm({ projectId }: { projectId: string }) {
               required
             />
           </Field>
-          <Field label="Cost per call (USD)" hint="Deducted per request. Blank = free.">
-            <Input
-              name="costPerRequest"
-              type="number"
-              step="0.000001"
-              min="0"
-              placeholder="0.01"
-            />
-          </Field>
+          {!perToken && (
+            <Field label="Cost per call (USD)" hint="Deducted per request. Blank = free.">
+              <Input
+                name="costPerRequest"
+                type="number"
+                step="0.000001"
+                min="0"
+                placeholder="0.01"
+              />
+            </Field>
+          )}
         </div>
       </details>
 

@@ -10,6 +10,7 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
   const [generated, setGenerated] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState("");
   const [limit, setLimit] = useState("");
 
   function mint() {
@@ -18,7 +19,7 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
       const n = Number(limit);
       const dailyLimit =
         limit.trim() !== "" && Number.isFinite(n) && n > 0 ? n : null;
-      const res = await createProjectKey(projectId, dailyLimit);
+      const res = await createProjectKey(projectId, dailyLimit, name || null);
       if (!res.ok) setError(res.error ?? "Failed.");
       else setGenerated(res.generatedKey ?? null);
     });
@@ -53,13 +54,19 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
     <div>
       <div className="flex flex-wrap items-center gap-2">
         <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Key name (e.g. prod)"
+          className="max-w-[180px]"
+        />
+        <Input
           value={limit}
           onChange={(e) => setLimit(e.target.value)}
           type="number"
           step="0.01"
           min="0"
           placeholder="Daily limit USD (optional)"
-          className="max-w-[220px]"
+          className="max-w-[200px]"
         />
         <Button
           variant="ghost"

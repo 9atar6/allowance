@@ -20,11 +20,13 @@ export function CreateKeyButton({ endpointId }: { endpointId: string }) {
 
   if (key) {
     return (
-      <div className="rounded-md border border-amber-700/50 bg-amber-950/30 p-3">
-        <p className="mb-1 text-xs font-medium text-amber-400">
-          Copy this key now. It is shown only once.
+      <div className="neu-inset p-4">
+        <p className="mb-2 text-xs font-medium text-[var(--text-muted)]">
+          Copy this key now — it is shown only once.
         </p>
-        <code className="block break-all text-xs text-amber-200">{key}</code>
+        <code className="block break-all font-mono text-xs text-[var(--accent)]">
+          {key}
+        </code>
         <Button
           variant="ghost"
           className="mt-2 text-xs"

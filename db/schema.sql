@@ -625,4 +625,62 @@ begin
   );
 end; $$;
 
+-- =============================================================================
+-- NAMED KEYS  (label each key + track last use)
+-- =============================================================================
+alter table public.proxy_keys add column if not exists name text;
+alter table public.proxy_keys add column if not exists last_used_at timestamptz;
+
+-- issue_proxy_key v3: adds an optional human label (p_name).
+drop function if exists public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric);
+create or replace function public.issue_proxy_key(
+  p_user_id uuid, p_key_hash text, p_key_prefix text,
+  p_endpoint_id uuid default null, p_project_id uuid default null,
+  p_daily_limit numeric default null, p_name text default null
+)
+returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_id uuid;
+begin
+  insert into public.proxy_keys (user_id, key_hash, key_prefix, endpoint_id, project_id, daily_limit, name)
+  values (p_user_id, p_key_hash, p_key_prefix, p_endpoint_id, p_project_id, p_daily_limit, nullif(btrim(p_name), ''))
+  returning id into v_id;
+  return v_id;
+end; $$;
+revoke all on function public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric,text) from public;
+grant execute on function public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric,text) to service_role;
+
+-- =============================================================================
+-- USAGE ANALYTICS  (Pro): daily + per-service rollups, RLS-scoped via auth.uid()
+-- =============================================================================
+create or replace function public.my_daily_usage(p_days int default 14)
+returns table(day date, requests bigint, cost numeric)
+language sql security definer set search_path = public as $$
+  select date_trunc('day', created_at at time zone 'utc')::date as day,
+         count(*)::bigint as requests,
+         coalesce(sum(cost), 0)::numeric as cost
+  from public.usage_events
+  where user_id = auth.uid()
+    and created_at >= ((now() at time zone 'utc')::date - (greatest(p_days, 1) - 1))
+  group by 1
+  order by 1;
+$$;
+
+create or replace function public.my_service_usage(p_days int default 30)
+returns table(endpoint_id uuid, requests bigint, cost numeric)
+language sql security definer set search_path = public as $$
+  select endpoint_id,
+         count(*)::bigint as requests,
+         coalesce(sum(cost), 0)::numeric as cost
+  from public.usage_events
+  where user_id = auth.uid()
+    and created_at >= ((now() at time zone 'utc')::date - (greatest(p_days, 1) - 1))
+  group by endpoint_id
+  order by cost desc;
+$$;
+
+revoke all on function public.my_daily_usage(int) from public;
+revoke all on function public.my_service_usage(int) from public;
+grant execute on function public.my_daily_usage(int) to authenticated;
+grant execute on function public.my_service_usage(int) to authenticated;
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';

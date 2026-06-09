@@ -7,6 +7,11 @@ import { PlanCard } from "@/components/plan-card";
 import { ProjectsSection, type ProjectRow } from "@/components/projects-section";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { TopUp } from "@/components/top-up";
+import {
+  UsageAnalytics,
+  type DailyPoint,
+  type ServicePoint,
+} from "@/components/usage-analytics";
 import { Wordmark } from "@/components/wordmark";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -31,6 +36,8 @@ interface ProxyKey {
   endpoint_id: string | null;
   project_id: string | null;
   daily_limit: number | null;
+  name: string | null;
+  created_at: string | null;
 }
 
 export default async function DashboardPage({
@@ -55,6 +62,8 @@ export default async function DashboardPage({
     { data: txns },
     { data: projects },
     { count: monthlyCount },
+    { data: dailyRaw },
+    { data: serviceRaw },
   ] = await Promise.all([
     supabase
       .from("wallets")
@@ -66,7 +75,7 @@ export default async function DashboardPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("proxy_keys")
-      .select("id, key_prefix, is_active, endpoint_id, project_id, daily_limit")
+      .select("id, key_prefix, is_active, endpoint_id, project_id, daily_limit, name, created_at")
       .order("created_at", { ascending: false }),
     // Request-level detail, used to enrich debit rows in the activity feed.
     supabase
@@ -88,6 +97,8 @@ export default async function DashboardPage({
       .from("usage_events")
       .select("id", { count: "exact", head: true })
       .gte("created_at", monthStart),
+    supabase.rpc("my_daily_usage", { p_days: 14 }),
+    supabase.rpc("my_service_usage", { p_days: 30 }),
   ]);
 
   const balance = wallet?.balance ?? 0;
@@ -100,6 +111,31 @@ export default async function DashboardPage({
   const projectList = (projects ?? []) as ProjectRow[];
   const standaloneEndpoints = endpointList.filter((e) => !e.project_id);
   const endpointNames = new Map(endpointList.map((e) => [e.id, e.name]));
+  const isPro = plan !== "free";
+  const serviceName = (id: string | null) =>
+    (id && endpointNames.get(id)) || "Unknown";
+
+  // Fill a continuous 14-day window for the chart (RPC only returns active days).
+  const dailyMap = new Map<string, { requests: number; cost: number }>();
+  for (const r of (dailyRaw ?? []) as { day: string; requests: number; cost: number }[]) {
+    dailyMap.set(r.day, { requests: Number(r.requests), cost: Number(r.cost) });
+  }
+  const daily: DailyPoint[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - i),
+    );
+    const key = d.toISOString().slice(0, 10);
+    const hit = dailyMap.get(key);
+    daily.push({ day: key, requests: hit?.requests ?? 0, cost: hit?.cost ?? 0 });
+  }
+  const serviceRows: ServicePoint[] = (
+    (serviceRaw ?? []) as { endpoint_id: string | null; requests: number; cost: number }[]
+  ).map((s) => ({
+    endpointId: s.endpoint_id,
+    requests: Number(s.requests),
+    cost: Number(s.cost),
+  }));
 
   // Map request_id → request detail, to enrich debit rows.
   const usageByReq = new Map<string, { status: number | null; endpointId: string | null }>();
@@ -231,6 +267,8 @@ export default async function DashboardPage({
                     keyPrefix: k.key_prefix,
                     isActive: k.is_active,
                     dailyLimit: k.daily_limit,
+                    name: k.name,
+                    createdAt: k.created_at,
                   }));
                 return (
                   <li
@@ -261,6 +299,30 @@ export default async function DashboardPage({
               })}
             </ul>
           </details>
+        </Card>
+      )}
+
+      {/* Usage analytics (Pro) */}
+      {isPro ? (
+        <Card>
+          <CardTitle className="mb-5">Usage analytics</CardTitle>
+          <UsageAnalytics
+            daily={daily}
+            services={serviceRows}
+            serviceName={serviceName}
+          />
+        </Card>
+      ) : (
+        <Card className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <CardTitle>Usage analytics</CardTitle>
+            <p className="mt-2 text-sm text-[var(--text-muted)]">
+              Daily spend, request trends, and per-service breakdowns — on Pro.
+            </p>
+          </div>
+          <span className="neu-inset-sm px-3 py-1 text-xs text-[var(--text-faint)]">
+            Pro
+          </span>
         </Card>
       )}
 
