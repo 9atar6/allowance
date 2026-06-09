@@ -252,15 +252,18 @@ export default function Landing() {
           <Link href="/docs" className="transition-colors hover:text-[var(--text)]">
             Docs
           </Link>
+          <Link href="/terms" className="transition-colors hover:text-[var(--text)]">
+            Terms
+          </Link>
+          <Link href="/privacy" className="transition-colors hover:text-[var(--text)]">
+            Privacy
+          </Link>
           <a
             href="https://github.com/9atar6/allowance"
             className="transition-colors hover:text-[var(--text)]"
           >
             GitHub
           </a>
-          <Link href="/login" className="transition-colors hover:text-[var(--text)]">
-            Sign in
-          </Link>
         </div>
       </footer>
     </div>

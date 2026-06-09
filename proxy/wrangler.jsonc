@@ -58,5 +58,5 @@
   //   wrangler secret put LAGO_API_KEY
   //   wrangler secret put EDGE_ENCRYPTION_KEY     # base64 of 32 random bytes
   //   wrangler secret put RESEND_API_KEY          # for low-balance alert emails
-  //   wrangler secret put STRIPE_SECRET_KEY       # for auto-reload off-session charges
+  //   wrangler secret put ALERT_WEBHOOK_URL       # optional Slack/Discord error alerts
 }

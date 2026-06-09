@@ -45,6 +45,9 @@ export interface Env {
   // purge is disabled and revocation falls back to TTL expiry.
   ADMIN_PURGE_SECRET?: string;
 
+  // Optional Slack/Discord-style incoming webhook for error alerts. No-op if unset.
+  ALERT_WEBHOOK_URL?: string;
+
   // x402 crypto top-up rail. All optional — if any is unset, /v1/topup 503s
   // (dormant until configured).
   X402_RECEIVING_WALLET?: string; // wallet address that receives USDC

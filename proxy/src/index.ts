@@ -8,6 +8,7 @@
 import { Hono } from "hono";
 import { handlePurge } from "./admin/purge";
 import { runLowBalanceAlerts } from "./cron/low-balance";
+import { sendAlert } from "./lib/alert";
 import {
   getDailySpend,
   getMonthlyCount,
@@ -164,6 +165,20 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
 });
 
 app.notFound((c) => c.json({ error: "not_found" }, 404));
+
+// Catch-all for unhandled errors: log, alert (best-effort), return a clean 500.
+app.onError((err, c) => {
+  const requestId = c.get("requestId");
+  logEvent({ event: "unhandled_error", requestId });
+  try {
+    c.executionCtx.waitUntil(
+      sendAlert(c.env, `Allowance worker error [${requestId ?? "-"}]: ${String(err).slice(0, 200)}`),
+    );
+  } catch {
+    /* executionCtx may be absent in some contexts — ignore */
+  }
+  return c.json({ error: "internal_error" }, 500);
+});
 
 // fetch handler (HTTP) + scheduled handler (cron: low-balance alerts).
 export default {
