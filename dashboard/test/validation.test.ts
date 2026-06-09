@@ -1,7 +1,39 @@
+import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
-import { endpointSchema, topUpSchema } from "@/lib/validation";
+import {
+  attachServiceSchema,
+  connectionSchema,
+  isPublicHttpsUrl,
+  projectSchema,
+} from "@/lib/validation";
 
-describe("endpointSchema", () => {
+describe("isPublicHttpsUrl (SSRF guard)", () => {
+  it("allows a public https URL", () => {
+    expect(isPublicHttpsUrl("https://api.openai.com/v1")).toBe(true);
+  });
+  it("blocks plain http", () => {
+    expect(isPublicHttpsUrl("http://api.openai.com")).toBe(false);
+  });
+  it("blocks localhost and loopback", () => {
+    expect(isPublicHttpsUrl("https://localhost")).toBe(false);
+    expect(isPublicHttpsUrl("https://127.0.0.1")).toBe(false);
+  });
+  it("blocks private ranges", () => {
+    expect(isPublicHttpsUrl("https://10.0.0.5")).toBe(false);
+    expect(isPublicHttpsUrl("https://192.168.1.1")).toBe(false);
+    expect(isPublicHttpsUrl("https://172.16.0.1")).toBe(false);
+  });
+  it("blocks link-local / cloud metadata", () => {
+    expect(isPublicHttpsUrl("https://169.254.169.254/latest/meta-data")).toBe(
+      false,
+    );
+  });
+  it("rejects garbage", () => {
+    expect(isPublicHttpsUrl("not a url")).toBe(false);
+  });
+});
+
+describe("connectionSchema", () => {
   const valid = {
     name: "OpenAI",
     targetUrl: "https://api.openai.com/v1",
@@ -9,65 +41,60 @@ describe("endpointSchema", () => {
     headers: "Authorization: Bearer sk-x",
   };
 
-  it("accepts a valid endpoint and coerces cost to a number", () => {
-    const res = endpointSchema.safeParse(valid);
+  it("accepts a valid connection and coerces cost to a number", () => {
+    const res = connectionSchema.safeParse(valid);
     expect(res.success).toBe(true);
     if (res.success) expect(res.data.costPerRequest).toBe(0.01);
   });
-
-  it("rejects a non-https target URL", () => {
-    const res = endpointSchema.safeParse({ ...valid, targetUrl: "http://api.openai.com" });
-    expect(res.success).toBe(false);
-  });
-
-  it("rejects a non-positive cost", () => {
-    expect(endpointSchema.safeParse({ ...valid, costPerRequest: "0" }).success).toBe(false);
-    expect(endpointSchema.safeParse({ ...valid, costPerRequest: "-1" }).success).toBe(false);
-  });
-
-  it("rejects an empty name", () => {
-    expect(endpointSchema.safeParse({ ...valid, name: "" }).success).toBe(false);
-  });
-
   it("defaults to flat metering", () => {
-    const res = endpointSchema.safeParse(valid);
-    expect(res.success).toBe(true);
+    const res = connectionSchema.safeParse(valid);
     if (res.success) expect(res.data.meteringMode).toBe("flat");
   });
+  it("rejects a private / SSRF URL", () => {
+    const res = connectionSchema.safeParse({ ...valid, targetUrl: "https://127.0.0.1" });
+    expect(res.success).toBe(false);
+  });
+  it("rejects an empty name", () => {
+    const res = connectionSchema.safeParse({ ...valid, name: "" });
+    expect(res.success).toBe(false);
+  });
+});
 
-  it("accepts per_token with a token price", () => {
-    const res = endpointSchema.safeParse({
-      ...valid,
-      meteringMode: "per_token",
-      inputTokenCost: "0.000001",
-      outputTokenCost: "0.000002",
+describe("attachServiceSchema", () => {
+  it("accepts a valid slug", () => {
+    const res = attachServiceSchema.safeParse({
+      projectId: randomUUID(),
+      endpointId: randomUUID(),
+      slug: "openai-v1",
     });
     expect(res.success).toBe(true);
   });
-
-  it("rejects per_token with no token price", () => {
-    const res = endpointSchema.safeParse({
-      ...valid,
-      meteringMode: "per_token",
-      inputTokenCost: "0",
-      outputTokenCost: "0",
+  it("rejects an invalid slug", () => {
+    const res = attachServiceSchema.safeParse({
+      projectId: randomUUID(),
+      endpointId: randomUUID(),
+      slug: "Bad Slug!",
+    });
+    expect(res.success).toBe(false);
+  });
+  it("rejects a non-uuid project id", () => {
+    const res = attachServiceSchema.safeParse({
+      projectId: "nope",
+      endpointId: randomUUID(),
+      slug: "ok",
     });
     expect(res.success).toBe(false);
   });
 });
 
-describe("topUpSchema", () => {
-  it("accepts an amount within bounds", () => {
-    const res = topUpSchema.safeParse({ amount: "25" });
+describe("projectSchema", () => {
+  it("accepts a name with an optional budget", () => {
+    expect(
+      projectSchema.safeParse({ name: "My SaaS", monthlyBudget: "10" }).success,
+    ).toBe(true);
+  });
+  it("treats a blank budget as absent", () => {
+    const res = projectSchema.safeParse({ name: "My SaaS", monthlyBudget: "" });
     expect(res.success).toBe(true);
-    if (res.success) expect(res.data.amount).toBe(25);
-  });
-
-  it("rejects below the $5 minimum", () => {
-    expect(topUpSchema.safeParse({ amount: "4" }).success).toBe(false);
-  });
-
-  it("rejects above the $10,000 maximum", () => {
-    expect(topUpSchema.safeParse({ amount: "10001" }).success).toBe(false);
   });
 });

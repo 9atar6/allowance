@@ -1,10 +1,7 @@
-// Stripe webhook — the ONLY place a wallet is credited. Verifies the signature
-// against the raw body, then calls the service_role-locked credit_wallet RPC.
-// Idempotent: credit_wallet dedupes on (type, payment_intent), so Stripe retries
-// never double-credit.
+// Stripe webhook — mirrors the Pro subscription state onto the wallet (plan).
+// Verifies the signature against the raw body, then calls set_plan (service_role).
 import type Stripe from "stripe";
 import { type NextRequest, NextResponse } from "next/server";
-import { ensureLagoProvisioned } from "@/lib/lago";
 import { stripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -31,84 +28,6 @@ export async function POST(req: NextRequest) {
   } catch {
     // Bad signature → reject. Never trust an unverified payload.
     return NextResponse.json({ error: "invalid_signature" }, { status: 400 });
-  }
-
-  // ── One-off balance top-up (payment mode) → credit the wallet ──────────────
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-
-    // Subscription checkouts are handled by the customer.subscription.* events
-    // below; only credit a wallet for one-off payment-mode top-ups here.
-    if (session.mode === "payment") {
-      const userId = session.metadata?.user_id;
-      const amountTotal = session.amount_total; // cents
-      const paymentIntent =
-        typeof session.payment_intent === "string"
-          ? session.payment_intent
-          : session.payment_intent?.id;
-
-      if (
-        session.payment_status === "paid" &&
-        userId &&
-        amountTotal &&
-        paymentIntent
-      ) {
-        const admin = createAdminClient();
-        const { error } = await admin.rpc("credit_wallet", {
-          p_user_id: userId,
-          p_amount: amountTotal / 100, // cents → USD (exact at 2dp)
-          p_type: "topup",
-          p_external_ref: paymentIntent, // idempotency key
-        });
-        if (error) {
-          // Tell Stripe to retry — the credit didn't land.
-          return NextResponse.json({ error: "credit_failed" }, { status: 500 });
-        }
-
-        // Provision Lago metering now that the user can generate usage.
-        // Idempotent + best-effort — never fails the webhook.
-        const email =
-          session.customer_email ?? session.customer_details?.email ?? "";
-        await ensureLagoProvisioned(userId, email);
-      }
-    }
-
-    // Auto-reload card setup (setup mode) → store the saved card + enable it.
-    if (session.mode === "setup" && session.metadata?.kind === "auto_reload") {
-      const userId = session.metadata?.user_id;
-      const amount = Number(session.metadata?.amount);
-      const setupIntentId =
-        typeof session.setup_intent === "string"
-          ? session.setup_intent
-          : session.setup_intent?.id;
-
-      if (userId && setupIntentId && amount > 0) {
-        const si = await stripe.setupIntents.retrieve(setupIntentId);
-        const pm =
-          typeof si.payment_method === "string"
-            ? si.payment_method
-            : si.payment_method?.id;
-        const customer =
-          (typeof si.customer === "string" ? si.customer : si.customer?.id) ??
-          (typeof session.customer === "string"
-            ? session.customer
-            : session.customer?.id);
-
-        if (pm && customer) {
-          const admin = createAdminClient();
-          const { error } = await admin.rpc("set_auto_reload", {
-            p_user_id: userId,
-            p_customer_id: customer,
-            p_payment_method_id: pm,
-            p_amount: amount,
-            p_enabled: true,
-          });
-          if (error) {
-            return NextResponse.json({ error: "auto_reload_failed" }, { status: 500 });
-          }
-        }
-      }
-    }
   }
 
   // ── Subscription lifecycle → mirror the plan onto the wallet ───────────────

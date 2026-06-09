@@ -10,8 +10,6 @@ import { createClient } from "@/lib/supabase/server";
 import {
   attachServiceSchema,
   connectionSchema,
-  endpointSchema,
-  projectEndpointSchema,
   projectSchema,
 } from "@/lib/validation";
 
@@ -19,76 +17,6 @@ export interface ActionResult {
   ok: boolean;
   error?: string;
   generatedKey?: string; // returned ONCE for a freshly minted proxy key
-}
-
-/** Create an endpoint — credentials encrypted into Vault via create_endpoint. */
-export async function createEndpoint(formData: FormData): Promise<ActionResult> {
-  const parsed = endpointSchema.safeParse({
-    name: formData.get("name"),
-    targetUrl: formData.get("targetUrl"),
-    costPerRequest: formData.get("costPerRequest"),
-    headers: formData.get("headers"),
-    meteringMode: formData.get("meteringMode") ?? "flat",
-    inputTokenCost: formData.get("inputTokenCost") ?? 0,
-    outputTokenCost: formData.get("outputTokenCost") ?? 0,
-  });
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
-  }
-
-  const headers = parseHeaders(parsed.data.headers);
-  if (!headers) {
-    return { ok: false, error: 'Headers must be "Name: value" lines.' };
-  }
-
-  // Runs as the authenticated user → create_endpoint keys off auth.uid().
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("create_endpoint", {
-    p_name: parsed.data.name,
-    p_target_url: parsed.data.targetUrl,
-    p_cost_per_request: parsed.data.costPerRequest,
-    p_auth_headers: headers,
-    p_metering_mode: parsed.data.meteringMode,
-    p_input_token_cost: parsed.data.inputTokenCost,
-    p_output_token_cost: parsed.data.outputTokenCost,
-  });
-
-  if (error) return { ok: false, error: "Could not create endpoint." };
-
-  revalidatePath("/dashboard");
-  return { ok: true };
-}
-
-/** Mint a proxy key. Plaintext is returned once; only the hash is persisted. */
-export async function createProxyKey(endpointId: string): Promise<ActionResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Not authenticated." };
-
-  // Verify the endpoint belongs to this user (RLS-scoped read).
-  const { data: endpoint } = await supabase
-    .from("endpoints")
-    .select("id")
-    .eq("id", endpointId)
-    .single();
-  if (!endpoint) return { ok: false, error: "Endpoint not found." };
-
-  const { key, keyHash, keyPrefix } = generateProxyKey();
-
-  // issue_proxy_key is service_role-locked; scope it to the verified user id.
-  const admin = createAdminClient();
-  const { error } = await admin.rpc("issue_proxy_key", {
-    p_user_id: user.id,
-    p_key_hash: keyHash,
-    p_key_prefix: keyPrefix,
-    p_endpoint_id: endpointId,
-  });
-  if (error) return { ok: false, error: "Could not create key." };
-
-  revalidatePath("/dashboard");
-  return { ok: true, generatedKey: key };
 }
 
 /**
@@ -121,22 +49,6 @@ export async function revokeProxyKey(keyId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
-/** Enable/disable an endpoint. Disabled endpoints 503 at the proxy. RLS-scoped. */
-export async function setEndpointActive(
-  endpointId: string,
-  isActive: boolean,
-): Promise<ActionResult> {
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("endpoints")
-    .update({ is_active: isActive })
-    .eq("id", endpointId);
-
-  if (error) return { ok: false, error: "Could not update endpoint." };
-  revalidatePath("/dashboard");
-  return { ok: true };
-}
-
 // ── Projects ─────────────────────────────────────────────────────────────────
 
 /** Create a project (a bundle of services billed to one key). */
@@ -155,46 +67,6 @@ export async function createProject(formData: FormData): Promise<ActionResult> {
     p_monthly_budget: parsed.data.monthlyBudget ?? null,
   });
   if (error) return { ok: false, error: "Could not create project." };
-
-  revalidatePath("/dashboard");
-  return { ok: true };
-}
-
-/** Add a service to a project (routed by its slug). Credentials go to Vault. */
-export async function createProjectEndpoint(formData: FormData): Promise<ActionResult> {
-  const parsed = projectEndpointSchema.safeParse({
-    projectId: formData.get("projectId"),
-    name: formData.get("name"),
-    targetUrl: formData.get("targetUrl"),
-    slug: formData.get("slug"),
-    costPerRequest: formData.get("costPerRequest"),
-    headers: formData.get("headers"),
-    meteringMode: formData.get("meteringMode") ?? undefined,
-    inputTokenCost: formData.get("inputTokenCost") ?? undefined,
-    outputTokenCost: formData.get("outputTokenCost") ?? undefined,
-  });
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
-  }
-
-  const headers = parseHeaders(parsed.data.headers);
-  if (!headers) {
-    return { ok: false, error: 'Headers must be "Name: value" lines.' };
-  }
-
-  const supabase = await createClient();
-  const { error } = await supabase.rpc("create_endpoint", {
-    p_name: parsed.data.name,
-    p_target_url: parsed.data.targetUrl,
-    p_cost_per_request: parsed.data.costPerRequest,
-    p_auth_headers: headers,
-    p_metering_mode: parsed.data.meteringMode,
-    p_input_token_cost: parsed.data.inputTokenCost,
-    p_output_token_cost: parsed.data.outputTokenCost,
-    p_project_id: parsed.data.projectId,
-    p_slug: parsed.data.slug,
-  });
-  if (error) return { ok: false, error: "Could not add service (is the slug unique?)." };
 
   revalidatePath("/dashboard");
   return { ok: true };
@@ -343,15 +215,6 @@ export async function setLowBalanceThreshold(
     p_threshold: value,
   });
   if (error) return { ok: false, error: "Could not save the threshold." };
-  revalidatePath("/dashboard");
-  return { ok: true };
-}
-
-/** Delete a service (endpoint). RLS scopes it to the owner. */
-export async function deleteService(endpointId: string): Promise<ActionResult> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("endpoints").delete().eq("id", endpointId);
-  if (error) return { ok: false, error: "Could not delete service." };
   revalidatePath("/dashboard");
   return { ok: true };
 }
