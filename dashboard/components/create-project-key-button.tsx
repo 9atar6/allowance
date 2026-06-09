@@ -2,13 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { createProjectKey } from "@/app/dashboard/actions";
+import { CopyButton } from "@/components/copy-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
   const [pending, startTransition] = useTransition();
   const [generated, setGenerated] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [limit, setLimit] = useState("");
@@ -35,16 +35,7 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
           <code className="min-w-0 flex-1 truncate font-mono text-xs text-[var(--accent)]">
             {generated}
           </code>
-          <Button
-            onClick={() => {
-              navigator.clipboard.writeText(generated);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            }}
-            className="shrink-0 px-3 py-2 text-xs"
-          >
-            {copied ? "Copied" : "Copy"}
-          </Button>
+          <CopyButton text={generated} className="neu-sm pressable" />
         </div>
       </div>
     );

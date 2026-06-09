@@ -7,7 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "Allowance — One key. Every API. A hard cap.",
   description:
-    "Route all your API spend through one key, with a prepaid limit and an instant kill switch. Works with any API. Built for apps and AI agents.",
+    "Route all your API spend through one key, with a spending cap your apps and agents can never exceed and an instant kill switch. Works with any API.",
 };
 
 export default function RootLayout({

@@ -265,8 +265,9 @@ export default async function DashboardPage({
           <p className="mt-3 text-5xl font-semibold tracking-tight tabular-nums">
             {usd(Number(balance))}
           </p>
-          <p className="mt-2 text-xs text-[var(--text-faint)]">
-            A spend cap you set. Calls stop with HTTP 402 when it reaches zero.
+          <p className="mt-2 text-xs leading-relaxed text-[var(--text-faint)]">
+            A free cap you set — your providers still bill you directly, we never
+            charge for usage. Calls stop with HTTP 402 when it reaches zero.
           </p>
           <div className="mt-auto pt-6">
             <SetBudget current={Number(balance)} />

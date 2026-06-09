@@ -73,7 +73,7 @@ export function AddConnectionForm() {
         <select
           value={presetId}
           onChange={(e) => applyPreset(e.target.value)}
-          className="w-full neu-inset bg-[var(--bg-deep)] px-3.5 py-2.5 text-sm text-[var(--text)] focus:outline-none"
+          className="select-neu w-full neu-inset bg-[var(--bg-deep)] px-3.5 py-2.5 text-sm text-[var(--text)] focus:outline-none"
         >
           <option value="">Custom</option>
           {PROVIDER_PRESETS.map((p) => (
@@ -123,7 +123,7 @@ export function AddConnectionForm() {
       ) : (
         <Field
           label="Cost per call (USD)"
-          hint="What we subtract from your balance each time this API is called. Set it to roughly what the API charges you, so your balance tracks real spend. Blank = free."
+          hint="We never charge you for calls — your provider bills you directly. This is just an estimate of a call's cost, used to count down your free budget so it stops you near your real spend. Blank = doesn't count."
         >
           <Input
             name="costPerRequest"

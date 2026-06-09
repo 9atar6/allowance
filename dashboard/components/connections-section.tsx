@@ -56,9 +56,12 @@ export function ConnectionsSection({
         )}
       </div>
 
-      <details className="mt-4">
-        <summary className="inline-flex cursor-pointer text-xs font-medium text-[var(--accent)]">
-          + Add a connection
+      <details className="group mt-4">
+        <summary className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-[var(--accent)]">
+          <svg className="chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+          Add a connection
         </summary>
         <div className="neu mt-3 p-4">
           <AddConnectionForm />

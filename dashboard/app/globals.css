@@ -56,6 +56,23 @@ html {
   background: var(--bg);
   color-scheme: dark;
   transition: background 0.3s ease;
+  scroll-behavior: smooth;
+  scroll-padding-top: 6rem; /* anchored sections clear the sticky nav */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+
+/* Selects: hide the native arrow, draw our own with right-side breathing room. */
+.select-neu {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa0ab' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  background-size: 12px;
+  padding-right: 2.4rem;
 }
 body {
   min-height: 100vh;

@@ -145,8 +145,9 @@ curl ${PROXY}/v1/proxy/chat/completions \\
                 />
                 <p>
                   Allowance removes your <Mono>alw_</Mono> key, adds your real
-                  credentials, forwards the call, streams the response back, and
-                  subtracts the cost from your balance.
+                  credentials, forwards the call, and streams the response back.
+                  Your provider bills you as usual — we just count the estimated
+                  cost against your free budget and stop you at your cap.
                 </p>
               </Step>
 
@@ -182,10 +183,11 @@ curl ${PROXY}/v1/proxy/chat/completions \\
                   apps and agents get cut off.
                 </p>
                 <p>
-                  Add a <Mono>cost per call</Mono> to each connection (or pick a
-                  provider preset for real per-token pricing) so the budget tracks
-                  your true spend. Set caps per project and per key for finer
-                  control.
+                  Give each connection a <Mono>cost per call</Mono> (or pick a
+                  provider preset for real per-token pricing). That is only an
+                  estimate we use to count the budget down, so the cap trips near
+                  what you are actually spending with your provider. Set caps per
+                  project and per key for finer control.
                 </p>
               </Step>
 

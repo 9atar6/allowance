@@ -1,6 +1,4 @@
-"use client";
-
-import { useState } from "react";
+import { CopyButton } from "@/components/copy-button";
 
 // Lightweight, restrained shell-syntax coloring.
 function classify(tok: string): string {
@@ -38,15 +36,6 @@ interface CodeBlockProps {
 }
 
 export function CodeBlock({ code, label = "bash" }: CodeBlockProps) {
-  const [copied, setCopied] = useState(false);
-
-  function copy() {
-    navigator.clipboard.writeText(code).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    });
-  }
-
   return (
     <div className="neu-inset overflow-hidden">
       <div className="flex items-center justify-between px-4 py-2.5">
@@ -58,13 +47,7 @@ export function CodeBlock({ code, label = "bash" }: CodeBlockProps) {
             {label}
           </span>
         </div>
-        <button
-          type="button"
-          onClick={copy}
-          className="font-mono text-xs text-[var(--text-faint)] transition-colors hover:text-[var(--text)]"
-        >
-          {copied ? "Copied" : "Copy"}
-        </button>
+        <CopyButton text={code} />
       </div>
       <pre className="overflow-x-auto px-5 pb-4 text-[13px] leading-relaxed text-[var(--text-muted)]">
         <code className="font-mono">

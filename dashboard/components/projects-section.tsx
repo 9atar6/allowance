@@ -150,9 +150,12 @@ export function ProjectsSection({
                       ))}
                     </ul>
                   )}
-                  <details className="mt-3">
-                    <summary className="inline-flex cursor-pointer text-xs font-medium text-[var(--accent)]">
-                      + Attach a service
+                  <details className="group mt-3">
+                    <summary className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-medium text-[var(--accent)]">
+                      <svg className="chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                        <path d="M6 9l6 6 6-6" />
+                      </svg>
+                      Attach a service
                     </summary>
                     <div className="mt-3">
                       <AttachServiceForm projectId={p.id} connections={connections} />

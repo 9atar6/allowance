@@ -66,7 +66,7 @@ export function AttachServiceForm({
           }
         }}
         required
-        className="neu-inset bg-[var(--bg-deep)] px-3 py-2 text-xs text-[var(--text)] focus:outline-none"
+        className="select-neu neu-inset bg-[var(--bg-deep)] px-3 py-2 text-xs text-[var(--text)] focus:outline-none"
       >
         <option value="">Choose a connection</option>
         {connections.map((c) => (
