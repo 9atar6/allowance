@@ -7,8 +7,8 @@
 
 import { Hono } from "hono";
 import { handlePurge } from "./admin/purge";
-import { getDailySpend, utcDateKey } from "./cache/context";
-import { PROXY_BASE_PATH } from "./config";
+import { getDailySpend, getMonthlyCount, utcDateKey, utcMonthKey } from "./cache/context";
+import { FREE_MONTHLY_REQUESTS, PROXY_BASE_PATH } from "./config";
 import { logEvent } from "./lib/log";
 import { buildX402Body } from "./lib/x402";
 import { withinRateLimit } from "./lib/rate-limit";
@@ -52,6 +52,23 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
     }
     logEvent({ event: "endpoint_unavailable", requestId, userId: ctx.userId, reason: "inactive_or_missing" });
     return c.json({ error: "endpoint_unavailable" }, 503);
+  }
+
+  // ── Free-plan monthly quota (hard cap so free users can't run up cost) ────
+  if (ctx.plan === "free") {
+    const usedThisMonth = await getMonthlyCount(c.env, ctx.userId, utcMonthKey());
+    if (usedThisMonth >= FREE_MONTHLY_REQUESTS) {
+      logEvent({ event: "free_quota_reached", requestId, userId: ctx.userId });
+      return c.json(
+        {
+          error: "free_quota_reached",
+          limit: FREE_MONTHLY_REQUESTS,
+          used: usedThisMonth,
+          upgradeUrl: "https://app.allowance.dev/billing",
+        },
+        402,
+      );
+    }
   }
 
   // ── Per-key daily limit (edge counter; null = unlimited) ──────────────────

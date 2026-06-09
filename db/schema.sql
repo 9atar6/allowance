@@ -529,4 +529,97 @@ grant execute on function public.create_project(text,numeric) to authenticated;
 grant execute on function public.create_endpoint(text,text,numeric,jsonb,text,numeric,numeric,uuid,text) to authenticated;
 grant execute on function public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric) to service_role;
 
+-- =============================================================================
+-- BILLING / PLANS  (freemium: free | pro | enterprise)
+--
+-- We charge for the gateway, never the upstream AI. The prepaid balance stays a
+-- spend-control feature; the *plan* is what gates quota + features. Stripe holds
+-- the money; these columns mirror the subscription state for fast reads.
+-- =============================================================================
+alter table public.wallets add column if not exists plan text not null default 'free'
+  check (plan in ('free', 'pro', 'enterprise'));
+alter table public.wallets add column if not exists plan_status text not null default 'active';
+alter table public.wallets add column if not exists stripe_customer_id text;
+alter table public.wallets add column if not exists stripe_subscription_id text;
+alter table public.wallets add column if not exists current_period_end timestamptz;
+
+comment on column public.wallets.plan is
+  'Billing tier. Drives the monthly request quota + feature gating.';
+
+-- set_plan: service_role ONLY — called by the Stripe subscription webhook.
+create or replace function public.set_plan(
+  p_user_id uuid,
+  p_plan text,
+  p_status text default 'active',
+  p_customer_id text default null,
+  p_subscription_id text default null,
+  p_period_end timestamptz default null
+) returns void language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if p_plan not in ('free', 'pro', 'enterprise') then
+    raise exception 'invalid plan %', p_plan;
+  end if;
+  update public.wallets
+     set plan                   = p_plan,
+         plan_status            = p_status,
+         stripe_customer_id     = coalesce(p_customer_id, stripe_customer_id),
+         stripe_subscription_id = coalesce(p_subscription_id, stripe_subscription_id),
+         current_period_end     = coalesce(p_period_end, current_period_end),
+         updated_at             = now()
+   where user_id = p_user_id;
+end; $$;
+
+revoke all on function public.set_plan(uuid,text,text,text,text,timestamptz) from public;
+grant execute on function public.set_plan(uuid,text,text,text,text,timestamptz) to service_role;
+
+-- get_proxy_context v3: also returns the wallet `plan`, so the edge can enforce
+-- the free-tier monthly request cap without a second round-trip.
+create or replace function public.get_proxy_context(p_key_hash text)
+returns jsonb language plpgsql security definer set search_path = public, vault, pg_temp as $$
+declare k record; v_routes jsonb;
+begin
+  select pk.user_id, w.balance, w.plan, pk.endpoint_id, pk.project_id, pk.daily_limit
+  into k
+  from public.proxy_keys pk
+  join public.wallets w on w.user_id = pk.user_id
+  where pk.key_hash = p_key_hash and pk.is_active;
+  if not found then return null; end if;
+
+  if k.project_id is not null then
+    select jsonb_agg(jsonb_build_object(
+      'slug', e.slug,
+      'endpoint_id', e.id,
+      'target_url', e.target_url,
+      'cost_per_request', e.cost_per_request,
+      'metering_mode', coalesce(e.metering_mode, 'flat'),
+      'input_token_cost', coalesce(e.input_token_cost, 0),
+      'output_token_cost', coalesce(e.output_token_cost, 0),
+      'upstream_header', (select decrypted_secret from vault.decrypted_secrets where id = e.vault_secret_id)
+    ))
+    into v_routes
+    from public.endpoints e
+    where e.project_id = k.project_id and e.is_active and e.slug is not null;
+
+    return jsonb_build_object(
+      'user_id', k.user_id, 'balance', k.balance, 'plan', coalesce(k.plan, 'free'),
+      'daily_limit', k.daily_limit,
+      'project_id', k.project_id, 'routes', coalesce(v_routes, '[]'::jsonb)
+    );
+  end if;
+
+  return (
+    select jsonb_build_object(
+      'user_id', k.user_id, 'balance', k.balance, 'plan', coalesce(k.plan, 'free'),
+      'daily_limit', k.daily_limit,
+      'endpoint_id', e.id, 'target_url', e.target_url, 'cost_per_request', e.cost_per_request,
+      'metering_mode', coalesce(e.metering_mode, 'flat'),
+      'input_token_cost', coalesce(e.input_token_cost, 0),
+      'output_token_cost', coalesce(e.output_token_cost, 0),
+      'endpoint_active', coalesce(e.is_active, false),
+      'upstream_header', (select decrypted_secret from vault.decrypted_secrets where id = e.vault_secret_id)
+    )
+    from public.endpoints e where e.id = k.endpoint_id
+  );
+end; $$;
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';

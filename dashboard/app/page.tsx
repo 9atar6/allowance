@@ -74,6 +74,51 @@ const features = [
   },
 ];
 
+const plans = [
+  {
+    name: "Free",
+    price: "$0",
+    cadence: "",
+    blurb: "For tinkering and small projects.",
+    features: [
+      "5,000 requests per month",
+      "Spending cap + instant kill switch",
+      "One project",
+      "Card and USDC top-ups",
+    ],
+    cta: "Start free",
+    highlight: false,
+  },
+  {
+    name: "Pro",
+    price: "$20",
+    cadence: "/mo",
+    blurb: "For production apps and agents.",
+    features: [
+      "1,000,000 requests per month",
+      "Unlimited projects and keys",
+      "Per-key daily limits",
+      "90-day analytics + the x402 agent rail",
+    ],
+    cta: "Upgrade to Pro",
+    highlight: true,
+  },
+  {
+    name: "Enterprise",
+    price: "Custom",
+    cadence: "",
+    blurb: "For teams at scale.",
+    features: [
+      "Volume pricing",
+      "SSO and team seats",
+      "SLA + priority support",
+      "Custom limits and retention",
+    ],
+    cta: "Contact us",
+    highlight: false,
+  },
+];
+
 function Eyebrow({ children }: { children: string }) {
   return (
     <p className="text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
@@ -219,6 +264,68 @@ export default function Landing() {
               </div>
             );
           })}
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section className="border-y border-neutral-200 bg-white py-20 dark:border-neutral-800 dark:bg-neutral-950/40">
+        <div className="mx-auto max-w-5xl px-6">
+          <div className="text-center">
+            <Eyebrow>Pricing</Eyebrow>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+              Fair, and free to start
+            </h2>
+            <p className="mx-auto mt-4 max-w-2xl text-neutral-600 dark:text-neutral-300">
+              We never mark up your AI. You pay for the gateway, the controls,
+              and the analytics. The cost of the services you call stays between
+              you and them.
+            </p>
+          </div>
+          <div className="mt-12 grid gap-6 md:grid-cols-3">
+            {plans.map((p) => (
+              <div
+                key={p.name}
+                className={`flex flex-col rounded-2xl border p-7 ${
+                  p.highlight
+                    ? "border-emerald-500/60 bg-white shadow-sm dark:bg-neutral-800/60"
+                    : "border-neutral-200 dark:border-neutral-800"
+                }`}
+              >
+                <h3 className="text-lg font-medium">{p.name}</h3>
+                <div className="mt-3 flex items-baseline gap-1">
+                  <span className="text-4xl font-semibold tracking-tight">
+                    {p.price}
+                  </span>
+                  <span className="text-sm text-neutral-500">{p.cadence}</span>
+                </div>
+                <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
+                  {p.blurb}
+                </p>
+                <ul className="mt-6 space-y-2.5 text-sm">
+                  {p.features.map((f) => (
+                    <li key={f} className="flex gap-2">
+                      <span className="text-emerald-600 dark:text-emerald-400">
+                        ✓
+                      </span>
+                      <span className="text-neutral-700 dark:text-neutral-300">
+                        {f}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  href="/login"
+                  className={`mt-7 rounded-lg px-4 py-2.5 text-center text-sm font-medium ${
+                    p.highlight
+                      ? "bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+                      : "border border-neutral-300 hover:border-neutral-400 dark:border-neutral-700 dark:hover:border-neutral-500"
+                  }`}
+                >
+                  {p.cta}
+                </Link>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 

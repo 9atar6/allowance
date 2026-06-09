@@ -8,7 +8,13 @@
 //   3. Emit the Lago usage event.
 // =============================================================================
 
-import { addDailySpend, updateCachedBalance, utcDateKey } from "../cache/context";
+import {
+  addDailySpend,
+  incrMonthlyCount,
+  updateCachedBalance,
+  utcDateKey,
+  utcMonthKey,
+} from "../cache/context";
 import { logEvent } from "../lib/log";
 import { debitWallet } from "../lib/supabase";
 import type { ActiveRequest, Env, TokenUsage } from "../types";
@@ -55,6 +61,8 @@ export async function settle(
     await updateCachedBalance(env, ctx.keyHash, ctx.balance - params.cost);
     // Bump the per-key daily spend counter (for per-key daily limits).
     await addDailySpend(env, ctx.keyHash, utcDateKey(), params.cost);
+    // Bump the per-user monthly request counter (for the free-plan cap).
+    await incrMonthlyCount(env, ctx.userId, utcMonthKey());
 
     await sendLagoEvent(env, {
       userId: ctx.userId,

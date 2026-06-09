@@ -33,38 +33,84 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_signature" }, { status: 400 });
   }
 
+  // ── One-off balance top-up (payment mode) → credit the wallet ──────────────
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
-    const userId = session.metadata?.user_id;
-    const amountTotal = session.amount_total; // cents
-    const paymentIntent =
-      typeof session.payment_intent === "string"
-        ? session.payment_intent
-        : session.payment_intent?.id;
 
-    if (
-      session.payment_status === "paid" &&
-      userId &&
-      amountTotal &&
-      paymentIntent
-    ) {
+    // Subscription checkouts are handled by the customer.subscription.* events
+    // below; only credit a wallet for one-off payment-mode top-ups here.
+    if (session.mode === "payment") {
+      const userId = session.metadata?.user_id;
+      const amountTotal = session.amount_total; // cents
+      const paymentIntent =
+        typeof session.payment_intent === "string"
+          ? session.payment_intent
+          : session.payment_intent?.id;
+
+      if (
+        session.payment_status === "paid" &&
+        userId &&
+        amountTotal &&
+        paymentIntent
+      ) {
+        const admin = createAdminClient();
+        const { error } = await admin.rpc("credit_wallet", {
+          p_user_id: userId,
+          p_amount: amountTotal / 100, // cents → USD (exact at 2dp)
+          p_type: "topup",
+          p_external_ref: paymentIntent, // idempotency key
+        });
+        if (error) {
+          // Tell Stripe to retry — the credit didn't land.
+          return NextResponse.json({ error: "credit_failed" }, { status: 500 });
+        }
+
+        // Provision Lago metering now that the user can generate usage.
+        // Idempotent + best-effort — never fails the webhook.
+        const email =
+          session.customer_email ?? session.customer_details?.email ?? "";
+        await ensureLagoProvisioned(userId, email);
+      }
+    }
+  }
+
+  // ── Subscription lifecycle → mirror the plan onto the wallet ───────────────
+  if (
+    event.type === "customer.subscription.created" ||
+    event.type === "customer.subscription.updated" ||
+    event.type === "customer.subscription.deleted"
+  ) {
+    const sub = event.data.object as Stripe.Subscription;
+    const userId = sub.metadata?.user_id;
+
+    if (userId) {
+      // active/trialing → Pro; anything else (canceled, unpaid, past_due) → Free.
+      const isActive = sub.status === "active" || sub.status === "trialing";
+      const plan = isActive ? "pro" : "free";
+      const customerId =
+        typeof sub.customer === "string" ? sub.customer : sub.customer.id;
+      // current_period_end has shifted location across Stripe API versions;
+      // read it defensively so we don't couple to a pinned type.
+      const periodEndUnix = (sub as unknown as { current_period_end?: number })
+        .current_period_end;
+      const periodEnd =
+        typeof periodEndUnix === "number"
+          ? new Date(periodEndUnix * 1000).toISOString()
+          : null;
+
       const admin = createAdminClient();
-      const { error } = await admin.rpc("credit_wallet", {
+      const { error } = await admin.rpc("set_plan", {
         p_user_id: userId,
-        p_amount: amountTotal / 100, // cents → USD (exact at 2dp)
-        p_type: "topup",
-        p_external_ref: paymentIntent, // idempotency key
+        p_plan: plan,
+        p_status: sub.status,
+        p_customer_id: customerId,
+        p_subscription_id: sub.id,
+        p_period_end: periodEnd,
       });
       if (error) {
-        // Tell Stripe to retry — the credit didn't land.
-        return NextResponse.json({ error: "credit_failed" }, { status: 500 });
+        // Retry so the plan state converges with Stripe.
+        return NextResponse.json({ error: "plan_update_failed" }, { status: 500 });
       }
-
-      // Provision Lago metering now that the user can generate usage.
-      // Idempotent + best-effort — never fails the webhook.
-      const email =
-        session.customer_email ?? session.customer_details?.email ?? "";
-      await ensureLagoProvisioned(userId, email);
     }
   }
 

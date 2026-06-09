@@ -52,6 +52,9 @@ export interface Env {
  */
 export type MeteringMode = "flat" | "per_token";
 
+/** Billing tier — drives the free-plan monthly request cap at the edge. */
+export type PlanTier = "free" | "pro" | "enterprise";
+
 /** Token usage parsed from an upstream response (OpenAI-style `usage`). */
 export interface TokenUsage {
   promptTokens: number;
@@ -78,6 +81,7 @@ export interface RpcRoute {
 export interface RpcProxyContext {
   user_id: string;
   balance: number;
+  plan?: PlanTier;
   daily_limit: number | null;
   // single-endpoint (legacy) key:
   endpoint_id?: string | null;
@@ -112,6 +116,7 @@ export interface CachedSingle extends CachedRoute {
 export interface CachedProxyContext {
   user_id: string;
   balance: number;
+  plan: PlanTier;
   daily_limit: number | null;
   single: CachedSingle | null;
   routes: CachedRoute[] | null;
@@ -134,6 +139,7 @@ export interface ResolvedEndpoint {
 export interface ResolvedContext {
   userId: string;
   balance: number;
+  plan: PlanTier;
   dailyLimit: number | null;
   keyHash: string;
   single: (ResolvedEndpoint & { endpointActive: boolean }) | null;

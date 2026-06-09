@@ -8,6 +8,15 @@ export const PROXY_BASE_PATH = "/v1/proxy";
 /** KV key namespace for cached proxy contexts. */
 export const KV_CTX_PREFIX = "ctx:";
 
+/** KV key namespace for per-user monthly request counters. */
+export const KV_MONTH_PREFIX = "req:";
+
+/**
+ * Free-plan monthly request quota. Hard-capped at the edge so a free account can
+ * never run up unbounded infrastructure cost — calls 402 once this is reached.
+ */
+export const FREE_MONTHLY_REQUESTS = 5000;
+
 /** Fallback TTL (seconds) if KV_CONTEXT_TTL_SECONDS is unset/invalid. */
 export const DEFAULT_CTX_TTL = 60;
 

@@ -7,7 +7,7 @@
 // risks one over-served call, never a negative balance.
 // =============================================================================
 
-import { DEFAULT_CTX_TTL, KV_CTX_PREFIX } from "../config";
+import { DEFAULT_CTX_TTL, KV_CTX_PREFIX, KV_MONTH_PREFIX } from "../config";
 import type { CachedProxyContext, Env } from "../types";
 
 const keyFor = (hash: string) => `${KV_CTX_PREFIX}${hash}`;
@@ -69,6 +69,39 @@ export async function addDailySpend(
   const current = await getDailySpend(env, hash, date);
   await env.WALLET_KV.put(spendKey(hash, date), String(current + amount), {
     expirationTtl: SPEND_TTL_SECONDS,
+  });
+}
+
+// ── Per-user monthly request counter (for the free-plan hard cap) ────────────
+const MONTH_TTL_SECONDS = 60 * 60 * 24 * 35; // ~35 days, so last month expires
+
+/** UTC month key, e.g. "2026-06". */
+export function utcMonthKey(now: Date = new Date()): string {
+  return now.toISOString().slice(0, 7);
+}
+
+const monthKey = (userId: string, month: string) =>
+  `${KV_MONTH_PREFIX}${userId}:${month}`;
+
+/** Requests counted this month for a user (best-effort edge counter; 0 if unset). */
+export async function getMonthlyCount(
+  env: Env,
+  userId: string,
+  month: string,
+): Promise<number> {
+  const v = await env.WALLET_KV.get(monthKey(userId, month));
+  return v ? Number(v) : 0;
+}
+
+/** Increment this month's request counter for a user (called during settlement). */
+export async function incrMonthlyCount(
+  env: Env,
+  userId: string,
+  month: string,
+): Promise<void> {
+  const current = await getMonthlyCount(env, userId, month);
+  await env.WALLET_KV.put(monthKey(userId, month), String(current + 1), {
+    expirationTtl: MONTH_TTL_SECONDS,
   });
 }
 

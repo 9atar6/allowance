@@ -4,11 +4,13 @@ import { CreateKeyButton } from "@/components/create-key-button";
 import { EndpointToggle } from "@/components/endpoint-toggle";
 import { InlineDelete } from "@/components/inline-delete";
 import { KeyList } from "@/components/key-list";
+import { PlanCard } from "@/components/plan-card";
 import { ProjectsSection, type ProjectRow } from "@/components/projects-section";
 import { TopUp } from "@/components/top-up";
 import { TransactionsTable, type TxnRow } from "@/components/transactions-table";
 import { UsageTable, type UsageRow } from "@/components/usage-table";
 import { formatUsd as usd } from "@/lib/format";
+import { monthlyQuota, type PlanTier } from "@/lib/plans";
 import { createClient } from "@/lib/supabase/server";
 import { deleteService, signOut } from "./actions";
 
@@ -33,10 +35,16 @@ interface ProxyKey {
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ topup?: string }>;
+  searchParams: Promise<{ topup?: string; plan?: string }>;
 }) {
-  const { topup } = await searchParams;
+  const { topup, plan: planParam } = await searchParams;
   const supabase = await createClient();
+
+  // Start of the current UTC month — matches the worker's monthly counter window.
+  const now = new Date();
+  const monthStart = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
+  ).toISOString();
 
   // All reads are RLS-scoped to the signed-in user.
   const [
@@ -46,8 +54,9 @@ export default async function DashboardPage({
     { data: usage },
     { data: txns },
     { data: projects },
+    { count: monthlyCount },
   ] = await Promise.all([
-    supabase.from("wallets").select("balance, currency").single(),
+    supabase.from("wallets").select("balance, currency, plan").single(),
     supabase
       .from("endpoints")
       .select("id, name, target_url, cost_per_request, is_active, project_id, slug")
@@ -70,9 +79,17 @@ export default async function DashboardPage({
       .from("projects")
       .select("id, name, monthly_budget, is_active")
       .order("created_at", { ascending: false }),
+    // Requests this month (RLS-scoped). head:true → count only, no rows.
+    supabase
+      .from("usage_events")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", monthStart),
   ]);
 
   const balance = wallet?.balance ?? 0;
+  const plan = ((wallet?.plan as PlanTier | undefined) ?? "free") as PlanTier;
+  const monthlyUsed = monthlyCount ?? 0;
+  const monthlyLimit = monthlyQuota(plan);
   const endpointList = (endpoints ?? []) as Endpoint[];
   const keyList = (keys ?? []) as ProxyKey[];
   const projectList = (projects ?? []) as ProjectRow[];
@@ -137,6 +154,17 @@ export default async function DashboardPage({
           <p className="mt-3 text-sm text-neutral-400">Top-up cancelled.</p>
         )}
       </Card>
+
+      {/* Plan + monthly usage */}
+      <PlanCard plan={plan} used={monthlyUsed} limit={monthlyLimit} />
+      {planParam === "upgraded" && (
+        <p className="-mt-3 text-sm text-green-400">
+          You are on Pro. Thanks for the support.
+        </p>
+      )}
+      {planParam === "cancelled" && (
+        <p className="-mt-3 text-sm text-neutral-400">Upgrade cancelled.</p>
+      )}
 
       {/* Projects: the main way to add services + keys */}
       <ProjectsSection
