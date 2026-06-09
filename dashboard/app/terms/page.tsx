@@ -86,7 +86,14 @@ export default function Terms() {
 
           <H2>8. Contact</H2>
           <p>
-            Questions about these terms: <strong>axelacan@gmail.com</strong>.
+            Questions about these terms: open an issue at{" "}
+            <a
+              href="https://github.com/9atar6/allowance/issues"
+              className="text-[var(--accent)] hover:underline"
+            >
+              github.com/9atar6/allowance
+            </a>
+            . A support inbox is coming with general availability.
           </p>
         </div>
       </main>
