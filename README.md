@@ -36,9 +36,9 @@ proxy/  ── Hono on Cloudflare Workers ────────────�
 db/  Supabase (Postgres + Vault)         dashboard/  Next.js 15 (Vercel)
    • RLS deny-by-default                   • GitHub/Google OAuth + magic link
    • creds encrypted in Vault              • connections → projects → keys
-   • budget via SECURITY DEFINER RPCs      • Stripe subscription (Pro) ──┐
+   • budget via SECURITY DEFINER RPCs      • Polar subscription (Pro) ───┐
         ▲                                                                │
-        └──── set_plan ◀── signature-verified Stripe webhook ◀──────────┘
+        └──── set_plan ◀── signature-verified Polar webhook ◀───────────┘
 ```
 
 ## Layout

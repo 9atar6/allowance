@@ -114,7 +114,7 @@ everything else is buildable in-session.
 - [ ] Webhooks (budget-hit / key-revoked / low-budget) with HMAC signatures.
 - [ ] Management API (create keys/connections programmatically) — agent story.
 - [ ] Team workspaces (Enterprise), key rotation endpoint.
-- [ ] Stripe live mode + tax settings; annual plan.
+- [x] Live payments via Polar (merchant of record). Annual plan later.
 - [ ] Settlement batching via Durable Object (trigger: sustained tens of
       req/s or Supabase write saturation — measure first).
 

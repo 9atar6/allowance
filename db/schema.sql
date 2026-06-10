@@ -45,7 +45,7 @@ create table if not exists public.wallet_transactions (
   type             public.txn_type not null,
   amount           numeric(14, 6) not null,   -- signed: + credit, - debit
   balance_after    numeric(14, 6) not null,
-  external_ref     text,                        -- Stripe PI id / proxy request id
+  external_ref     text,                        -- payment ref / proxy request id
   metadata         jsonb not null default '{}'::jsonb,
   created_at       timestamptz not null default now()
 );
@@ -496,7 +496,7 @@ grant execute on function public.issue_proxy_key(uuid,text,text,uuid,uuid,numeri
 -- BILLING / PLANS  (freemium: free | pro | enterprise)
 --
 -- We charge for the gateway, never the upstream AI. The prepaid balance stays a
--- spend-control feature; the *plan* is what gates quota + features. Stripe holds
+-- spend-control feature; the *plan* is what gates quota + features. Polar holds
 -- the money; these columns mirror the subscription state for fast reads.
 -- =============================================================================
 alter table public.wallets add column if not exists plan text not null default 'free'
@@ -509,7 +509,8 @@ alter table public.wallets add column if not exists current_period_end timestamp
 comment on column public.wallets.plan is
   'Billing tier. Drives the monthly request quota + feature gating.';
 
--- set_plan: service_role ONLY — called by the Stripe subscription webhook.
+-- set_plan: service_role ONLY — called by the Polar subscription webhook.
+-- (stripe_* column names are historical; they store the payment provider's ids.)
 create or replace function public.set_plan(
   p_user_id uuid,
   p_plan text,
