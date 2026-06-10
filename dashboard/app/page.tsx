@@ -272,6 +272,12 @@ export default function Landing() {
           >
             GitHub
           </a>
+          <a
+            href="https://stats.uptimerobot.com/bewvMY4MqN"
+            className="transition-colors hover:text-[var(--text)]"
+          >
+            Status
+          </a>
         </div>
       </footer>
     </div>
