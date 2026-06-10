@@ -38,7 +38,7 @@ every sentence here is true of the product as built.
 > spend today — dashboard limits? nothing? — and what would make this useful
 > enough to switch.
 >
-> https://allowance-amber.vercel.app
+> https://getallowance.dev
 
 **HN survival notes:** post Tue–Thu, 14:00–16:00 UTC. Reply to every comment
 within the first 2 hours. Don't argue; ask what they'd need. The "how do you

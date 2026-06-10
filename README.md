@@ -13,7 +13,7 @@ Allowance never touches provider billing: your providers charge you directly,
 as before. The budget is a guardrail, not a wallet. Revenue comes from the Pro
 subscription (no request cap + analytics), never from a markup on your AI.
 
-Live: [allowance-amber.vercel.app](https://allowance-amber.vercel.app)
+Live: [getallowance.dev](https://getallowance.dev)
 
 ## Architecture
 

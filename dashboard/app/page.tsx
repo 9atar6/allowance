@@ -18,8 +18,8 @@ export const metadata = {
     "Route all your API spend through one key, with a spending cap your apps and agents can never exceed and an instant kill switch. Works with any API.",
 };
 
-// The live proxy host. Swap to a vanity domain (api.allowance.dev) once owned.
-const PROXY = "https://api-wallet-proxy.6rataq.workers.dev";
+// The live proxy host.
+const PROXY = "https://api.getallowance.dev";
 
 const HERO_CODE = `# Keep your code. Point the base URL at Allowance.
 curl ${PROXY}/v1/proxy/chat/completions \\

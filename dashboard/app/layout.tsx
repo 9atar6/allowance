@@ -9,7 +9,7 @@ const DESCRIPTION =
   "Route all your API spend through one key, with a spending cap your apps and agents can never exceed and an instant kill switch. Works with any API.";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://allowance-amber.vercel.app"),
+  metadataBase: new URL("https://getallowance.dev"),
   title: TITLE,
   description: DESCRIPTION,
   openGraph: {

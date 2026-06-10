@@ -40,7 +40,7 @@
   "vars": {
     "SUPABASE_URL": "https://izcxmonodmfoebaazxxe.supabase.co",
     "KV_CONTEXT_TTL_SECONDS": "60",
-    "APP_URL": "https://allowance-amber.vercel.app",
+    "APP_URL": "https://getallowance.dev",
     "RESEND_FROM": "Allowance <onboarding@resend.dev>"
   }
 

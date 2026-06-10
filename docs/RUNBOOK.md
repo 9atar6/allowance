@@ -7,7 +7,7 @@ incident that isn't covered here should add a section.
 
 | Thing | Where |
 |---|---|
-| Worker health | `https://api-wallet-proxy.6rataq.workers.dev/healthz` (expect `{"ok":true}`) |
+| Worker health | `https://api.getallowance.dev/healthz` (expect `{"ok":true}`) |
 | Worker logs (live) | `cd proxy && npx wrangler tail` |
 | Worker dashboard | Cloudflare → Workers & Pages → `api-wallet-proxy` (metrics, errors, cron runs) |
 | Database | Supabase dashboard → project `izcxmonodmfoebaazxxe` |
@@ -18,7 +18,7 @@ incident that isn't covered here should add a section.
 
 ## 1. "The proxy is down" (healthz failing / users report 5xx)
 
-1. `curl https://api-wallet-proxy.6rataq.workers.dev/healthz` — if 200, the
+1. `curl https://api.getallowance.dev/healthz` — if 200, the
    worker itself is fine; go to §2 (likely Supabase) or §5 (one user's config).
 2. Check Cloudflare status: https://www.cloudflarestatus.com (Workers/KV).
 3. `npx wrangler tail` and send a test request — read the structured log events

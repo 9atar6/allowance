@@ -18,7 +18,7 @@ function usd(n: number): string {
 }
 
 async function sendAlertEmail(env: Env, w: LowBalanceWallet): Promise<void> {
-  const appUrl = env.APP_URL ?? "https://allowance-amber.vercel.app";
+  const appUrl = env.APP_URL ?? "https://getallowance.dev";
   const body = {
     from: env.RESEND_FROM,
     to: [w.email],

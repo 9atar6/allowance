@@ -7,8 +7,8 @@ export const metadata = {
   description: "Quickstart: route any API through Allowance in three steps.",
 };
 
-// The live proxy host. Swap to a vanity domain (api.allowance.dev) once owned.
-const PROXY = "https://api-wallet-proxy.6rataq.workers.dev";
+// The live proxy host.
+const PROXY = "https://api.getallowance.dev";
 
 const toc = [
   { id: "connect", label: "1. Connect a service" },
@@ -267,7 +267,7 @@ curl "${PROXY}/v1/proxy/gemini/models/gemini-1.5-flash:generateContent" \\
       "scheme": "budget",
       "maxAmountRequired": 0.01,
       "budgetRemaining": 0,
-      "payTo": "https://allowance-amber.vercel.app/dashboard"
+      "payTo": "https://getallowance.dev/dashboard"
     }
   ]
 }`}
