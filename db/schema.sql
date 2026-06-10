@@ -323,60 +323,23 @@ begin
   return true;
 end; $$;
 
--- credit_wallet: service_role ONLY — Stripe top-ups / refunds. Idempotent.
-create or replace function public.credit_wallet(
-  p_user_id uuid, p_amount numeric, p_type public.txn_type, p_external_ref text
-)
-returns boolean language plpgsql security definer
-set search_path = public, pg_temp as $$
-declare v_wallet_id uuid; v_new_bal numeric(14,6);
-begin
-  if p_amount <= 0 then raise exception 'credit amount must be positive'; end if;
-  if exists (select 1 from public.wallet_transactions
-              where type = p_type and external_ref = p_external_ref) then
-    return true;  -- already credited
-  end if;
+-- (credit_wallet was removed with the Model-A pivot — the budget is set
+--  directly via set_budget. Dropped by db/migrations/2026-06-10-cleanup.sql.)
 
-  update public.wallets set balance = balance + p_amount
-   where user_id = p_user_id
-   returning id, balance into v_wallet_id, v_new_bal;
-  if not found then raise exception 'wallet not found for user %', p_user_id; end if;
-
-  insert into public.wallet_transactions
-    (wallet_id, user_id, type, amount, balance_after, external_ref)
-  values (v_wallet_id, p_user_id, p_type, p_amount, v_new_bal, p_external_ref);
-  return true;
-end; $$;
-
--- issue_proxy_key: service_role ONLY — stores hash, plaintext never reaches DB.
-create or replace function public.issue_proxy_key(
-  p_user_id uuid, p_key_hash text, p_key_prefix text, p_endpoint_id uuid default null
-)
-returns uuid language plpgsql security definer
-set search_path = public, pg_temp as $$
-declare v_id uuid;
-begin
-  insert into public.proxy_keys (user_id, key_hash, key_prefix, endpoint_id)
-  values (p_user_id, p_key_hash, p_key_prefix, p_endpoint_id)
-  returning id into v_id;
-  return v_id;
-end; $$;
+-- (issue_proxy_key is defined ONCE, in its latest form, further down — see the
+--  PER-KEY MONTHLY LIMIT section.)
 
 -- ── Privilege lockdown ───────────────────────────────────────────────────────
 revoke all on function public.create_endpoint(text,text,numeric,jsonb,text,numeric,numeric) from public;
 revoke all on function public.get_endpoint_credentials(uuid)                     from public;
 revoke all on function public.get_proxy_context(text)                            from public;
 revoke all on function public.debit_wallet(uuid,uuid,numeric,text,int,int,int,int,int) from public;
-revoke all on function public.credit_wallet(uuid,numeric,public.txn_type,text)   from public;
-revoke all on function public.issue_proxy_key(uuid,text,text,uuid)               from public;
 
 grant execute on function public.create_endpoint(text,text,numeric,jsonb,text,numeric,numeric) to authenticated;
 
 grant execute on function public.get_endpoint_credentials(uuid)                   to service_role;
 grant execute on function public.get_proxy_context(text)                          to service_role;
 grant execute on function public.debit_wallet(uuid,uuid,numeric,text,int,int,int,int,int) to service_role;
-grant execute on function public.credit_wallet(uuid,numeric,public.txn_type,text) to service_role;
-grant execute on function public.issue_proxy_key(uuid,text,text,uuid)             to service_role;
 
 -- =============================================================================
 -- PROJECTS — group several services under one key, with optional budgets.
@@ -727,70 +690,8 @@ revoke all on function public.mark_low_balance_alerted(uuid) from public;
 grant execute on function public.wallets_needing_low_balance_alert() to service_role;
 grant execute on function public.mark_low_balance_alerted(uuid) to service_role;
 
--- =============================================================================
--- AUTO-RELOAD  (charge a saved card automatically when balance drops below the
--- low-balance threshold). Reuses low_balance_threshold as the trigger point.
--- =============================================================================
-alter table public.wallets add column if not exists auto_reload_enabled boolean not null default false;
-alter table public.wallets add column if not exists auto_reload_amount numeric(14, 6);
-alter table public.wallets add column if not exists stripe_payment_method_id text;
-alter table public.wallets add column if not exists auto_reload_attempted_at timestamptz;
-
--- service_role: store the saved card + enable (called by the Stripe setup webhook).
-create or replace function public.set_auto_reload(
-  p_user_id uuid, p_customer_id text, p_payment_method_id text,
-  p_amount numeric, p_enabled boolean
-) returns void language plpgsql security definer set search_path = public, pg_temp as $$
-begin
-  update public.wallets
-     set stripe_customer_id       = coalesce(p_customer_id, stripe_customer_id),
-         stripe_payment_method_id = coalesce(p_payment_method_id, stripe_payment_method_id),
-         auto_reload_amount       = coalesce(p_amount, auto_reload_amount),
-         auto_reload_enabled      = p_enabled,
-         auto_reload_attempted_at = null,
-         updated_at               = now()
-   where user_id = p_user_id;
-end; $$;
-revoke all on function public.set_auto_reload(uuid,text,text,numeric,boolean) from public;
-grant execute on function public.set_auto_reload(uuid,text,text,numeric,boolean) to service_role;
-
--- user: turn auto-reload off.
-create or replace function public.set_auto_reload_enabled(p_enabled boolean)
-returns void language plpgsql security definer set search_path = public, pg_temp as $$
-begin
-  if auth.uid() is null then raise exception 'auth required'; end if;
-  update public.wallets set auto_reload_enabled = p_enabled, updated_at = now()
-   where user_id = auth.uid();
-end; $$;
-revoke all on function public.set_auto_reload_enabled(boolean) from public;
-grant execute on function public.set_auto_reload_enabled(boolean) to authenticated;
-
--- service_role: wallets to auto-reload now (below threshold, card on file, not
--- attempted in the last hour — latch guards against double charges).
-create or replace function public.wallets_needing_auto_reload()
-returns table(user_id uuid, customer_id text, payment_method_id text, amount numeric)
-language sql security definer set search_path = public, pg_temp as $$
-  select w.user_id, w.stripe_customer_id, w.stripe_payment_method_id, w.auto_reload_amount
-  from public.wallets w
-  where w.auto_reload_enabled
-    and w.low_balance_threshold is not null
-    and w.balance < w.low_balance_threshold
-    and w.stripe_customer_id is not null
-    and w.stripe_payment_method_id is not null
-    and coalesce(w.auto_reload_amount, 0) > 0
-    and (w.auto_reload_attempted_at is null
-         or w.auto_reload_attempted_at < now() - interval '1 hour');
-$$;
-
-create or replace function public.mark_auto_reload_attempted(p_user_id uuid)
-returns void language sql security definer set search_path = public, pg_temp as $$
-  update public.wallets set auto_reload_attempted_at = now() where user_id = p_user_id;
-$$;
-
-revoke all on function public.wallets_needing_auto_reload() from public;
-revoke all on function public.mark_auto_reload_attempted(uuid) from public;
-grant execute on function public.wallets_needing_auto_reload() to service_role;
-grant execute on function public.mark_auto_reload_attempted(uuid) to service_role;
+-- (Auto-reload was removed with the Model-A pivot. Its leftover columns and
+--  functions are dropped by db/migrations/2026-06-10-cleanup.sql.)
 
 -- =============================================================================
 -- REUSABLE CONNECTIONS  (define an API once → attach it to many projects)
@@ -929,9 +830,6 @@ begin
 end; $$;
 revoke all on function public.set_budget(numeric) from public;
 grant execute on function public.set_budget(numeric) to authenticated;
-
--- Disable any auto-reload left over from the prepaid experiment (no card charges).
-update public.wallets set auto_reload_enabled = false where auto_reload_enabled;
 
 -- =============================================================================
 -- PER-KEY MONTHLY LIMIT  (completes the limits story: key/day, key/month,

@@ -62,24 +62,6 @@ export function getProxyContext(
   });
 }
 
-/** Credit a wallet (x402 top-up). Idempotent on (type, externalRef). */
-export function creditWallet(
-  env: Env,
-  params: {
-    userId: string;
-    amount: number;
-    type: "topup" | "refund" | "adjustment";
-    externalRef: string;
-  },
-): Promise<boolean> {
-  return rpc<boolean>(env, "credit_wallet", {
-    p_user_id: params.userId,
-    p_amount: params.amount,
-    p_type: params.type,
-    p_external_ref: params.externalRef,
-  });
-}
-
 /**
  * Atomically debit the wallet and write the ledger + usage row.
  * Returns true if debited, false on insufficient funds / duplicate request_id.
