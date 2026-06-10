@@ -22,3 +22,6 @@ supabase/.temp/
 # OS / editor
 .DS_Store
 *.log
+
+# Generated test coverage reports
+coverage/
