@@ -186,7 +186,9 @@ details:not([open]) .chevron { transform: rotate(-90deg); }
   margin: -350px 0 0 -350px;
   border-radius: 50%;
   pointer-events: none;
-  z-index: 1;
+  /* Above the sticky nav (z-20) so the light sweeps across it instead of
+     cutting off at its edge; below toasts (z-50). Pointer-events: none. */
+  z-index: 30;
   background: radial-gradient(
     circle,
     rgba(124, 127, 255, 0.09) 0%,
@@ -205,64 +207,26 @@ html.light .cursor-glow {
   mix-blend-mode: soft-light;
 }
 
-/* Click ripple: a layered burst — a soft light flash that blooms fast, and a
-   crisp ring that chases it with a slight overshoot. */
+/* Click effect: a barely-there pressure ring, like the surface itself reacting.
+   No color, no glow — a faint neutral ring that expands and dissolves. */
 .click-ripple {
   position: fixed;
-  width: 160px;
-  height: 160px;
-  margin: -80px 0 0 -80px;
+  width: 88px;
+  height: 88px;
+  margin: -44px 0 0 -44px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  filter: blur(0.6px);
   pointer-events: none;
-  z-index: 2;
+  z-index: 31;
+  animation: ripple-press 0.5s ease-out forwards;
 }
-.click-ripple::before {
-  /* the light flash */
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.65) 0%,
-    rgba(124, 127, 255, 0.35) 30%,
-    transparent 65%
-  );
-  animation: ripple-flash 0.45s ease-out forwards;
+html.light .click-ripple {
+  border-color: rgba(40, 42, 52, 0.16);
 }
-.click-ripple::after {
-  /* the chasing ring */
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1.5px solid rgba(160, 162, 255, 0.9);
-  box-shadow:
-    0 0 18px 2px rgba(124, 127, 255, 0.35),
-    inset 0 0 12px rgba(124, 127, 255, 0.2);
-  animation: ripple-ring 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-@keyframes ripple-flash {
-  0%   { transform: scale(0.1); opacity: 1; }
-  60%  { opacity: 0.5; }
-  100% { transform: scale(0.9); opacity: 0; }
-}
-@keyframes ripple-ring {
-  0%   { transform: scale(0.12); opacity: 0; }
-  15%  { opacity: 1; }
-  70%  { transform: scale(1.05); }
+@keyframes ripple-press {
+  0%   { transform: scale(0.35); opacity: 0.8; }
   100% { transform: scale(1); opacity: 0; }
-}
-html.light .click-ripple::before {
-  background: radial-gradient(
-    circle,
-    rgba(91, 94, 240, 0.4) 0%,
-    rgba(91, 94, 240, 0.18) 35%,
-    transparent 65%
-  );
-}
-html.light .click-ripple::after {
-  border-color: rgba(91, 94, 240, 0.7);
-  box-shadow: 0 0 18px 2px rgba(91, 94, 240, 0.25);
 }
 
 /* ── Motion: a single quiet entrance ──────────────────────────────────────── */
