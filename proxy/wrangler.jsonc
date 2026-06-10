@@ -41,7 +41,7 @@
     "SUPABASE_URL": "https://izcxmonodmfoebaazxxe.supabase.co",
     "KV_CONTEXT_TTL_SECONDS": "60",
     "APP_URL": "https://getallowance.dev",
-    "RESEND_FROM": "Allowance <onboarding@resend.dev>"
+    "RESEND_FROM": "Allowance <alerts@getallowance.dev>"
   }
 
   // SECRETS — never commit these; set them per-environment:
