@@ -14,10 +14,14 @@ const toc = [
   { id: "connect", label: "1. Connect a service" },
   { id: "key", label: "2. Create a key" },
   { id: "route", label: "3. Point your base URL" },
+  { id: "providers", label: "Provider quickstarts" },
   { id: "streaming", label: "Streaming" },
+  { id: "limits", label: "The four caps" },
   { id: "limit", label: "When the budget runs out" },
   { id: "budget", label: "Setting a budget" },
   { id: "revoke", label: "Revoke a key" },
+  { id: "errors", label: "Error reference" },
+  { id: "faq", label: "FAQ" },
 ];
 
 function Mono({ children }: { children: string }) {
@@ -152,11 +156,97 @@ curl ${PROXY}/v1/proxy/chat/completions \\
                 </p>
               </Step>
 
+              <Step id="providers" title="Provider quickstarts">
+                <p>
+                  Official SDKs work unchanged — point the base URL at your
+                  Allowance slug and pass your <Mono>alw_live_</Mono> key as the
+                  API key. Your real provider key stays in the vault.
+                </p>
+                <CodeBlock
+                  label="openai (js / python)"
+                  code={`// JavaScript
+import OpenAI from "openai";
+const client = new OpenAI({
+  apiKey: "alw_live_your_key",
+  baseURL: "${PROXY}/v1/proxy/openai",
+});
+
+# Python
+from openai import OpenAI
+client = OpenAI(
+    api_key="alw_live_your_key",
+    base_url="${PROXY}/v1/proxy/openai",
+)`}
+                />
+                <CodeBlock
+                  label="anthropic (js / python)"
+                  code={`// JavaScript
+import Anthropic from "@anthropic-ai/sdk";
+const client = new Anthropic({
+  apiKey: "alw_live_your_key",
+  baseURL: "${PROXY}/v1/proxy/anthropic",
+});
+
+# Python
+from anthropic import Anthropic
+client = Anthropic(
+    api_key="alw_live_your_key",
+    base_url="${PROXY}/v1/proxy/anthropic",
+)`}
+                />
+                <CodeBlock
+                  label="gemini (rest)"
+                  code={`# Gemini's SDK pins its host, so call the REST API through your slug:
+curl "${PROXY}/v1/proxy/gemini/models/gemini-1.5-flash:generateContent" \\
+  -H "Authorization: Bearer alw_live_your_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "contents": [{ "parts": [{ "text": "hi" }] }] }'`}
+                />
+                <p>
+                  The slug (<Mono>openai</Mono>, <Mono>anthropic</Mono>, …) is
+                  whatever you chose when attaching the connection to your
+                  project.
+                </p>
+              </Step>
+
               <Step id="streaming" title="Streaming works out of the box">
                 <p>
                   Live token streams pass straight through. Add{" "}
                   <Mono>{`"stream": true`}</Mono> and read the response exactly as
                   you would from the service directly.
+                </p>
+              </Step>
+
+              <Step id="limits" title="The four caps">
+                <p>
+                  Allowance enforces four independent hard stops. Any one of them
+                  tripping returns <Mono>402</Mono> and the call never reaches
+                  your provider:
+                </p>
+                <ul className="ml-5 list-disc space-y-2">
+                  <li>
+                    <strong className="text-[var(--text)]">Account budget</strong> — the
+                    number on your dashboard. The ultimate ceiling across
+                    everything you run.
+                  </li>
+                  <li>
+                    <strong className="text-[var(--text)]">Project budget /mo</strong> —
+                    optional, set when creating a project. Caps all keys in that
+                    project combined, resets monthly.
+                  </li>
+                  <li>
+                    <strong className="text-[var(--text)]">Key cap /day</strong> —
+                    optional, set when minting a key. Resets at midnight UTC.
+                  </li>
+                  <li>
+                    <strong className="text-[var(--text)]">Key cap /mo</strong> —
+                    optional, set when minting a key. Resets monthly.
+                  </li>
+                </ul>
+                <p>
+                  Typical setup: a generous account budget, a sane project
+                  budget, and a tight daily cap on any key an autonomous agent
+                  holds.
                 </p>
               </Step>
 
@@ -208,6 +298,102 @@ curl ${PROXY}/v1/proxy/chat/completions \\
                   every further request returns <Mono>401</Mono>. You can disable a
                   whole service the same way.
                 </p>
+              </Step>
+
+              <Step id="errors" title="Error reference">
+                <p>
+                  Every error is JSON with an <Mono>error</Mono> field. The exact
+                  values:
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full min-w-[520px] text-sm">
+                    <thead>
+                      <tr className="text-left text-xs text-[var(--text-faint)]">
+                        <th className="pb-2 pr-4 font-normal">Status</th>
+                        <th className="pb-2 pr-4 font-normal">error</th>
+                        <th className="pb-2 font-normal">Meaning / fix</th>
+                      </tr>
+                    </thead>
+                    <tbody className="align-top">
+                      {[
+                        ["401", "missing_api_key", "No Authorization header. Send Bearer alw_live_…"],
+                        ["401", "invalid_api_key", "Unknown or revoked key. Mint a new one."],
+                        ["402", "x402 body", "Account budget exhausted. Raise it on the dashboard."],
+                        ["402", "daily_limit_reached", "This key's $/day cap tripped. Resets midnight UTC."],
+                        ["402", "monthly_limit_reached", "This key's $/month cap tripped. Resets monthly."],
+                        ["402", "project_budget_reached", "The project's monthly budget tripped."],
+                        ["404", "unknown_service", "The slug after /v1/proxy/ doesn't match an attached service."],
+                        ["413", "payload_too_large", "Request body over 10 MB."],
+                        ["429", "rate_limited", "Too many requests (per key or per IP). Back off and retry."],
+                        ["502", "upstream_unreachable", "Your provider's URL is down or wrong."],
+                        ["503", "endpoint_unavailable", "The connection is disabled. Re-enable it."],
+                        ["504", "upstream_timeout", "Provider didn't respond within 60 s."],
+                      ].map(([status, err, fix]) => (
+                        <tr key={`${status}-${err}`} className="border-t border-[var(--line)]">
+                          <td className="py-2 pr-4 font-mono text-xs">{status}</td>
+                          <td className="py-2 pr-4 font-mono text-xs text-[var(--accent)]">
+                            {err}
+                          </td>
+                          <td className="py-2 text-xs text-[var(--text-muted)]">{fix}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </Step>
+
+              <Step id="faq" title="FAQ">
+                <div className="space-y-5">
+                  <div>
+                    <p className="font-medium text-[var(--text)]">
+                      Does Allowance charge me for my API usage?
+                    </p>
+                    <p className="mt-1">
+                      No. Your providers bill you directly, exactly as before.
+                      The budget is a free cap; Allowance only charges for the
+                      Pro plan if you choose it.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-[var(--text)]">
+                      Can you see my prompts or responses?
+                    </p>
+                    <p className="mt-1">
+                      No. Bodies stream through and are never stored or logged.
+                      We keep metadata only: timestamps, status codes, token
+                      counts, estimated cost.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-[var(--text)]">
+                      How exact is the budget?
+                    </p>
+                    <p className="mt-1">
+                      Per-token presets (OpenAI, Anthropic, Gemini) compute real
+                      token cost from each response. Flat-rate connections use
+                      the estimate you set. Treat the budget as a guardrail, not
+                      an invoice.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-[var(--text)]">
+                      What happens to in-flight streams when a cap trips?
+                    </p>
+                    <p className="mt-1">
+                      Caps are checked before each call. A stream that already
+                      started always finishes; the next call gets the 402.
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-[var(--text)]">
+                      How fast is revocation?
+                    </p>
+                    <p className="mt-1">
+                      Within seconds — and never more than 60 (the edge cache
+                      TTL).
+                    </p>
+                  </div>
+                </div>
               </Step>
             </div>
 

@@ -4,10 +4,25 @@ import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
+const TITLE = "Allowance — One key. Every API. A hard cap.";
+const DESCRIPTION =
+  "Route all your API spend through one key, with a spending cap your apps and agents can never exceed and an instant kill switch. Works with any API.";
+
 export const metadata: Metadata = {
-  title: "Allowance — One key. Every API. A hard cap.",
-  description:
-    "Route all your API spend through one key, with a spending cap your apps and agents can never exceed and an instant kill switch. Works with any API.",
+  metadataBase: new URL("https://allowance-amber.vercel.app"),
+  title: TITLE,
+  description: DESCRIPTION,
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    siteName: "Allowance",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: TITLE,
+    description: DESCRIPTION,
+  },
 };
 
 export default function RootLayout({

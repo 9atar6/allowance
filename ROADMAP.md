@@ -44,7 +44,7 @@ everything else is buildable in-session.
       `wallets_needing_low_balance_alert`, `mark_low_balance_alerted`; mint JWT;
       swap secret; verify live, keep old key as rollback. (Needs careful
       live testing — do as its own block.)
-- [ ] Cleanup migration: drop dead columns (`auto_reload_*`,
+- [x] Cleanup migration: drop dead columns (`auto_reload_*`,
       `stripe_payment_method_id`) + drop dead RPCs (`set_auto_reload*`,
       `wallets_needing_auto_reload`, `mark_auto_reload_attempted`,
       `credit_wallet` if unused) in one reviewed SQL block.
@@ -92,18 +92,18 @@ everything else is buildable in-session.
 - [ ] **[you + me]** Verify domain in Resend → branded alert emails to any
       user; create `support@` inbox; put it in Terms/Privacy (replacing the
       GitHub-issues placeholder).
-- [ ] Docs expansion: error reference table (401/402/404/413/429/5xx with
+- [x] Docs expansion: error reference table (401/402/404/413/429/5xx with
       exact bodies), per-provider quickstarts (OpenAI/Anthropic/Gemini code
       snippets in JS + Python), limits page (3 caps explained), FAQ.
-- [ ] OpenGraph/social card + favicon (currently default).
+- [x] OpenGraph/social card + favicon (currently default).
 - [ ] Landing: add a real screenshot of the dashboard (social proof section
       placeholder until there are users).
 
 ## Phase 6 — Business validation (D → A+) — the one that actually matters
 
-- [ ] Draft launch assets: Show HN post, outreach DM, 2-minute onboarding gif.
+- [x] Draft launch assets: Show HN post, outreach DM, 2-minute onboarding gif.
 - [ ] **[you]** Post + DM until 10 real developers have keys.
-- [ ] Define activation metric (connected real API + >50 proxied calls +
+- [x] Define activation metric (connected real API + >50 proxied calls +
       returned in week 2) and check it weekly against `usage_events`.
 - [ ] 5 user calls; log verbatim pain quotes in `docs/VALIDATION.md`.
 - [ ] Decision gate: ≥3/10 activated → double down (build Phase 7);
