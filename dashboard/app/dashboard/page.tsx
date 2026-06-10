@@ -5,6 +5,7 @@ import {
   type ConnectionRow,
 } from "@/components/connections-section";
 import { LowBalanceSetting } from "@/components/low-balance-setting";
+import { Onboarding } from "@/components/onboarding";
 import { PlanCard } from "@/components/plan-card";
 import {
   ProjectsSection,
@@ -14,6 +15,7 @@ import {
 } from "@/components/projects-section";
 import { SetBudget } from "@/components/set-budget";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Toaster } from "@/components/toaster";
 import {
   UsageAnalytics,
   type DailyPoint,
@@ -57,6 +59,7 @@ interface ProxyKey {
   monthly_limit: number | null;
   name: string | null;
   created_at: string | null;
+  last_used_at: string | null;
 }
 
 export default async function DashboardPage({
@@ -97,7 +100,7 @@ export default async function DashboardPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("proxy_keys")
-      .select("id, key_prefix, is_active, endpoint_id, project_id, daily_limit, monthly_limit, name, created_at")
+      .select("id, key_prefix, is_active, endpoint_id, project_id, daily_limit, monthly_limit, name, created_at, last_used_at")
       .order("created_at", { ascending: false }),
     // Request-level detail, used to enrich debit rows in the activity feed.
     supabase
@@ -178,6 +181,18 @@ export default async function DashboardPage({
   const isPro = plan !== "free";
   const serviceName = (id: string | null) =>
     (id && endpointNames.get(id)) || "Unknown";
+  const serviceNames = Object.fromEntries(endpointNames);
+
+  // Fresh account → guided onboarding instead of the full sections.
+  const isFreshAccount =
+    keyList.length === 0 && projectList.length <= 1 && connections.length <= 1;
+  const firstProject = projectList[0]
+    ? { id: projectList[0].id, name: projectList[0].name }
+    : null;
+  const firstSlug =
+    (firstProject &&
+      attachments.find((a) => a.project_id === firstProject.id)?.slug) ??
+    null;
 
   // Fill a continuous 14-day window for the chart (RPC only returns active days).
   const dailyMap = new Map<string, { requests: number; cost: number }>();
@@ -235,6 +250,7 @@ export default async function DashboardPage({
 
   return (
     <main className="mx-auto max-w-5xl space-y-8 px-6 pb-20">
+      <Toaster />
       {/* Top bar */}
       <header className="flex items-center justify-between py-7">
         <Wordmark />
@@ -298,20 +314,31 @@ export default async function DashboardPage({
         </div>
       </CollapsibleCard>
 
-      {/* Connections (reusable APIs) — define an API first, then attach it */}
-      <CollapsibleCard title="Connections">
-        <ConnectionsSection connections={connections} />
-      </CollapsibleCard>
-
-      {/* Projects — attach connections + mint keys */}
-      <CollapsibleCard title="Projects">
-        <ProjectsSection
-          projects={projectList}
-          attachments={attachments}
+      {isFreshAccount ? (
+        /* Fresh account: guided 3-step setup to the first capped call */
+        <Onboarding
           connections={connectionOptions}
-          keys={keyList}
+          firstProject={firstProject}
+          firstSlug={firstSlug}
         />
-      </CollapsibleCard>
+      ) : (
+        <>
+          {/* Connections (reusable APIs) — define an API first, then attach it */}
+          <CollapsibleCard title="Connections">
+            <ConnectionsSection connections={connections} />
+          </CollapsibleCard>
+
+          {/* Projects — attach connections + mint keys */}
+          <CollapsibleCard title="Projects">
+            <ProjectsSection
+              projects={projectList}
+              attachments={attachments}
+              connections={connectionOptions}
+              keys={keyList}
+            />
+          </CollapsibleCard>
+        </>
+      )}
 
       {/* Usage analytics (Pro) */}
       <CollapsibleCard
@@ -322,7 +349,7 @@ export default async function DashboardPage({
           <UsageAnalytics
             daily={daily}
             services={serviceRows}
-            serviceName={serviceName}
+            serviceNames={serviceNames}
           />
         ) : (
           <p className="text-sm text-[var(--text-muted)]">
@@ -334,7 +361,7 @@ export default async function DashboardPage({
 
       {/* Activity: one ledger of top-ups + per-call charges (scrolls if long) */}
       <CollapsibleCard title="Activity">
-        <div className="max-h-96 overflow-y-auto pr-1">
+        <div className="max-h-96 overflow-auto pr-1">
           <ActivityTable rows={activityRows} />
         </div>
       </CollapsibleCard>

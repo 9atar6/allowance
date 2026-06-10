@@ -975,6 +975,13 @@ begin
   where pk.key_hash = p_key_hash and pk.is_active;
   if not found then return null; end if;
 
+  -- Touch last_used_at, throttled to once/hour. Piggybacks on the cache-miss
+  -- path (the edge calls this at most every KV TTL), so no extra round-trips.
+  update public.proxy_keys
+     set last_used_at = now()
+   where key_hash = p_key_hash
+     and (last_used_at is null or last_used_at < now() - interval '1 hour');
+
   if k.project_id is not null then
     with routes_cte as (
       select ps.slug, e.id, e.target_url, e.cost_per_request, e.metering_mode,

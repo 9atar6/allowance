@@ -36,8 +36,8 @@ everything else is buildable in-session.
 - [x] Enforce request body size limit (e.g. 10 MB) → 413, with test.
 - [x] Per-key *monthly* limit (same KV pattern as daily) — completes the
       limits story (daily ✓, project-monthly ✓, key-monthly ✗).
-- [ ] Make the negative-key cache TTL + IP limit numbers config vars.
-- [ ] Decide Pro quota policy: either keep "uncapped" (current, honest) or
+- [x] Make the negative-key cache TTL + IP limit numbers config vars.
+- [x] Decide Pro quota policy: either keep "uncapped" (current, honest) or
       build soft-warning at N req/mo. No silent caps.
 - [ ] Restricted Postgres role for the worker (replace service_role): create
       role with EXECUTE on exactly `get_proxy_context`, `debit_wallet`,
@@ -65,23 +65,23 @@ everything else is buildable in-session.
 
 ## Phase 4 — Dashboard & UX (B → A+)
 
-- [ ] First-run onboarding: when a user has 0 connections, replace the empty
+- [x] First-run onboarding: when a user has 0 connections, replace the empty
       dashboard with a 3-step guided card (add connection → create project +
       attach → mint key with copy-paste curl that includes their real key
       prefix + worker URL). This is the activation moment — highest UX leverage.
-- [ ] Toast system (one tiny component) for success/error instead of inline
+- [x] Toast system (one tiny component) for success/error instead of inline
       text scattered per form.
-- [ ] Loading/disabled states pass: every server-action button shows pending
+- [x] Loading/disabled states pass: every server-action button shows pending
       state consistently (audit all forms).
-- [ ] Mobile pass: test at 375px; fix the project rows + tables (horizontal
+- [x] Mobile pass: test at 375px; fix the project rows + tables (horizontal
       scroll wrappers), nav wrap.
-- [ ] Accessibility pass: focus order, aria-labels on icon buttons (copy,
+- [x] Accessibility pass: focus order, aria-labels on icon buttons (copy,
       theme, revoke), prefers-reduced-motion respected (done), color-contrast
       check in light mode.
-- [ ] Key UX: show full key prefix + name prominently; "last used" column
+- [x] Key UX: show full key prefix + name prominently; "last used" column
       (data already in schema: `last_used_at` — needs worker to update it,
       throttled, e.g. only when > 1h stale).
-- [ ] Analytics: add a requests/day bar toggle (cost vs requests), and a
+- [x] Analytics: add a requests/day bar toggle (cost vs requests), and a
       30→90 day range once data exists (then update pricing copy to match).
 
 ## Phase 5 — Marketing & docs (A− → A+) — mostly needs the domain

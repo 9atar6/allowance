@@ -34,6 +34,7 @@ export interface ProjectKeyRow {
   monthly_limit: number | null;
   name: string | null;
   created_at: string | null;
+  last_used_at: string | null;
 }
 
 interface Props {
@@ -90,6 +91,7 @@ export function ProjectsSection({
                 monthlyLimit: k.monthly_limit,
                 name: k.name,
                 createdAt: k.created_at,
+                lastUsedAt: k.last_used_at,
               }));
 
             return (

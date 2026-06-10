@@ -40,6 +40,8 @@ export interface Env {
   ALERT_WEBHOOK_URL?: string;
 
   KV_CONTEXT_TTL_SECONDS: string;
+  // Optional override for the bad-key negative-cache TTL (default 60s).
+  NEG_CACHE_TTL_SECONDS?: string;
 }
 
 /**

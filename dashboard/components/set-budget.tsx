@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { setBudget } from "@/app/dashboard/actions";
+import { toast } from "@/components/toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -23,8 +24,12 @@ export function SetBudget({ current }: { current: number }) {
     }
     start(async () => {
       const res = await setBudget(n);
-      if (!res.ok) setError(res.error ?? "Something went wrong.");
-      else setVal("");
+      if (!res.ok) {
+        toast(res.error ?? "Could not set the budget.", "error");
+      } else {
+        setVal("");
+        toast(`Budget set to $${n.toFixed(2)}.`);
+      }
     });
   }
 
@@ -43,7 +48,7 @@ export function SetBudget({ current }: { current: number }) {
         <Button type="submit" disabled={pending} className="shrink-0">
           {pending ? "…" : "Set"}
         </Button>
-      </div>
+        </div>
       {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
     </form>
   );

@@ -20,7 +20,7 @@ export function ActivityTable({ rows }: { rows: ActivityRow[] }) {
   }
 
   return (
-    <table className="w-full text-sm">
+    <table className="w-full min-w-[560px] text-sm">
       <thead className="sticky top-0 bg-[var(--bg)]">
         <tr className="text-left text-xs text-[var(--text-faint)]">
           <th className="pb-3 pt-1 font-normal">When</th>

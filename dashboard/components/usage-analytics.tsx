@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { formatUsd } from "@/lib/format";
 
 export interface DailyPoint {
@@ -14,8 +17,11 @@ export interface ServicePoint {
 interface Props {
   daily: DailyPoint[];
   services: ServicePoint[];
-  serviceName: (id: string | null) => string;
+  /** endpointId -> display name, resolved server-side. */
+  serviceNames: Record<string, string>;
 }
+
+type Metric = "cost" | "requests";
 
 function fmtDay(iso: string): string {
   return new Date(iso).toLocaleDateString(undefined, {
@@ -24,32 +30,47 @@ function fmtDay(iso: string): string {
   });
 }
 
-export function UsageAnalytics({ daily, services, serviceName }: Props) {
+export function UsageAnalytics({ daily, services, serviceNames }: Props) {
+  const [metric, setMetric] = useState<Metric>("cost");
+
   const totalCost = daily.reduce((s, d) => s + d.cost, 0);
   const totalReq = daily.reduce((s, d) => s + d.requests, 0);
-  const max = Math.max(...daily.map((d) => d.cost), 1e-9);
+  const value = (d: DailyPoint) => (metric === "cost" ? d.cost : d.requests);
+  const max = Math.max(...daily.map(value), 1e-9);
+  const name = (id: string | null) => (id && serviceNames[id]) || "Unknown";
+
+  function StatButton({ m, label, display }: { m: Metric; label: string; display: string }) {
+    const active = metric === m;
+    return (
+      <button
+        type="button"
+        onClick={() => setMetric(m)}
+        aria-pressed={active}
+        className={`px-3 py-2 text-left transition-shadow ${
+          active ? "neu-inset-sm" : "pressable rounded-[var(--r-sm)]"
+        }`}
+      >
+        <span className="block text-xs text-[var(--text-faint)]">{label}</span>
+        <span className="mt-0.5 block text-2xl font-semibold tabular-nums text-[var(--text)]">
+          {display}
+        </span>
+      </button>
+    );
+  }
 
   return (
     <div>
-      <div className="flex gap-10">
-        <div>
-          <p className="text-xs text-[var(--text-faint)]">Spent · 14 days</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">
-            {formatUsd(totalCost)}
-          </p>
-        </div>
-        <div>
-          <p className="text-xs text-[var(--text-faint)]">Requests · 14 days</p>
-          <p className="mt-1 text-2xl font-semibold tabular-nums">
-            {totalReq.toLocaleString()}
-          </p>
-        </div>
+      {/* Totals double as the chart-metric toggle */}
+      <div className="flex gap-4">
+        <StatButton m="cost" label="Spent · 14 days" display={formatUsd(totalCost)} />
+        <StatButton m="requests" label="Requests · 14 days" display={totalReq.toLocaleString()} />
       </div>
 
-      {/* Daily spend bars */}
-      <div className="mt-7 flex h-28 items-end gap-1.5">
+      {/* Daily bars for the selected metric */}
+      <div className="mt-6 flex h-28 items-end gap-1.5">
         {daily.map((d) => {
-          const h = Math.max(2, Math.round((d.cost / max) * 100));
+          const v = value(d);
+          const h = Math.max(2, Math.round((v / max) * 100));
           return (
             <div
               key={d.day}
@@ -58,7 +79,7 @@ export function UsageAnalytics({ daily, services, serviceName }: Props) {
             >
               <div
                 className="w-full rounded-[3px] bg-[var(--accent)]"
-                style={{ height: `${h}%`, opacity: d.cost > 0 ? 1 : 0.2 }}
+                style={{ height: `${h}%`, opacity: v > 0 ? 1 : 0.2 }}
               />
             </div>
           );
@@ -81,9 +102,7 @@ export function UsageAnalytics({ daily, services, serviceName }: Props) {
                 key={s.endpointId ?? "unknown"}
                 className="flex items-center justify-between"
               >
-                <span className="text-[var(--text)]">
-                  {serviceName(s.endpointId)}
-                </span>
+                <span className="text-[var(--text)]">{name(s.endpointId)}</span>
                 <span className="tabular-nums text-[var(--text-muted)]">
                   {s.requests.toLocaleString()} req · {formatUsd(s.cost)}
                 </span>

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { revokeProxyKey } from "@/app/dashboard/actions";
+import { toast } from "@/components/toaster";
 import { Button } from "@/components/ui/button";
 
 export interface KeyItem {
@@ -12,6 +13,7 @@ export interface KeyItem {
   monthlyLimit?: number | null;
   name?: string | null;
   createdAt?: string | null;
+  lastUsedAt?: string | null;
 }
 
 function shortDate(iso: string): string {
@@ -23,7 +25,6 @@ function shortDate(iso: string): string {
 
 export function KeyList({ keys }: { keys: KeyItem[] }) {
   const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   const [revoking, setRevoking] = useState<string | null>(null);
 
   if (keys.length === 0) {
@@ -31,11 +32,11 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
   }
 
   function revoke(id: string) {
-    setError(null);
     setRevoking(id);
     startTransition(async () => {
       const res = await revokeProxyKey(id);
-      if (!res.ok) setError(res.error ?? "Failed to revoke.");
+      if (!res.ok) toast(res.error ?? "Failed to revoke the key.", "error");
+      else toast("Key revoked. It stops working within seconds.");
       setRevoking(null);
     });
   }
@@ -58,6 +59,11 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
             </div>
             <div className="mt-0.5 text-[var(--text-faint)]">
               {k.createdAt && <>Created {shortDate(k.createdAt)}</>}
+              {k.lastUsedAt ? (
+                <> · Last used {shortDate(k.lastUsedAt)}</>
+              ) : (
+                <> · Never used</>
+              )}
               {k.dailyLimit != null && <> · ${k.dailyLimit}/day cap</>}
               {k.monthlyLimit != null && <> · ${k.monthlyLimit}/mo cap</>}
             </div>
@@ -74,7 +80,6 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
           )}
         </li>
       ))}
-      {error && <li className="text-xs text-red-400">{error}</li>}
     </ul>
   );
 }

@@ -57,6 +57,7 @@ export function AttachServiceForm({
       <input type="hidden" name="projectId" value={projectId} />
       <select
         name="endpointId"
+        aria-label="Connection to attach"
         value={endpointId}
         onChange={(e) => {
           setEndpointId(e.target.value);

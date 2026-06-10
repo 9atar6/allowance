@@ -46,8 +46,8 @@ html.light {
   --accent: #5b5ef0;
   --accent-dim: #4d50d8;
   --text: #2a2d35;
-  --text-muted: #62656f;
-  --text-faint: #9498a3;
+  --text-muted: #5c5f69;
+  --text-faint: #7e8290; /* darker than the classic soft-UI grey for WCAG contrast */
   --line: rgba(0, 0, 0, 0.12);
   color-scheme: light;
 }
