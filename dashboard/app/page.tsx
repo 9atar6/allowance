@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CodeBlock } from "@/components/marketing/code-block";
+import { CursorFx } from "@/components/cursor-fx";
 import { SiteNav } from "@/components/site-nav";
 import { Wordmark } from "@/components/wordmark";
 import {
@@ -73,7 +74,7 @@ const plans = [
     cadence: "/mo",
     features: [
       "Everything in Free",
-      "No monthly request cap",
+      "No monthly request cap (fair use)",
       "Usage analytics (trends + top services)",
     ],
     cta: "Upgrade",
@@ -100,6 +101,7 @@ function Eyebrow({ children }: { children: string }) {
 export default function Landing() {
   return (
     <div className="min-h-screen">
+      <CursorFx />
       <SiteNav />
 
       {/* Hero */}
