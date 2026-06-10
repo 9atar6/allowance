@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 /**
- * Set the spend budget. Free — it's a cap, not a payment. Your providers still
+ * Set the spend budget. Free, it's a cap, not a payment. Your providers still
  * bill you directly; this just decides when Allowance cuts your agents off.
  */
 export function SetBudget({ current }: { current: number }) {

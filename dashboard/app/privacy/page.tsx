@@ -1,7 +1,7 @@
 import { SiteNav } from "@/components/site-nav";
 
 export const metadata = {
-  title: "Privacy Policy — Allowance",
+  title: "Privacy Policy | Allowance",
 };
 
 function H2({ children }: { children: string }) {
@@ -32,7 +32,7 @@ export default function Privacy() {
             </li>
             <li>
               <strong>Configuration:</strong> your projects, connections (the API
-              base URLs you add), budgets, and proxy keys (stored only as a hash —
+              base URLs you add), budgets, and proxy keys (stored only as a hash -
               the full key is shown once and never stored).
             </li>
             <li>
@@ -61,7 +61,7 @@ export default function Privacy() {
           <p>
             We use a small set of infrastructure providers to run the Service:
             Supabase (database and authentication), Cloudflare (the edge proxy),
-            Stripe (payments — we never see or store your card details), Resend
+            Stripe (payments, we never see or store your card details), Resend
             (transactional email), and Vercel (hosting). We do not sell your data
             or share it for advertising.
           </p>

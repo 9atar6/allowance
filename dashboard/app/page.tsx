@@ -13,7 +13,7 @@ import {
 } from "@/components/marketing/icons";
 
 export const metadata = {
-  title: "Allowance — One key. Every API. A hard cap.",
+  title: "Allowance: One key. Every API. A hard cap.",
   description:
     "Route all your API spend through one key, with a spending cap your apps and agents can never exceed and an instant kill switch. Works with any API.",
 };
@@ -30,7 +30,7 @@ const steps = [
   {
     n: "01",
     title: "Set a budget",
-    body: "Tell Allowance how much your apps and agents may spend. That cap is the ceiling — nothing can ever go past it.",
+    body: "Tell Allowance how much your apps and agents may spend. That cap is the ceiling, nothing can ever go past it.",
   },
   {
     n: "02",
@@ -214,7 +214,7 @@ export default function Landing() {
                   {p.cadence}
                 </span>
               </div>
-              <ul className="mt-7 space-y-3 text-sm">
+              <ul className="mt-7 flex-1 space-y-3 text-sm">
                 {p.features.map((f) => (
                   <li key={f} className="flex gap-2.5 text-[var(--text-muted)]">
                     <span className="text-accent">·</span>

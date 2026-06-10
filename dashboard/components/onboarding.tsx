@@ -71,7 +71,7 @@ function Step({
 
 /**
  * First-run guided setup. Shown instead of the Connections/Projects sections
- * until the user mints their first key — walks them to a working proxied call.
+ * until the user mints their first key, walks them to a working proxied call.
  */
 export function Onboarding({ connections, firstProject, firstSlug }: Props) {
   const step1Done = connections.length > 0;
@@ -87,7 +87,7 @@ export function Onboarding({ connections, firstProject, firstSlug }: Props) {
     <Card>
       <CardTitle>Get started</CardTitle>
       <p className="mt-2 text-sm text-[var(--text-muted)]">
-        Three steps to your first capped API call — about two minutes.
+        Three steps to your first capped API call, about two minutes.
       </p>
 
       <ol className="mt-6 space-y-5">
@@ -109,7 +109,7 @@ export function Onboarding({ connections, firstProject, firstSlug }: Props) {
             <div>
               <p className="mb-2 text-xs text-[var(--text-faint)]">
                 Project <span className="text-[var(--text)]">{firstProject.name}</span>{" "}
-                created — now attach your connection under a slug:
+                created, now attach your connection under a slug:
               </p>
               <AttachServiceForm projectId={firstProject.id} connections={connections} />
             </div>
@@ -119,7 +119,10 @@ export function Onboarding({ connections, firstProject, firstSlug }: Props) {
         <Step n={3} done={false} active={step3Active} title="Mint a key and make your first call">
           {firstProject && (
             <div className="space-y-3">
-              <CreateProjectKeyButton projectId={firstProject.id} />
+              <CreateProjectKeyButton
+                projectId={firstProject.id}
+                testSlug={firstSlug}
+              />
               <p className="text-xs text-[var(--text-faint)]">
                 Copy the key (shown once), then drop it into this call:
               </p>

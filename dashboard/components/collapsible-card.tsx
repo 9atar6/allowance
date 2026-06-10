@@ -10,7 +10,7 @@ interface Props {
 }
 
 /**
- * A neumorphic section that collapses/expands. Native <details> — accessible,
+ * A neumorphic section that collapses/expands. Native <details>, accessible,
  * keyboard-friendly, no JS. Open by default.
  */
 export function CollapsibleCard({

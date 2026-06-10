@@ -108,7 +108,7 @@ export default async function DashboardPage({
       .select("request_id, endpoint_id, status_code")
       .order("created_at", { ascending: false })
       .limit(200),
-    // The money ledger — the spine of the activity feed.
+    // The money ledger, the spine of the activity feed.
     supabase
       .from("wallet_transactions")
       .select("id, type, amount, balance_after, created_at, external_ref, metadata")
@@ -276,14 +276,14 @@ export default async function DashboardPage({
       {/* Account: Balance + Plan share one panel, actions pinned to the bottom */}
       <CollapsibleCard title="Account">
         <div className="grid gap-0 md:grid-cols-2">
-        {/* Budget (a free spend cap — your providers still bill you directly) */}
+        {/* Budget (a free spend cap, your providers still bill you directly) */}
         <div className="flex flex-col pb-6 md:pb-0 md:pr-8">
           <CardTitle>Budget left</CardTitle>
           <p className="mt-3 text-5xl font-semibold tracking-tight tabular-nums">
             {usd(Number(balance))}
           </p>
           <p className="mt-2 text-xs leading-relaxed text-[var(--text-faint)]">
-            A free cap you set — your providers still bill you directly, we never
+            A free cap you set, your providers still bill you directly, we never
             charge for usage. Calls stop with HTTP 402 when it reaches zero.
           </p>
           <div className="mt-auto pt-6">
@@ -323,12 +323,12 @@ export default async function DashboardPage({
         />
       ) : (
         <>
-          {/* Connections (reusable APIs) — define an API first, then attach it */}
+          {/* Connections (reusable APIs), define an API first, then attach it */}
           <CollapsibleCard title="Connections">
             <ConnectionsSection connections={connections} />
           </CollapsibleCard>
 
-          {/* Projects — attach connections + mint keys */}
+          {/* Projects, attach connections + mint keys */}
           <CollapsibleCard title="Projects">
             <ProjectsSection
               projects={projectList}
@@ -353,7 +353,7 @@ export default async function DashboardPage({
           />
         ) : (
           <p className="text-sm text-[var(--text-muted)]">
-            Daily spend, request trends, and per-service breakdowns — upgrade to
+            Daily spend, request trends, and per-service breakdowns, upgrade to
             Pro to unlock.
           </p>
         )}

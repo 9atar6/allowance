@@ -95,7 +95,7 @@ export default function Docs() {
             <p className="mt-5 text-lg leading-relaxed text-[var(--text-muted)]">
               Allowance is a spend-control proxy for any pay-per-use API. You set
               a budget, route your traffic through one key, and it stops at your
-              cap. Your providers still bill you directly — we never touch that
+              cap. Your providers still bill you directly, we never touch that
               money. Here is the whole thing in three steps.
             </p>
 
@@ -151,14 +151,14 @@ curl ${PROXY}/v1/proxy/chat/completions \\
                 <p>
                   Allowance removes your <Mono>alw_</Mono> key, adds your real
                   credentials, forwards the call, and streams the response back.
-                  Your provider bills you as usual — we just count the estimated
+                  Your provider bills you as usual, we just count the estimated
                   cost against your free budget and stop you at your cap.
                 </p>
               </Step>
 
               <Step id="providers" title="Provider quickstarts">
                 <p>
-                  Official SDKs work unchanged — point the base URL at your
+                  Official SDKs work unchanged, point the base URL at your
                   Allowance slug and pass your <Mono>alw_live_</Mono> key as the
                   API key. Your real provider key stays in the vault.
                 </p>
@@ -225,21 +225,21 @@ curl "${PROXY}/v1/proxy/gemini/models/gemini-1.5-flash:generateContent" \\
                 </p>
                 <ul className="ml-5 list-disc space-y-2">
                   <li>
-                    <strong className="text-[var(--text)]">Account budget</strong> — the
+                    <strong className="text-[var(--text)]">Account budget</strong>: the
                     number on your dashboard. The ultimate ceiling across
                     everything you run.
                   </li>
                   <li>
-                    <strong className="text-[var(--text)]">Project budget /mo</strong> —
+                    <strong className="text-[var(--text)]">Project budget /mo</strong> -
                     optional, set when creating a project. Caps all keys in that
                     project combined, resets monthly.
                   </li>
                   <li>
-                    <strong className="text-[var(--text)]">Key cap /day</strong> —
+                    <strong className="text-[var(--text)]">Key cap /day</strong> -
                     optional, set when minting a key. Resets at midnight UTC.
                   </li>
                   <li>
-                    <strong className="text-[var(--text)]">Key cap /mo</strong> —
+                    <strong className="text-[var(--text)]">Key cap /mo</strong> -
                     optional, set when minting a key. Resets monthly.
                   </li>
                 </ul>
@@ -253,7 +253,7 @@ curl "${PROXY}/v1/proxy/gemini/models/gemini-1.5-flash:generateContent" \\
               <Step id="limit" title="When the budget runs out">
                 <p>
                   At your cap, the proxy stops the request and returns{" "}
-                  <Mono>402 Payment Required</Mono> with a small JSON body — a
+                  <Mono>402 Payment Required</Mono> with a small JSON body, a
                   hard stop, so a runaway agent can never blow past your limit.
                 </p>
                 <CodeBlock
@@ -276,7 +276,7 @@ curl "${PROXY}/v1/proxy/gemini/models/gemini-1.5-flash:generateContent" \\
 
               <Step id="budget" title="Setting a budget">
                 <p>
-                  Open the dashboard and set a budget — it is{" "}
+                  Open the dashboard and set a budget, it is{" "}
                   <strong className="text-[var(--text)]">free</strong>, just a cap.
                   Allowance never charges you and never pays your providers; they
                   bill you directly as usual. The budget only decides when your
@@ -389,7 +389,7 @@ curl "${PROXY}/v1/proxy/gemini/models/gemini-1.5-flash:generateContent" \\
                       How fast is revocation?
                     </p>
                     <p className="mt-1">
-                      Within seconds — and never more than 60 (the edge cache
+                      Within seconds, and never more than 60 (the edge cache
                       TTL).
                     </p>
                   </div>

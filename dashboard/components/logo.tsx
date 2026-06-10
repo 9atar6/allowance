@@ -1,5 +1,5 @@
 /**
- * The Allowance mark: a rising arrow stopped by the cap bar — spend goes up,
+ * The Allowance mark: a rising arrow stopped by the cap bar, spend goes up,
  * the cap stops it. Keep in sync with app/icon.svg (the favicon).
  */
 export function LogoMark({ size = 28 }: { size?: number }) {

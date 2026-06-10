@@ -189,6 +189,85 @@ export async function detachService(projectServiceId: string): Promise<ActionRes
   return { ok: true };
 }
 
+export interface TestCallResult {
+  ok: boolean;
+  status?: number;
+  message: string;
+}
+
+/**
+ * Fire one real proxied call through a freshly minted key so the user sees the
+ * whole pipeline work without leaving the dashboard. The plaintext key exists
+ * only in the browser right after minting; it transits here over TLS and is
+ * never stored or logged.
+ */
+export async function testProxyCall(
+  plainKey: string,
+  slug: string,
+): Promise<TestCallResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, message: "Not authenticated." };
+
+  const prefix = process.env.PROXY_KEY_PREFIX || "alw_live_";
+  if (!plainKey.startsWith(prefix) || plainKey.length > 200) {
+    return { ok: false, message: "That does not look like an Allowance key." };
+  }
+  if (!/^[a-z0-9-]{1,40}$/.test(slug)) {
+    return { ok: false, message: "Invalid service slug." };
+  }
+
+  const { PROXY_URL } = await import("@/lib/proxy-url");
+  let res: Response;
+  try {
+    res = await fetch(`${PROXY_URL}/v1/proxy/${slug}/models`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${plainKey}` },
+      signal: AbortSignal.timeout(20_000),
+    });
+  } catch {
+    return { ok: false, message: "Could not reach the proxy. Try again." };
+  }
+
+  // Map the proxy's documented error bodies to human guidance.
+  let errorCode: string | undefined;
+  try {
+    const body = (await res.json()) as { error?: string };
+    errorCode = body?.error;
+  } catch {
+    /* non-JSON upstream body is fine */
+  }
+
+  if (res.status === 401) {
+    return { ok: false, status: 401, message: "The key was not accepted. Mint a new one and retry." };
+  }
+  if (errorCode === "unknown_service") {
+    return { ok: false, status: 404, message: `No service is attached under /${slug}.` };
+  }
+  if (res.status === 402) {
+    return { ok: false, status: 402, message: "A cap is already at zero. Raise your budget and retry." };
+  }
+  if (res.status === 502 || res.status === 504) {
+    return { ok: false, status: res.status, message: "Routing worked, but your provider did not answer. Check the connection's base URL." };
+  }
+  if (res.status >= 500) {
+    return { ok: false, status: res.status, message: `Your provider returned ${res.status}. The call was not charged.` };
+  }
+
+  // Any non-5xx upstream answer means the whole pipeline worked: auth, slug
+  // routing, credential injection, forward, metering.
+  return {
+    ok: true,
+    status: res.status,
+    message:
+      res.status === 200
+        ? "Your key works. The call was metered against your budget."
+        : `Routed and metered. Your provider answered ${res.status} for GET /models (some APIs do not have that route, which is fine).`,
+  };
+}
+
 /** Set the spend budget (USD). Free — this is a cap, not a payment. */
 export async function setBudget(amount: number): Promise<ActionResult> {
   const supabase = await createClient();

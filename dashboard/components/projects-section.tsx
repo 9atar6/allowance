@@ -172,7 +172,10 @@ export function ProjectsSection({
                   <GroupLabel>Keys</GroupLabel>
                   <KeyList keys={projKeys} />
                   <div className="mt-3">
-                    <CreateProjectKeyButton projectId={p.id} />
+                    <CreateProjectKeyButton
+                      projectId={p.id}
+                      testSlug={projAttachments[0]?.slug ?? null}
+                    />
                     <p className="mt-1.5 text-xs text-[var(--text-faint)]">
                       Optional: cap how much each key can spend per day and per
                       month.

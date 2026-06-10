@@ -123,7 +123,7 @@ export function AddConnectionForm() {
       ) : (
         <Field
           label="Cost per call (USD)"
-          hint="We never charge you for calls — your provider bills you directly. This is just an estimate of a call's cost, used to count down your free budget so it stops you near your real spend. Blank = doesn't count."
+          hint="We never charge you for calls, your provider bills you directly. This is just an estimate of a call's cost, used to count down your free budget so it stops you near your real spend. Blank = doesn't count."
         >
           <Input
             name="costPerRequest"

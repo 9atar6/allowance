@@ -96,7 +96,7 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
             disabled={pending}
             className="w-full"
           >
-            {pending ? "Starting…" : `Upgrade to Pro — $${PRO_PRICE_USD}/mo`}
+            {pending ? "Starting…" : `Upgrade to Pro ($${PRO_PRICE_USD}/mo)`}
           </Button>
         ) : (
           <Button

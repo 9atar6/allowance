@@ -1,7 +1,7 @@
 import { SiteNav } from "@/components/site-nav";
 
 export const metadata = {
-  title: "Terms of Service — Allowance",
+  title: "Terms of Service | Allowance",
 };
 
 function H2({ children }: { children: string }) {

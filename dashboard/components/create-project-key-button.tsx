@@ -1,12 +1,66 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createProjectKey } from "@/app/dashboard/actions";
+import {
+  createProjectKey,
+  testProxyCall,
+  type TestCallResult,
+} from "@/app/dashboard/actions";
 import { CopyButton } from "@/components/copy-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
+/** Fires one real proxied call with the just-minted key and shows the verdict. */
+function TestCallButton({
+  plainKey,
+  slug,
+}: {
+  plainKey: string;
+  slug: string;
+}) {
+  const [pending, start] = useTransition();
+  const [result, setResult] = useState<TestCallResult | null>(null);
+
+  function run() {
+    setResult(null);
+    start(async () => {
+      setResult(await testProxyCall(plainKey, slug));
+    });
+  }
+
+  return (
+    <div className="mt-3 border-t border-[var(--line)] pt-3">
+      <div className="flex flex-wrap items-center gap-2.5">
+        <Button onClick={run} disabled={pending} className="px-3 py-2 text-xs">
+          {pending ? "Calling…" : "Test it"}
+        </Button>
+        <span className="text-xs text-[var(--text-faint)]">
+          Sends one real call through /{slug} to prove everything works.
+        </span>
+      </div>
+      {result && (
+        <p
+          className={`mt-2 text-xs ${
+            result.ok ? "text-[var(--accent)]" : "text-red-400"
+          }`}
+          role="status"
+        >
+          {result.ok ? "✓" : "✗"}
+          {result.status != null ? ` ${result.status} ` : " "}
+          {result.message}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export function CreateProjectKeyButton({
+  projectId,
+  testSlug,
+}: {
+  projectId: string;
+  testSlug?: string | null;
+}) {
   const [pending, startTransition] = useTransition();
   const [generated, setGenerated] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +91,7 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
     return (
       <div className="neu-inset p-4">
         <p className="mb-2 text-xs font-medium text-[var(--text-muted)]">
-          Copy this key now — it is shown only once.
+          Copy this key now, it is shown only once.
         </p>
         <div className="flex items-center gap-2">
           <code className="min-w-0 flex-1 truncate font-mono text-xs text-[var(--accent)]">
@@ -45,6 +99,7 @@ export function CreateProjectKeyButton({ projectId }: { projectId: string }) {
           </code>
           <CopyButton text={generated} className="neu-sm pressable" />
         </div>
+        {testSlug && <TestCallButton plainKey={generated} slug={testSlug} />}
       </div>
     );
   }

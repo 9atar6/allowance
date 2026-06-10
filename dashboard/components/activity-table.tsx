@@ -11,7 +11,7 @@ export interface ActivityRow {
 }
 
 /**
- * One chronological ledger of everything that moved the balance — top-ups and
+ * One chronological ledger of everything that moved the balance, top-ups and
  * per-request charges in a single feed. Replaces the old split usage/txn tables.
  */
 export function ActivityTable({ rows }: { rows: ActivityRow[] }) {
@@ -49,7 +49,7 @@ export function ActivityTable({ rows }: { rows: ActivityRow[] }) {
                 </span>
               </td>
               <td className="py-2.5 text-right font-mono tabular-nums text-[var(--text-faint)]">
-                {r.status ?? "—"}
+                {r.status ?? "-"}
               </td>
               <td
                 className={`py-2.5 text-right tabular-nums ${
