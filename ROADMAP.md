@@ -9,17 +9,17 @@ everything else is buildable in-session.
 
 ## Phase 0 — Unblockers (15 min, mostly [you])
 
-- [ ] **[you]** `cd proxy && npx wrangler deploy` — ships the multi-provider
+- [x] **[you]** `cd proxy && npx wrangler deploy` — ships the multi-provider
       metering fix + new 402 body (already merged, not yet live).
-- [ ] **[you]** Buy the domain (`allowance.dev` or alternative). Unlocks: vanity
+- [x] **[you]** Buy the domain (`allowance.dev` or alternative). Unlocks: vanity
       API host, branded email, real support inbox, credible launch.
-- [ ] **[you]** Set `ALERT_WEBHOOK_URL` secret (Discord/Slack webhook) + deploy.
-- [ ] **[you]** UptimeRobot (free): monitor `GET /healthz` on the worker every
+- [x] **[you]** Set `ALERT_WEBHOOK_URL` secret (Discord/Slack webhook) + deploy.
+- [x] **[you]** UptimeRobot (free): monitor `GET /healthz` on the worker every
       minute → email alert.
 
 ## Phase 1 — Ops readiness (C → A+)
 
-- [ ] Status page (BetterStack/Instatus free) wired to the healthz monitor;
+- [x] Status page (BetterStack/Instatus free) wired to the healthz monitor;
       link it in the site footer.
 - [x] Worker: alert on elevated error *rate*, not just single errors (count
       errors in KV per 5-min window inside `onError`; webhook when > threshold).
@@ -27,7 +27,7 @@ everything else is buildable in-session.
       can't pin requests open. Test for it.
 - [x] Runbook: `docs/RUNBOOK.md` — what to check when (a) proxy down,
       (b) Supabase down, (c) KV stale, (d) deploy rollback (`wrangler rollback`).
-- [ ] Supabase: confirm PITR/backup setting; document restore steps in runbook.
+- [x] Supabase: confirm PITR/backup setting; document restore steps in runbook.
 - [x] Log hygiene pass: confirm every log path is metadata-only (grep for
       header/body logging; add a test asserting forward strips `Authorization`).
 
@@ -86,10 +86,10 @@ everything else is buildable in-session.
 
 ## Phase 5 — Marketing & docs (A− → A+) — mostly needs the domain
 
-- [ ] **[you + me]** Point `api.allowance.dev` at the worker (custom domain in
+- [x] **[you + me]** Point `api.allowance.dev` at the worker (custom domain in
       Cloudflare) and `allowance.dev` at Vercel; update `PROXY` consts +
       `APP_URL` + metadata. This also unlocks Cloudflare WAF rules (zone).
-- [ ] **[you + me]** Verify domain in Resend → branded alert emails to any
+- [x] **[you + me]** Verify domain in Resend → branded alert emails to any
       user; create `support@` inbox; put it in Terms/Privacy (replacing the
       GitHub-issues placeholder).
 - [x] Docs expansion: error reference table (401/402/404/413/429/5xx with
