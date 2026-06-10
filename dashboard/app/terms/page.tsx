@@ -63,9 +63,9 @@ export default function Terms() {
           </p>
           <p>
             The Pro plan has no fixed monthly request cap, subject to fair use:
-            sustained volumes far beyond typical production use (millions of
-            requests per month) may require an Enterprise arrangement. We will
-            always contact you before limiting anything.
+            sustained volumes beyond roughly one million requests per month may
+            require an Enterprise arrangement. We will always contact you before
+            limiting anything.
           </p>
 
           <H2>5. Availability and warranty</H2>

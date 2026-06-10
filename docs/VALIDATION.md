@@ -20,6 +20,23 @@ order by requests desc;
 Activated = real API connected + ≥50 requests + active again >7 days after
 first call (see docs/LAUNCH.md).
 
+## Whale check (run with the activation SQL)
+
+Pro margin math: typical cost is ~$6/million requests, worst case (every cap
+set) ~$23/million. Anyone past ~500k requests/month deserves a friendly
+Enterprise conversation (fair use kicks in around 1M, per the Terms).
+
+```sql
+-- Requests in the last 30 days per user, heaviest first
+select u.email, count(e.id) as requests_30d
+from auth.users u
+join public.usage_events e on e.user_id = u.id
+where e.created_at > now() - interval '30 days'
+group by u.email
+having count(e.id) > 100000
+order by requests_30d desc;
+```
+
 ## Scorecard
 
 | # | Who / source | Keyed? | Real API? | ≥50 req? | Week-2 return? | Would pay? |
