@@ -61,7 +61,8 @@ export default function Privacy() {
           <p>
             We use a small set of infrastructure providers to run the Service:
             Supabase (database and authentication), Cloudflare (the edge proxy),
-            Stripe (payments, we never see or store your card details), Resend
+            Polar (payments, as merchant of record; we never see or store your
+            card details), Resend
             (transactional email), and Vercel (hosting). We do not sell your data
             or share it for advertising.
           </p>

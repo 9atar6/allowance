@@ -56,10 +56,12 @@ export default function Terms() {
 
           <H2>4. Billing and fair use</H2>
           <p>
-            Paid plans are billed monthly through Stripe. You can cancel at any
-            time from the billing portal; access continues until the end of the
-            paid period. Fees already paid are non-refundable except where
-            required by law.
+            Paid plans are billed monthly through our merchant of record, Polar
+            (Polar Software Inc.), which is the seller of record and handles
+            payment processing and applicable taxes. You can cancel at any time
+            from the billing portal; access continues until the end of the paid
+            period. Fees already paid are non-refundable except where required
+            by law.
           </p>
           <p>
             The Pro plan has no fixed monthly request cap, subject to fair use:

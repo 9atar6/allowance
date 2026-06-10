@@ -41,8 +41,6 @@ jobs:
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
       SUPABASE_SERVICE_ROLE_KEY: ci-placeholder
-      STRIPE_SECRET_KEY: sk_test_ci_placeholder
-      STRIPE_WEBHOOK_SECRET: whsec_ci_placeholder
       NEXT_PUBLIC_APP_URL: http://localhost:3000
     steps:
       - uses: actions/checkout@v4

@@ -1,6 +1,6 @@
 # Deploy Runbook
 
-Order matters: **Supabase → Proxy (Cloudflare) → Dashboard (Vercel) → Stripe → Auth URLs.**
+Order matters: **Supabase → Proxy (Cloudflare) → Dashboard (Vercel) → Polar → Auth URLs.**
 Do it once for a `dev`/preview environment, then repeat for production with prod keys.
 
 ---
@@ -76,9 +76,9 @@ add env vars (Project → Settings → Environment Variables):
 | `SUPABASE_SERVICE_ROLE_KEY` | service_role key | **no** |
 | `NEXT_PUBLIC_APP_URL` | your Vercel URL | yes |
 | `PROXY_KEY_PREFIX` | `alw_live_` | no |
-| `STRIPE_SECRET_KEY` | `sk_…` | **no** |
-| `STRIPE_WEBHOOK_SECRET` | `whsec_…` (from step 4) | **no** |
-| `STRIPE_PRO_PRICE_ID` | `price_…` ($20/mo recurring) | **no** |
+| `POLAR_ACCESS_TOKEN` | `polar_oat_…` (from step 4) | **no** |
+| `POLAR_WEBHOOK_SECRET` | `polar_whs_…` (from step 4) | **no** |
+| `POLAR_PRO_PRODUCT_ID` | the $20/mo product id (from step 4) | **no** |
 | `PROXY_ADMIN_URL` | deployed worker URL | **no** |
 | `PROXY_PURGE_SECRET` | = worker `ADMIN_PURGE_SECRET` | **no** |
 
@@ -86,22 +86,20 @@ Deploy.
 
 ---
 
-## 4. Stripe (Pro subscription)
+## 4. Polar (Pro subscription, merchant of record)
 
-1. Get `STRIPE_SECRET_KEY` (test mode first) → add to Vercel.
-2. Create a Product "Allowance Pro" with a **$20/mo recurring price**; put its
-   id in `STRIPE_PRO_PRICE_ID` (Vercel).
-3. Create a webhook endpoint pointing at
-   `https://<your-app>/api/stripe/webhook`, subscribed to
-   **`customer.subscription.created` / `updated` / `deleted`**.
-   Copy its signing secret → `STRIPE_WEBHOOK_SECRET`.
-4. Activate the Customer Portal (Settings → Billing → Customer portal) so
-   "Manage billing" works.
-5. Local testing:
-   ```bash
-   stripe login
-   stripe listen --forward-to localhost:3000/api/stripe/webhook   # prints whsec_…
-   ```
+Polar is the seller of record: it handles payment processing and taxes, and
+pays out to an individual — no registered business required.
+
+1. Create an organization at [polar.sh](https://polar.sh) (sign in with GitHub).
+2. **Product**: Products → New → "Allowance Pro", subscription, **$20/month**.
+   Copy the product id → `POLAR_PRO_PRODUCT_ID` (Vercel).
+3. **Access token**: Settings → Developers → New token (checkouts +
+   customer sessions scopes, or all) → `POLAR_ACCESS_TOKEN` (Vercel).
+4. **Webhook**: Settings → Webhooks → Add endpoint
+   `https://<your-app>/api/polar/webhook`, format **Raw**, subscribe to all
+   `subscription.*` events. Copy the secret → `POLAR_WEBHOOK_SECRET` (Vercel).
+5. Redeploy the dashboard so the env takes effect.
 
 ---
 
@@ -134,5 +132,5 @@ Otherwise magic links won't resolve.
 5. Watch the budget decrement on the dashboard; set the budget to ~0 →
    expect `HTTP 402` (x402-style body with `budgetRemaining`).
 6. Revoke the key → the same call returns `401` within seconds.
-7. (Pro) Upgrade with Stripe test card `4242 4242 4242 4242` → plan flips to
-   Pro after the webhook; "Manage billing" opens the portal.
+7. (Pro) Click Upgrade → Polar checkout → pay → plan flips to Pro after the
+   webhook; "Manage billing" opens the Polar customer portal.

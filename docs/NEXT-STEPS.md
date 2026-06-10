@@ -19,30 +19,31 @@ If anything fails, note the exact error and bring it to the next session.
 
 ---
 
-## Step 2. Stripe live mode (20 min, ONLY when ready to launch publicly)
+## Step 2. Go live with payments via Polar (15 min, when ready to launch)
 
-Until then, test mode is correct. When you decide to take real money:
+Polar is the merchant of record: it sells on your behalf, handles taxes, and
+pays you out as an individual. No URSSAF, no company. The code is already
+wired — you only configure your Polar account and three env vars.
 
-1. **Activate the account**: https://dashboard.stripe.com → toggle
-   "Test mode" OFF (top right) → Stripe asks you to "Activate payments" →
-   fill identity + bank details (payouts). Wait for approval (usually fast).
-2. **Recreate the product in live mode** (live and test data are separate):
-   Product catalogue → Add product → "Allowance Pro", recurring **$20/month**
-   → copy the new live `price_...` id.
-3. **Live webhook**: Developers → Webhooks → Add endpoint →
-   URL `https://getallowance.dev/api/stripe/webhook` → subscribe to
-   `customer.subscription.created`, `customer.subscription.updated`,
-   `customer.subscription.deleted` → copy the live `whsec_...`.
-4. **Customer portal**: Settings → Billing → Customer portal → Activate
-   (live mode has its own portal config).
-5. **Swap the env vars in Vercel** (Settings → Environment Variables):
-   - `STRIPE_SECRET_KEY` → the live `sk_live_...`
-   - `STRIPE_WEBHOOK_SECRET` → the live `whsec_...`
-   - `STRIPE_PRO_PRICE_ID` → the live `price_...`
-   Then Deployments → latest → ... → **Redeploy**.
-6. **Verify**: upgrade with a REAL card (you can refund yourself from the
-   Stripe dashboard right after), confirm the plan flips to Pro and
-   "Manage billing" opens the live portal.
+1. **Product**: polar.sh dashboard → Products → New Product →
+   name "Allowance Pro" → Subscription → **$20 / month** → create.
+   Open it and copy the **Product ID**.
+2. **Access token**: Settings → Developers → **New token** → name
+   "allowance-dashboard", select all scopes (or at minimum checkouts +
+   customer sessions) → copy the `polar_oat_...` token (shown once).
+3. **Webhook**: Settings → Webhooks → **Add endpoint** →
+   URL `https://getallowance.dev/api/polar/webhook` → Format **Raw** →
+   select all `subscription.*` events → save → copy the **secret**.
+4. **Vercel env vars** (Settings → Environment Variables, all three, then
+   Deployments → latest → ... → Redeploy):
+   - `POLAR_ACCESS_TOKEN` = the token from step 2
+   - `POLAR_WEBHOOK_SECRET` = the secret from step 3
+   - `POLAR_PRO_PRODUCT_ID` = the id from step 1
+5. **Verify**: dashboard → Upgrade to Pro → complete the Polar checkout with a
+   real card (you can refund yourself from Polar afterwards) → plan flips to
+   Pro → "Manage billing" opens the Polar portal.
+
+Payouts: Polar → Finance → connect your personal bank account.
 
 ---
 
