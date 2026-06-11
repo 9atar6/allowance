@@ -20,7 +20,8 @@ export function isPublicHttpsUrl(value: string): boolean {
   if (/^127\./.test(h) || /^10\./.test(h) || /^192\.168\./.test(h)) return false;
   if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false;
   if (/^169\.254\./.test(h)) return false;
-  if (/^fc|^fd/.test(h)) return false; // IPv6 unique-local
+  // IPv6 unique-local — only for IPv6 literals, not domains like fcc.gov.
+  if (h.includes(":") && /^(fc|fd)/.test(h)) return false;
   return true;
 }
 

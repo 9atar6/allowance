@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { appOrigin } from "@/lib/app-url";
 import { createClient } from "@/lib/supabase/server";
 
 const schema = z.object({ email: z.string().email() });
@@ -14,7 +15,7 @@ export async function signInWithProvider(formData: FormData): Promise<void> {
   }
 
   const supabase = await createClient();
-  const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const origin = appOrigin();
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
@@ -43,7 +44,7 @@ export async function sendMagicLink(
   }
 
   const supabase = await createClient();
-  const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const origin = appOrigin();
 
   const { error } = await supabase.auth.signInWithOtp({
     email: parsed.data.email,

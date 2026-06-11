@@ -1,5 +1,6 @@
 "use server";
 
+import { appOrigin } from "@/lib/app-url";
 import { getPolar, proProductId } from "@/lib/polar";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,7 +31,7 @@ export async function startProCheckout(): Promise<SubResult> {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Not authenticated." };
 
-  const origin = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const origin = appOrigin();
 
   try {
     const checkout = await polar.checkouts.create({

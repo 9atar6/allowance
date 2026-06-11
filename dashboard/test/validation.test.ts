@@ -31,6 +31,12 @@ describe("isPublicHttpsUrl (SSRF guard)", () => {
   it("rejects garbage", () => {
     expect(isPublicHttpsUrl("not a url")).toBe(false);
   });
+  it("blocks IPv6 unique-local literals but not fc*/fd* domains", () => {
+    expect(isPublicHttpsUrl("https://[fc00::1]")).toBe(false);
+    expect(isPublicHttpsUrl("https://[fd12:3456::1]")).toBe(false);
+    expect(isPublicHttpsUrl("https://fcc.gov")).toBe(true);
+    expect(isPublicHttpsUrl("https://fdic.gov")).toBe(true);
+  });
 });
 
 describe("connectionSchema", () => {
