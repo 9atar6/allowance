@@ -305,6 +305,24 @@ x-allowance-project-remaining: 8.40000 # only if the project has a budget`}
                   window up to 60s), accurate enough to steer on, with the
                   database as the authoritative ledger.
                 </p>
+                <p>
+                  An agent can also ask directly, without making a billable
+                  call: <Mono>GET /v1/me</Mono> with the same Bearer key returns
+                  the plan, budget left, and every configured cap with its
+                  spent/remaining numbers as JSON.
+                </p>
+                <CodeBlock
+                  label="self-inspection"
+                  code={`curl https://api.getallowance.dev/v1/me \\
+  -H "Authorization: Bearer alw_live_your_key"
+
+{
+  "plan": "pro",
+  "budgetRemaining": 7.5,
+  "dailyCap": { "limit": 3, "spent": 1.01, "remaining": 1.99 },
+  "manageUrl": "https://getallowance.dev/dashboard"
+}`}
+                />
               </Step>
 
               <Step id="budget" title="Setting a budget">
@@ -321,6 +339,22 @@ x-allowance-project-remaining: 8.40000 # only if the project has a budget`}
                   estimate we use to count the budget down, so the cap trips near
                   what you are actually spending with your provider. Set caps per
                   project and per key for finer control.
+                </p>
+                <p>
+                  <strong className="text-[var(--text)]">
+                    Monthly allowance:
+                  </strong>{" "}
+                  turn on auto-refill and the budget resets itself to your
+                  chosen amount on the 1st of each month (UTC). Set it once and
+                  your agents get a fresh allowance every month, never more.
+                </p>
+                <p>
+                  <strong className="text-[var(--text)]">
+                    Ephemeral keys:
+                  </strong>{" "}
+                  when minting a key, pick an expiry (1 hour to 30 days) and it
+                  dies on its own, perfect for CI runs, demos, or one-off agent
+                  tasks. A leaked ephemeral key is a self-cleaning incident.
                 </p>
               </Step>
 

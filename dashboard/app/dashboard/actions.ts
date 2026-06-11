@@ -145,6 +145,7 @@ export async function createProjectKey(
   dailyLimit: number | null,
   name?: string | null,
   monthlyLimit?: number | null,
+  expiresInHours?: number | null,
 ): Promise<ActionResult> {
   const supabase = await createClient();
   const {
@@ -162,6 +163,15 @@ export async function createProjectKey(
 
   const { key, keyHash, keyPrefix } = generateProxyKey();
 
+  // Ephemeral keys: bounded 1 hour .. 90 days; anything else means "never".
+  const hours =
+    expiresInHours != null && expiresInHours >= 1 && expiresInHours <= 24 * 90
+      ? expiresInHours
+      : null;
+  const expiresAt = hours
+    ? new Date(Date.now() + hours * 60 * 60 * 1000).toISOString()
+    : null;
+
   const admin = createAdminClient();
   const { error } = await admin.rpc("issue_proxy_key", {
     p_user_id: user.id,
@@ -171,6 +181,7 @@ export async function createProjectKey(
     p_daily_limit: dailyLimit,
     p_name: name?.trim() || null,
     p_monthly_limit: monthlyLimit ?? null,
+    p_expires_at: expiresAt,
   });
   if (error) return { ok: false, error: "Could not create key." };
 
@@ -346,6 +357,24 @@ export async function setBudget(amount: number): Promise<ActionResult> {
 
   const { error } = await supabase.rpc("set_budget", { p_amount: amount });
   if (error) return { ok: false, error: "Could not set budget." };
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/** Set or disable the monthly auto-refill allowance (USD). null/0 = off. */
+export async function setMonthlyAllowance(
+  value: number | null,
+): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated." };
+
+  const { error } = await supabase.rpc("set_monthly_allowance", {
+    p_amount: value,
+  });
+  if (error) return { ok: false, error: "Could not save the allowance." };
   revalidatePath("/dashboard");
   return { ok: true };
 }

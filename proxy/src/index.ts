@@ -26,6 +26,7 @@ import {
 import { logEvent } from "./lib/log";
 import { buildX402Body } from "./lib/x402";
 import { withinRateLimit } from "./lib/rate-limit";
+import { resetMonthlyAllowances } from "./lib/supabase";
 import { authMiddleware } from "./middleware/auth";
 import { computeCost } from "./proxy/cost";
 import {
@@ -44,6 +45,58 @@ app.get("/healthz", (c) => c.json({ ok: true }));
 
 // Instant key revocation (shared-secret auth inside the handler).
 app.post("/admin/purge", handlePurge);
+
+// Key self-inspection: an agent can ask "how much do I have left?" without
+// making a billable upstream call. Same auth as the proxy; values are edge
+// snapshots (refresh window <= KV TTL, default 60s).
+app.get("/v1/me", authMiddleware, async (c) => {
+  const ctx = c.get("resolved");
+  if (!(await withinRateLimit(c.env, ctx.keyHash))) {
+    return c.json({ error: "rate_limited" }, 429);
+  }
+
+  const body: Record<string, unknown> = {
+    plan: ctx.plan,
+    budgetRemaining: Math.max(0, ctx.balance),
+    snapshotMaxAgeSeconds: 60,
+    manageUrl: "https://getallowance.dev/dashboard",
+  };
+
+  if (ctx.plan === "free") {
+    const used = await getMonthlyCount(c.env, ctx.userId, utcMonthKey());
+    body.requestsThisMonth = {
+      used,
+      limit: FREE_MONTHLY_REQUESTS,
+      remaining: Math.max(0, FREE_MONTHLY_REQUESTS - used),
+    };
+  }
+  if (ctx.dailyLimit != null) {
+    const spent = await getDailySpend(c.env, ctx.keyHash, utcDateKey());
+    body.dailyCap = {
+      limit: ctx.dailyLimit,
+      spent,
+      remaining: Math.max(0, ctx.dailyLimit - spent),
+    };
+  }
+  if (ctx.monthlyLimit != null) {
+    const spent = await getKeyMonthlySpend(c.env, ctx.keyHash, utcMonthKey());
+    body.monthlyCap = {
+      limit: ctx.monthlyLimit,
+      spent,
+      remaining: Math.max(0, ctx.monthlyLimit - spent),
+    };
+  }
+  if (ctx.projectId && ctx.monthlyBudget != null) {
+    const spent = await getProjectSpend(c.env, ctx.projectId, utcMonthKey());
+    body.projectBudget = {
+      limit: ctx.monthlyBudget,
+      spent,
+      remaining: Math.max(0, ctx.monthlyBudget - spent),
+    };
+  }
+
+  return c.json(body);
+});
 
 // All proxy traffic flows through here. The key is resolved by authMiddleware.
 app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
@@ -268,5 +321,14 @@ export default {
   scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): void {
     // Email users whose budget is running low.
     ctx.waitUntil(runLowBalanceAlerts(env));
+    // Refill monthly allowances on the first run of a new month (idempotent:
+    // the RPC only touches wallets not yet reset this month).
+    ctx.waitUntil(
+      resetMonthlyAllowances(env)
+        .then((n) => {
+          if (n > 0) logEvent({ event: "allowances_reset", count: n });
+        })
+        .catch(() => logEvent({ event: "allowances_reset_failed" })),
+    );
   },
 };

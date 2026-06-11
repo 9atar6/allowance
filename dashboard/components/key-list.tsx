@@ -113,9 +113,7 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
                   <span className="text-[var(--text-faint)]">(revoked)</span>
                 )}
                 {isExpiring(k) && (
-                  <span className="text-amber-500">
-                    (replaced · stops within 24h)
-                  </span>
+                  <span className="text-amber-500">(expiring)</span>
                 )}
                 {isExpired(k) && (
                   <span className="text-[var(--text-faint)]">
@@ -132,6 +130,9 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
                 )}
                 {k.dailyLimit != null && <> · ${k.dailyLimit}/day cap</>}
                 {k.monthlyLimit != null && <> · ${k.monthlyLimit}/mo cap</>}
+                {isExpiring(k) && k.expiresAt && (
+                  <> · dies {shortDate(k.expiresAt)}</>
+                )}
               </div>
             </div>
             {k.isActive ? (

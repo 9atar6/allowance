@@ -1052,4 +1052,82 @@ grant execute on function public.my_service_usage(int) to authenticated;
 -- Pin the trigger helper's search_path (linter 0011).
 alter function public.tg_set_updated_at() set search_path = public;
 
+-- =============================================================================
+-- Ephemeral keys + monthly allowance (v7)
+-- =============================================================================
+
+-- issue_proxy_key v5: optional expiry (ephemeral keys: 1h/24h/7d/never).
+-- Earlier overloads are dropped so exactly one signature remains exposed.
+drop function if exists public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric);
+drop function if exists public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric,text);
+drop function if exists public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric,text,numeric);
+create or replace function public.issue_proxy_key(
+  p_user_id uuid, p_key_hash text, p_key_prefix text,
+  p_endpoint_id uuid default null, p_project_id uuid default null,
+  p_daily_limit numeric default null, p_name text default null,
+  p_monthly_limit numeric default null, p_expires_at timestamptz default null
+)
+returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare v_id uuid;
+begin
+  insert into public.proxy_keys
+    (user_id, key_hash, key_prefix, endpoint_id, project_id, daily_limit, name,
+     monthly_limit, expires_at)
+  values
+    (p_user_id, p_key_hash, p_key_prefix, p_endpoint_id, p_project_id,
+     p_daily_limit, nullif(btrim(p_name), ''), p_monthly_limit, p_expires_at)
+  returning id into v_id;
+  return v_id;
+end; $$;
+revoke all on function public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric,text,numeric,timestamptz) from public, anon, authenticated;
+grant execute on function public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric,text,numeric,timestamptz) to service_role;
+
+-- Monthly allowance: the budget refills itself to a chosen amount on the 1st
+-- (UTC). "Allowance", literally. Null = off (manual budget only).
+alter table public.wallets add column if not exists monthly_allowance numeric(14, 6);
+alter table public.wallets add column if not exists allowance_reset_month text;
+
+create or replace function public.set_monthly_allowance(p_amount numeric)
+returns void language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if auth.uid() is null then raise exception 'auth required'; end if;
+  if p_amount is not null and (p_amount < 0 or p_amount > 1000000) then
+    raise exception 'allowance must be between 0 and 1,000,000';
+  end if;
+  if coalesce(p_amount, 0) <= 0 then
+    update public.wallets set monthly_allowance = null, updated_at = now()
+     where user_id = auth.uid();
+  else
+    -- Enabling also applies the first refill immediately, so the UI reflects it.
+    update public.wallets
+       set monthly_allowance = p_amount,
+           balance = p_amount,
+           allowance_reset_month = to_char(now() at time zone 'utc', 'YYYY-MM'),
+           low_balance_alerted_at = null,
+           updated_at = now()
+     where user_id = auth.uid();
+  end if;
+end; $$;
+revoke all on function public.set_monthly_allowance(numeric) from public, anon;
+grant execute on function public.set_monthly_allowance(numeric) to authenticated;
+
+-- Cron-called: refill every wallet whose allowance has not run this month yet.
+create or replace function public.reset_monthly_allowances()
+returns integer language sql security definer set search_path = public as $$
+  with bumped as (
+    update public.wallets
+       set balance = monthly_allowance,
+           allowance_reset_month = to_char(now() at time zone 'utc', 'YYYY-MM'),
+           low_balance_alerted_at = null,
+           updated_at = now()
+     where monthly_allowance is not null
+       and allowance_reset_month is distinct from to_char(now() at time zone 'utc', 'YYYY-MM')
+    returning 1
+  )
+  select count(*)::int from bumped;
+$$;
+revoke all on function public.reset_monthly_allowances() from public, anon, authenticated;
+grant execute on function public.reset_monthly_allowances() to service_role;
+grant execute on function public.reset_monthly_allowances() to proxy_worker;
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';

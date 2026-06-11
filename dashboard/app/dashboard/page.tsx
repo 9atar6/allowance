@@ -5,6 +5,7 @@ import {
   type ConnectionRow,
 } from "@/components/connections-section";
 import { LowBalanceSetting } from "@/components/low-balance-setting";
+import { MonthlyAllowanceSetting } from "@/components/monthly-allowance-setting";
 import { Onboarding } from "@/components/onboarding";
 import { PlanCard } from "@/components/plan-card";
 import {
@@ -92,7 +93,7 @@ export default async function DashboardPage({
     supabase
       .from("wallets")
       .select(
-        "balance, currency, plan, current_period_end, low_balance_threshold",
+        "balance, currency, plan, current_period_end, low_balance_threshold, monthly_allowance",
       )
       .single(),
     supabase
@@ -141,6 +142,8 @@ export default async function DashboardPage({
     wallet?.low_balance_threshold != null
       ? Number(wallet.low_balance_threshold)
       : null;
+  const monthlyAllowance =
+    wallet?.monthly_allowance != null ? Number(wallet.monthly_allowance) : null;
   const monthlyUsed = monthlyCount ?? 0;
   const monthlyLimit = monthlyQuota(plan);
   const endpointList = (endpoints ?? []) as Endpoint[];
@@ -289,6 +292,7 @@ export default async function DashboardPage({
           </p>
           <div className="mt-auto pt-6">
             <SetBudget current={Number(balance)} />
+            <MonthlyAllowanceSetting current={monthlyAllowance} />
             <LowBalanceSetting current={lowThreshold} />
           </div>
         </div>

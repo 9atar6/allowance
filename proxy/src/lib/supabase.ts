@@ -55,6 +55,11 @@ export function markLowBalanceAlerted(
   return rpc<unknown>(env, "mark_low_balance_alerted", { p_user_id: userId });
 }
 
+/** Refill wallets with a monthly allowance that has not run this month. */
+export function resetMonthlyAllowances(env: Env): Promise<number> {
+  return rpc<number>(env, "reset_monthly_allowances", {});
+}
+
 /** Resolve a proxy key hash to its full edge context (or null = unknown key). */
 export function getProxyContext(
   env: Env,

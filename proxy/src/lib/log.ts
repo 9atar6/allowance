@@ -18,6 +18,7 @@ export interface SafeLogFields {
   amount?: number; // top-up tier in USD — not sensitive
   settled?: boolean;
   reason?: string; // short machine code, e.g. "insufficient_balance"
+  count?: number; // batch size for cron jobs (e.g. allowances reset)
 }
 
 export function logEvent(fields: SafeLogFields): void {

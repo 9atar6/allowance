@@ -80,6 +80,31 @@ describe("proxy handler", () => {
     expect(ctl.debitCalls).toHaveLength(0); // never charged
   });
 
+  it("GET /v1/me returns spend state without a billable upstream call", async () => {
+    const ctl = newCtl({
+      proxyContext: baseContext({ balance: 7.5, daily_limit: 3 }),
+    });
+    installFetch(ctl);
+    const { ctx, flush } = makeCtx();
+
+    const res = await app.fetch(
+      new Request("https://proxy.test/v1/me", {
+        headers: { Authorization: `Bearer ${KEY}` },
+      }),
+      makeEnv(),
+      ctx,
+    );
+    await flush();
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, any>;
+    expect(body.budgetRemaining).toBe(7.5);
+    expect(body.dailyCap).toEqual({ limit: 3, spent: 0, remaining: 3 });
+    expect(body.requestsThisMonth.limit).toBe(5000); // free plan
+    expect(ctl.upstreamCalls).toHaveLength(0); // never forwarded
+    expect(ctl.debitCalls).toHaveLength(0); // never charged
+  });
+
   it("402s at zero balance even when the flat estimate is 0 (per-token)", async () => {
     // Per-token connections store cost_per_request = 0; "balance < cost" alone
     // (0 < 0) would never trip. The gate must fire on balance <= 0 by itself.

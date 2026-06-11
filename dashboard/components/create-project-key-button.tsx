@@ -67,6 +67,7 @@ export function CreateProjectKeyButton({
   const [name, setName] = useState("");
   const [limit, setLimit] = useState("");
   const [monthly, setMonthly] = useState("");
+  const [expires, setExpires] = useState(""); // hours; "" = never
 
   function parseLimit(raw: string): number | null {
     const n = Number(raw);
@@ -81,6 +82,7 @@ export function CreateProjectKeyButton({
         parseLimit(limit),
         name || null,
         parseLimit(monthly),
+        expires ? Number(expires) : null,
       );
       if (!res.ok) setError(res.error ?? "Failed.");
       else setGenerated(res.generatedKey ?? null);
@@ -131,6 +133,18 @@ export function CreateProjectKeyButton({
           placeholder="$/month cap (optional)"
           className="max-w-[170px]"
         />
+        <select
+          value={expires}
+          onChange={(e) => setExpires(e.target.value)}
+          aria-label="Key expiry"
+          className="select-neu neu-inset bg-[var(--bg-deep)] px-3 py-2.5 text-xs text-[var(--text)] focus:outline-none"
+        >
+          <option value="">Never expires</option>
+          <option value="1">Expires in 1 hour</option>
+          <option value="24">Expires in 24 hours</option>
+          <option value="168">Expires in 7 days</option>
+          <option value="720">Expires in 30 days</option>
+        </select>
         <Button
           variant="ghost"
           onClick={mint}
