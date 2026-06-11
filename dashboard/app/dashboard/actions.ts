@@ -50,6 +50,53 @@ export async function revokeProxyKey(keyId: string): Promise<ActionResult> {
 }
 
 /**
+ * Rotate a key with zero downtime: mint a fresh key with the same name and
+ * caps, and give the old key a 24h grace window (expires_at) so running
+ * agents keep working while configs are updated. The new key is returned once.
+ */
+export async function rotateProxyKey(keyId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated." };
+
+  // RLS-scoped read: only the owner's key resolves.
+  const { data: old } = await supabase
+    .from("proxy_keys")
+    .select("id, project_id, daily_limit, monthly_limit, name, is_active")
+    .eq("id", keyId)
+    .single();
+  if (!old || !old.is_active) {
+    return { ok: false, error: "Key not found or already revoked." };
+  }
+
+  const { key, keyHash, keyPrefix } = generateProxyKey();
+  const admin = createAdminClient();
+  const { error: issueError } = await admin.rpc("issue_proxy_key", {
+    p_user_id: user.id,
+    p_key_hash: keyHash,
+    p_key_prefix: keyPrefix,
+    p_project_id: old.project_id,
+    p_daily_limit: old.daily_limit,
+    p_name: old.name,
+    p_monthly_limit: old.monthly_limit,
+  });
+  if (issueError) return { ok: false, error: "Could not mint the new key." };
+
+  // Grace window on the old key (RLS-scoped). If this fails the new key still
+  // works; the old one just stays alive until manually revoked.
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+  await supabase
+    .from("proxy_keys")
+    .update({ expires_at: expiresAt })
+    .eq("id", keyId);
+
+  revalidatePath("/dashboard");
+  return { ok: true, generatedKey: key };
+}
+
+/**
  * Permanently delete a revoked key. RLS only permits deleting the owner's
  * inactive keys, so an active key can never be removed without revoking first.
  * Usage history is untouched (usage_events does not reference proxy_keys).

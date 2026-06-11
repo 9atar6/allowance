@@ -72,8 +72,33 @@ describe("proxy handler", () => {
     expect(res.status).toBe(402);
     const body = (await res.json()) as Record<string, unknown>;
     expect(body.x402Version).toBe(1);
+    // Agent-readable contract: every 402 says what's left and what to do.
+    expect(body.remaining).toBe(0.005);
+    expect(typeof body.retryHint).toBe("string");
+    expect(typeof body.manageUrl).toBe("string");
     expect(ctl.upstreamCalls).toHaveLength(0); // never forwarded
     expect(ctl.debitCalls).toHaveLength(0); // never charged
+  });
+
+  it("returns x-allowance-* spend headers on successful proxied calls", async () => {
+    const ctl = newCtl({
+      proxyContext: baseContext({ balance: 5, daily_limit: 2 }),
+    });
+    installFetch(ctl);
+    const { ctx, flush } = makeCtx();
+
+    const res = await app.fetch(proxyRequest(), makeEnv(), ctx);
+    await res.text(); // drain the stream so settlement can run
+    await flush();
+
+    expect(res.status).toBe(200);
+    // budget 5 - cost 0.01 = 4.99
+    expect(res.headers.get("x-allowance-budget-remaining")).toBe("4.990000");
+    // daily cap 2 - 0 spent - 0.01 = 1.99
+    expect(res.headers.get("x-allowance-daily-remaining")).toBe("1.990000");
+    // no monthly/project caps configured -> headers absent
+    expect(res.headers.get("x-allowance-monthly-remaining")).toBeNull();
+    expect(res.headers.get("x-allowance-project-remaining")).toBeNull();
   });
 
   it("429s when the per-key rate limit is exceeded", async () => {

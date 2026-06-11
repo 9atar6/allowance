@@ -18,6 +18,9 @@ export function buildX402Body(opts: X402Options): Record<string, unknown> {
     x402Version: 1,
     error: "PAYMENT_REQUIRED",
     message: "Allowance budget is exhausted for this key.",
+    remaining: Math.max(0, opts.balance),
+    retryHint: "Raise the account budget on the dashboard to continue.",
+    manageUrl: opts.topUpUrl,
     accepts: [
       {
         scheme: "budget",

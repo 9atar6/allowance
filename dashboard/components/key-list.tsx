@@ -1,7 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { deleteProxyKey, revokeProxyKey } from "@/app/dashboard/actions";
+import {
+  deleteProxyKey,
+  revokeProxyKey,
+  rotateProxyKey,
+} from "@/app/dashboard/actions";
+import { CopyButton } from "@/components/copy-button";
 import { toast } from "@/components/toaster";
 import { Button } from "@/components/ui/button";
 import { formatShortDate } from "@/lib/format";
@@ -15,86 +20,143 @@ export interface KeyItem {
   name?: string | null;
   createdAt?: string | null;
   lastUsedAt?: string | null;
+  expiresAt?: string | null;
 }
 
 const shortDate = formatShortDate;
 
+function isExpiring(k: KeyItem): boolean {
+  return Boolean(
+    k.isActive && k.expiresAt && new Date(k.expiresAt).getTime() > Date.now(),
+  );
+}
+
 export function KeyList({ keys }: { keys: KeyItem[] }) {
   const [pending, startTransition] = useTransition();
-  const [revoking, setRevoking] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [rotatedKey, setRotatedKey] = useState<string | null>(null);
 
   if (keys.length === 0) {
     return <p className="text-xs text-[var(--text-faint)]">No keys yet.</p>;
   }
 
   function revoke(id: string) {
-    setRevoking(id);
+    setBusy(id);
     startTransition(async () => {
       const res = await revokeProxyKey(id);
       if (!res.ok) toast(res.error ?? "Failed to revoke the key.", "error");
       else toast("Key revoked. It stops working within seconds.");
-      setRevoking(null);
+      setBusy(null);
     });
   }
 
   function remove(id: string) {
-    setRevoking(id);
+    setBusy(id);
     startTransition(async () => {
       const res = await deleteProxyKey(id);
       if (!res.ok) toast(res.error ?? "Failed to remove the key.", "error");
       else toast("Key removed.");
-      setRevoking(null);
+      setBusy(null);
+    });
+  }
+
+  function rotate(id: string) {
+    setBusy(id);
+    startTransition(async () => {
+      const res = await rotateProxyKey(id);
+      if (!res.ok || !res.generatedKey) {
+        toast(res.error ?? "Failed to rotate the key.", "error");
+      } else {
+        setRotatedKey(res.generatedKey);
+        toast("Key rotated. The old key keeps working for 24 hours.");
+      }
+      setBusy(null);
     });
   }
 
   return (
-    <ul className="space-y-1">
-      {keys.map((k) => (
-        <li key={k.id} className="flex items-center justify-between gap-2 text-xs">
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              {k.name && (
-                <span className="font-medium text-[var(--text)]">{k.name}</span>
-              )}
-              <code className="font-mono text-[var(--text-muted)]">
-                {k.keyPrefix}…
-              </code>
-              {!k.isActive && (
-                <span className="text-[var(--text-faint)]">(revoked)</span>
-              )}
-            </div>
-            <div className="mt-0.5 text-[var(--text-faint)]">
-              {k.createdAt && <>Created {shortDate(k.createdAt)}</>}
-              {k.lastUsedAt ? (
-                <> · Last used {shortDate(k.lastUsedAt)}</>
-              ) : (
-                <> · Never used</>
-              )}
-              {k.dailyLimit != null && <> · ${k.dailyLimit}/day cap</>}
-              {k.monthlyLimit != null && <> · ${k.monthlyLimit}/mo cap</>}
-            </div>
+    <div>
+      {rotatedKey && (
+        <div className="neu-inset mb-3 p-3">
+          <p className="text-xs text-[var(--text-muted)]">
+            New key. Copy it now, it is shown only once. The old key keeps
+            working for 24 hours so nothing breaks while you swap it.
+          </p>
+          <div className="mt-2 flex items-center gap-2">
+            <code className="min-w-0 break-all font-mono text-xs text-[var(--accent-strong,var(--accent))]">
+              {rotatedKey}
+            </code>
+            <CopyButton text={rotatedKey} />
           </div>
-          {k.isActive ? (
-            <Button
-              variant="danger"
-              className="shrink-0 px-2.5 py-1.5 text-xs"
-              disabled={pending && revoking === k.id}
-              onClick={() => revoke(k.id)}
-            >
-              {pending && revoking === k.id ? "Revoking…" : "Revoke"}
-            </Button>
-          ) : (
-            <button
-              type="button"
-              className="shrink-0 text-xs text-[var(--text-faint)] underline-offset-2 hover:text-[var(--text-muted)] hover:underline disabled:opacity-50"
-              disabled={pending && revoking === k.id}
-              onClick={() => remove(k.id)}
-            >
-              {pending && revoking === k.id ? "Removing…" : "Remove"}
-            </button>
-          )}
-        </li>
-      ))}
-    </ul>
+        </div>
+      )}
+
+      <ul className="space-y-1">
+        {keys.map((k) => (
+          <li key={k.id} className="flex items-center justify-between gap-2 text-xs">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                {k.name && (
+                  <span className="font-medium text-[var(--text)]">{k.name}</span>
+                )}
+                <code className="font-mono text-[var(--text-muted)]">
+                  {k.keyPrefix}…
+                </code>
+                {!k.isActive && (
+                  <span className="text-[var(--text-faint)]">(revoked)</span>
+                )}
+                {isExpiring(k) && (
+                  <span className="text-amber-500">
+                    (replaced · stops within 24h)
+                  </span>
+                )}
+              </div>
+              <div className="mt-0.5 text-[var(--text-faint)]">
+                {k.createdAt && <>Created {shortDate(k.createdAt)}</>}
+                {k.lastUsedAt ? (
+                  <> · Last used {shortDate(k.lastUsedAt)}</>
+                ) : (
+                  <> · Never used</>
+                )}
+                {k.dailyLimit != null && <> · ${k.dailyLimit}/day cap</>}
+                {k.monthlyLimit != null && <> · ${k.monthlyLimit}/mo cap</>}
+              </div>
+            </div>
+            {k.isActive ? (
+              <div className="flex shrink-0 items-center gap-2">
+                {!isExpiring(k) && (
+                  <button
+                    type="button"
+                    className="text-xs text-[var(--text-faint)] underline-offset-2 hover:text-[var(--text-muted)] hover:underline disabled:opacity-50"
+                    disabled={pending && busy === k.id}
+                    onClick={() => rotate(k.id)}
+                    title="Mint a fresh key; the old one keeps working for 24 hours."
+                  >
+                    {pending && busy === k.id ? "Rotating…" : "Rotate"}
+                  </button>
+                )}
+                <Button
+                  variant="danger"
+                  className="px-2.5 py-1.5 text-xs"
+                  disabled={pending && busy === k.id}
+                  onClick={() => revoke(k.id)}
+                >
+                  {pending && busy === k.id ? "Working…" : "Revoke"}
+                </Button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                className="shrink-0 text-xs text-[var(--text-faint)] underline-offset-2 hover:text-[var(--text-muted)] hover:underline disabled:opacity-50"
+                disabled={pending && busy === k.id}
+                onClick={() => remove(k.id)}
+              >
+                {pending && busy === k.id ? "Removing…" : "Remove"}
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

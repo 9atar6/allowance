@@ -35,6 +35,7 @@ export interface ProjectKeyRow {
   name: string | null;
   created_at: string | null;
   last_used_at: string | null;
+  expires_at: string | null;
 }
 
 interface Props {
@@ -92,6 +93,7 @@ export function ProjectsSection({
                 name: k.name,
                 createdAt: k.created_at,
                 lastUsedAt: k.last_used_at,
+                expiresAt: k.expires_at,
               }));
 
             return (

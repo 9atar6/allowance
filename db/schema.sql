@@ -871,7 +871,8 @@ begin
   from public.proxy_keys pk
   join public.wallets w on w.user_id = pk.user_id
   left join public.projects pj on pj.id = pk.project_id
-  where pk.key_hash = p_key_hash and pk.is_active;
+  where pk.key_hash = p_key_hash and pk.is_active
+    and (pk.expires_at is null or pk.expires_at > now());
   if not found then return null; end if;
 
   -- Touch last_used_at, throttled to once/hour. Piggybacks on the cache-miss
@@ -962,6 +963,14 @@ grant execute on function public.get_proxy_context(text) to proxy_worker;
 grant execute on function public.debit_wallet(uuid,uuid,numeric,text,int,int,int,int,int) to proxy_worker;
 grant execute on function public.wallets_needing_low_balance_alert() to proxy_worker;
 grant execute on function public.mark_low_balance_alerted(uuid) to proxy_worker;
+
+-- =============================================================================
+-- Key rotation (zero-downtime)
+-- =============================================================================
+-- Rotating mints a fresh key and gives the old one a 24h grace window via
+-- expires_at, so running agents keep working while configs are updated.
+-- get_proxy_context (above) rejects keys past their expires_at.
+alter table public.proxy_keys add column if not exists expires_at timestamptz;
 
 -- =============================================================================
 -- Privilege hardening (Supabase linter 0011 / 0028 / 0029)

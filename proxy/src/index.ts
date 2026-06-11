@@ -18,6 +18,11 @@ import {
   utcMonthKey,
 } from "./cache/context";
 import { FREE_MONTHLY_REQUESTS, MAX_BODY_BYTES, PROXY_BASE_PATH } from "./config";
+import {
+  spendHeaders,
+  withExtraHeaders,
+  type SpendState,
+} from "./lib/agent-headers";
 import { logEvent } from "./lib/log";
 import { buildX402Body } from "./lib/x402";
 import { withinRateLimit } from "./lib/rate-limit";
@@ -63,9 +68,17 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
     return c.json({ error: "endpoint_unavailable" }, 503);
   }
 
+  // Spend state collected at each gate; returned as x-allowance-* headers so
+  // agents can adapt before they hit a wall. 402 bodies carry the same data.
+  const manageUrl = "https://getallowance.dev/dashboard";
+  const spend: SpendState = {
+    budgetRemaining: ctx.balance - active.costPerRequest,
+  };
+
   // ── Free-plan monthly quota (hard cap so free users can't run up cost) ────
   if (ctx.plan === "free") {
     const usedThisMonth = await getMonthlyCount(c.env, ctx.userId, utcMonthKey());
+    spend.requestsRemaining = FREE_MONTHLY_REQUESTS - usedThisMonth - 1;
     if (usedThisMonth >= FREE_MONTHLY_REQUESTS) {
       logEvent({ event: "free_quota_reached", requestId, userId: ctx.userId });
       return c.json(
@@ -73,7 +86,9 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
           error: "free_quota_reached",
           limit: FREE_MONTHLY_REQUESTS,
           used: usedThisMonth,
-          upgradeUrl: "https://getallowance.dev/dashboard",
+          remaining: 0,
+          retryHint: "Upgrade to Pro or wait for the monthly reset (UTC).",
+          upgradeUrl: manageUrl,
         },
         402,
       );
@@ -83,10 +98,19 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
   // ── Per-key daily limit (edge counter; null = unlimited) ──────────────────
   if (ctx.dailyLimit != null) {
     const spentToday = await getDailySpend(c.env, ctx.keyHash, utcDateKey());
+    spend.dailyRemaining = ctx.dailyLimit - spentToday - active.costPerRequest;
     if (spentToday + active.costPerRequest > ctx.dailyLimit) {
       logEvent({ event: "daily_limit_reached", requestId, userId: ctx.userId });
       return c.json(
-        { error: "daily_limit_reached", limit: ctx.dailyLimit, spentToday },
+        {
+          error: "daily_limit_reached",
+          limit: ctx.dailyLimit,
+          spentToday,
+          remaining: Math.max(0, ctx.dailyLimit - spentToday),
+          retryHint:
+            "Raise this key's daily cap, or wait until midnight UTC when it resets.",
+          manageUrl,
+        },
         402,
       );
     }
@@ -99,10 +123,20 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
       ctx.keyHash,
       utcMonthKey(),
     );
+    spend.monthlyRemaining =
+      ctx.monthlyLimit - spentThisMonth - active.costPerRequest;
     if (spentThisMonth + active.costPerRequest > ctx.monthlyLimit) {
       logEvent({ event: "monthly_limit_reached", requestId, userId: ctx.userId });
       return c.json(
-        { error: "monthly_limit_reached", limit: ctx.monthlyLimit, spentThisMonth },
+        {
+          error: "monthly_limit_reached",
+          limit: ctx.monthlyLimit,
+          spentThisMonth,
+          remaining: Math.max(0, ctx.monthlyLimit - spentThisMonth),
+          retryHint:
+            "Raise this key's monthly cap, or wait for the monthly reset (UTC).",
+          manageUrl,
+        },
         402,
       );
     }
@@ -115,6 +149,8 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
       ctx.projectId,
       utcMonthKey(),
     );
+    spend.projectRemaining =
+      ctx.monthlyBudget - spentThisMonth - active.costPerRequest;
     if (spentThisMonth + active.costPerRequest > ctx.monthlyBudget) {
       logEvent({ event: "project_budget_reached", requestId, userId: ctx.userId });
       return c.json(
@@ -122,6 +158,9 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
           error: "project_budget_reached",
           budget: ctx.monthlyBudget,
           spentThisMonth,
+          remaining: Math.max(0, ctx.monthlyBudget - spentThisMonth),
+          retryHint: "Raise the project's monthly budget to continue.",
+          manageUrl,
         },
         402,
       );
@@ -136,7 +175,7 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
         resource: new URL(c.req.url).pathname,
         balance: ctx.balance,
         cost: active.costPerRequest,
-        topUpUrl: "https://getallowance.dev/dashboard",
+        topUpUrl: manageUrl,
       }),
       402,
     );
@@ -167,6 +206,7 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
   // worker alive until the body finishes piping, then settles. Scheduling
   // waitUntil from a later callback would be dropped by the runtime.
   const { response, done } = streamWithCount(upstream);
+  const withSpend = withExtraHeaders(response, spendHeaders(spend));
 
   c.executionCtx.waitUntil(
     done.then(({ chunkCount, usage }) => {
@@ -197,7 +237,7 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
     }),
   );
 
-  return response;
+  return withSpend;
 });
 
 app.notFound((c) => c.json({ error: "not_found" }, 404));

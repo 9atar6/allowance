@@ -18,6 +18,7 @@ const toc = [
   { id: "streaming", label: "Streaming" },
   { id: "limits", label: "The four caps" },
   { id: "limit", label: "When the budget runs out" },
+  { id: "agents", label: "For agents" },
   { id: "budget", label: "Setting a budget" },
   { id: "revoke", label: "Revoke a key" },
   { id: "errors", label: "Error reference" },
@@ -262,6 +263,9 @@ curl "${PROXY}/v1/proxy/gemini/models/gemini-1.5-flash:generateContent" \\
   "x402Version": 1,
   "error": "PAYMENT_REQUIRED",
   "message": "Allowance budget is exhausted for this key.",
+  "remaining": 0,
+  "retryHint": "Raise the account budget on the dashboard to continue.",
+  "manageUrl": "https://getallowance.dev/dashboard",
   "accepts": [
     {
       "scheme": "budget",
@@ -272,6 +276,35 @@ curl "${PROXY}/v1/proxy/gemini/models/gemini-1.5-flash:generateContent" \\
   ]
 }`}
                 />
+                <p>
+                  Every 402 variant (account budget, daily cap, monthly cap,
+                  project budget, free quota) carries <Mono>remaining</Mono>,{" "}
+                  <Mono>retryHint</Mono> and <Mono>manageUrl</Mono>, so an agent
+                  can decide what to do instead of just crashing.
+                </p>
+              </Step>
+
+              <Step id="agents" title="For agents: watch your own budget">
+                <p>
+                  Agents should not discover the cap by hitting it. Every
+                  successful proxied response includes{" "}
+                  <Mono>x-allowance-*</Mono> headers with the spend state, so an
+                  agent can adapt before the wall: switch to a cheaper model,
+                  summarize and finish, or alert its operator.
+                </p>
+                <CodeBlock
+                  label="response headers"
+                  code={`x-allowance-budget-remaining: 4.990000
+x-allowance-requests-remaining: 4863   # free plan only
+x-allowance-daily-remaining: 1.990000  # only if the key has a daily cap
+x-allowance-monthly-remaining: 9.99000 # only if the key has a monthly cap
+x-allowance-project-remaining: 8.40000 # only if the project has a budget`}
+                />
+                <p>
+                  Values are edge snapshots taken just before the call (refresh
+                  window up to 60s), accurate enough to steer on, with the
+                  database as the authoritative ledger.
+                </p>
               </Step>
 
               <Step id="budget" title="Setting a budget">
