@@ -31,6 +31,12 @@ function isExpiring(k: KeyItem): boolean {
   );
 }
 
+/** Death is near: within 48h. Drives the amber warning, not the meta line. */
+function isExpiringSoon(k: KeyItem): boolean {
+  if (!isExpiring(k) || !k.expiresAt) return false;
+  return new Date(k.expiresAt).getTime() - Date.now() < 48 * 60 * 60 * 1000;
+}
+
 /** Past its grace window: dead at the proxy even though is_active is true. */
 function isExpired(k: KeyItem): boolean {
   return Boolean(
@@ -112,7 +118,7 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
                 {!k.isActive && (
                   <span className="text-[var(--text-faint)]">(revoked)</span>
                 )}
-                {isExpiring(k) && (
+                {isExpiringSoon(k) && (
                   <span className="text-amber-500">(expiring)</span>
                 )}
                 {isExpired(k) && (
