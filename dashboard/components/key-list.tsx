@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { revokeProxyKey } from "@/app/dashboard/actions";
 import { toast } from "@/components/toaster";
 import { Button } from "@/components/ui/button";
+import { formatShortDate } from "@/lib/format";
 
 export interface KeyItem {
   id: string;
@@ -16,12 +17,7 @@ export interface KeyItem {
   lastUsedAt?: string | null;
 }
 
-function shortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
+const shortDate = formatShortDate;
 
 export function KeyList({ keys }: { keys: KeyItem[] }) {
   const [pending, startTransition] = useTransition();

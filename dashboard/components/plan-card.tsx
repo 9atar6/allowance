@@ -8,6 +8,7 @@ import {
 } from "@/app/dashboard/billing-actions";
 import { Button } from "@/components/ui/button";
 import { CardTitle } from "@/components/ui/card";
+import { formatInt, formatShortDate } from "@/lib/format";
 import {
   FREE_MONTHLY_REQUESTS,
   PRO_PRICE_USD,
@@ -41,17 +42,12 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
   const barColor =
     pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-400" : "bg-[var(--accent)]";
   const remaining = limit != null ? Math.max(0, limit - used) : null;
-  const renews = periodEnd
-    ? new Date(periodEnd).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-      })
-    : null;
+  const renews = periodEnd ? formatShortDate(periodEnd) : null;
   const footer =
     plan === "pro" && renews
       ? `Renews ${renews}`
       : remaining != null
-        ? `${remaining.toLocaleString()} requests left this month`
+        ? `${formatInt(remaining)} requests left this month`
         : null;
 
   return (
@@ -67,8 +63,8 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
         <div className="flex justify-between text-xs text-[var(--text-faint)]">
           <span>Requests this month</span>
           <span className="tabular-nums">
-            {used.toLocaleString()}
-            {limit != null ? ` / ${limit.toLocaleString()}` : ""}
+            {formatInt(used)}
+            {limit != null ? ` / ${formatInt(limit)}` : ""}
           </span>
         </div>
         {limit != null && (

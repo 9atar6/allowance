@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { formatUsd } from "@/lib/format";
+import { formatInt, formatShortDate, formatUsd } from "@/lib/format";
 
 export interface DailyPoint {
   day: string;
@@ -23,12 +23,7 @@ interface Props {
 
 type Metric = "cost" | "requests";
 
-function fmtDay(iso: string): string {
-  return new Date(iso).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
+const fmtDay = formatShortDate;
 
 export function UsageAnalytics({ daily, services, serviceNames }: Props) {
   const [metric, setMetric] = useState<Metric>("cost");
@@ -63,7 +58,7 @@ export function UsageAnalytics({ daily, services, serviceNames }: Props) {
       {/* Totals double as the chart-metric toggle */}
       <div className="flex gap-4">
         <StatButton m="cost" label="Spent · 14 days" display={formatUsd(totalCost)} />
-        <StatButton m="requests" label="Requests · 14 days" display={totalReq.toLocaleString()} />
+        <StatButton m="requests" label="Requests · 14 days" display={formatInt(totalReq)} />
       </div>
 
       {/* Daily bars for the selected metric */}
@@ -104,7 +99,7 @@ export function UsageAnalytics({ daily, services, serviceNames }: Props) {
               >
                 <span className="text-[var(--text)]">{name(s.endpointId)}</span>
                 <span className="tabular-nums text-[var(--text-muted)]">
-                  {s.requests.toLocaleString()} req · {formatUsd(s.cost)}
+                  {formatInt(s.requests)} req · {formatUsd(s.cost)}
                 </span>
               </li>
             ))}
