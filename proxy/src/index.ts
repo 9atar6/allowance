@@ -168,7 +168,9 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
   }
 
   // ── x402 hard-stop (advisory edge check; DB debit is authoritative) ───────
-  if (ctx.balance < active.costPerRequest) {
+  // balance <= 0 must trip on its own: per-token connections have a flat
+  // estimate of 0, so "balance < cost" alone would never fire for them.
+  if (ctx.balance <= 0 || ctx.balance < active.costPerRequest) {
     logEvent({ event: "payment_required", requestId, userId: ctx.userId, reason: "insufficient_balance" });
     return c.json(
       buildX402Body({

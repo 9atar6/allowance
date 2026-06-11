@@ -965,6 +965,46 @@ grant execute on function public.wallets_needing_low_balance_alert() to proxy_wo
 grant execute on function public.mark_low_balance_alerted(uuid) to proxy_worker;
 
 -- =============================================================================
+-- debit_wallet v2: always record a served call (may go negative once)
+-- =============================================================================
+-- v1 refused the debit when balance < cost. But settlement runs AFTER the call
+-- was served: refusing meant the call was free and unmetered, and per-token
+-- connections (flat estimate 0) could ride that loop forever at $0 budget.
+-- v2 debits unconditionally; the final call may push the balance slightly
+-- negative, and the edge gate (balance <= 0 -> 402) stops the next one.
+alter table public.wallets drop constraint if exists wallets_balance_check;
+create or replace function public.debit_wallet(
+  p_user_id uuid, p_endpoint_id uuid, p_cost numeric, p_request_id text,
+  p_status_code int default null, p_chunk_count int default null, p_duration_ms int default null,
+  p_prompt_tokens int default null, p_completion_tokens int default null
+)
+returns boolean language plpgsql security definer
+set search_path = public, pg_temp as $$
+declare v_wallet_id uuid; v_new_bal numeric(14,6);
+begin
+  if exists (select 1 from public.usage_events where request_id = p_request_id) then
+    return true;  -- already settled
+  end if;
+
+  update public.wallets set balance = balance - p_cost
+   where user_id = p_user_id
+   returning id, balance into v_wallet_id, v_new_bal;
+  if not found then return false; end if;  -- no wallet (should not happen)
+
+  insert into public.wallet_transactions
+    (wallet_id, user_id, type, amount, balance_after, external_ref, metadata)
+  values (v_wallet_id, p_user_id, 'debit', -p_cost, v_new_bal, p_request_id,
+          jsonb_build_object('endpoint_id', p_endpoint_id));
+
+  insert into public.usage_events
+    (user_id, endpoint_id, request_id, cost, status_code, chunk_count,
+     prompt_tokens, completion_tokens, duration_ms)
+  values (p_user_id, p_endpoint_id, p_request_id, p_cost, p_status_code,
+          p_chunk_count, p_prompt_tokens, p_completion_tokens, p_duration_ms);
+  return true;
+end; $$;
+
+-- =============================================================================
 -- Key rotation (zero-downtime)
 -- =============================================================================
 -- Rotating mints a fresh key and gives the old one a 24h grace window via

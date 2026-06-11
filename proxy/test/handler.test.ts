@@ -80,6 +80,22 @@ describe("proxy handler", () => {
     expect(ctl.debitCalls).toHaveLength(0); // never charged
   });
 
+  it("402s at zero balance even when the flat estimate is 0 (per-token)", async () => {
+    // Per-token connections store cost_per_request = 0; "balance < cost" alone
+    // (0 < 0) would never trip. The gate must fire on balance <= 0 by itself.
+    const ctl = newCtl({
+      proxyContext: baseContext({ balance: 0, cost_per_request: 0 }),
+    });
+    installFetch(ctl);
+    const { ctx, flush } = makeCtx();
+
+    const res = await app.fetch(proxyRequest(), makeEnv(), ctx);
+    await flush();
+
+    expect(res.status).toBe(402);
+    expect(ctl.upstreamCalls).toHaveLength(0); // never forwarded
+  });
+
   it("returns x-allowance-* spend headers on successful proxied calls", async () => {
     const ctl = newCtl({
       proxyContext: baseContext({ balance: 5, daily_limit: 2 }),

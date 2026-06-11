@@ -31,6 +31,13 @@ function isExpiring(k: KeyItem): boolean {
   );
 }
 
+/** Past its grace window: dead at the proxy even though is_active is true. */
+function isExpired(k: KeyItem): boolean {
+  return Boolean(
+    k.isActive && k.expiresAt && new Date(k.expiresAt).getTime() <= Date.now(),
+  );
+}
+
 export function KeyList({ keys }: { keys: KeyItem[] }) {
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
@@ -110,6 +117,11 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
                     (replaced · stops within 24h)
                   </span>
                 )}
+                {isExpired(k) && (
+                  <span className="text-[var(--text-faint)]">
+                    (expired · revoke to remove)
+                  </span>
+                )}
               </div>
               <div className="mt-0.5 text-[var(--text-faint)]">
                 {k.createdAt && <>Created {shortDate(k.createdAt)}</>}
@@ -124,7 +136,7 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
             </div>
             {k.isActive ? (
               <div className="flex shrink-0 items-center gap-2">
-                {!isExpiring(k) && (
+                {!isExpiring(k) && !isExpired(k) && (
                   <button
                     type="button"
                     className="text-xs text-[var(--text-faint)] underline-offset-2 hover:text-[var(--text-muted)] hover:underline disabled:opacity-50"
