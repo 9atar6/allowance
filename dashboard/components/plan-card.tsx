@@ -44,8 +44,10 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
   const remaining = limit != null ? Math.max(0, limit - used) : null;
   const renews = periodEnd ? formatShortDate(periodEnd) : null;
   const footer =
-    plan === "pro" && renews
-      ? `Renews ${renews}`
+    plan === "pro"
+      ? renews
+        ? `Unlimited requests · Renews ${renews}`
+        : "Unlimited requests"
       : remaining != null
         ? `${formatInt(remaining)} requests left this month`
         : null;

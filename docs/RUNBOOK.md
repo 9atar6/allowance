@@ -101,3 +101,24 @@ Most "bugs" are a cap they forgot they set, or a provider key they rotated.
 `RESEND_API_KEY` (optional), `ALERT_WEBHOOK_URL` (optional).
 List: `npx wrangler secret list`. Rotating `EDGE_ENCRYPTION_KEY` is safe at any
 time: cached blobs fail decryption and re-warm from the DB automatically.
+
+## 9. Restricted worker role (least privilege)
+
+The worker should NOT hold the all-powerful service_role key. Instead it uses a
+JWT bound to the `proxy_worker` Postgres role (created in `db/schema.sql`),
+which can execute exactly 4 RPCs and nothing else: `get_proxy_context`,
+`debit_wallet`, `wallets_needing_low_balance_alert`, `mark_low_balance_alerted`.
+
+Setup / rotation:
+
+1. Paste `db/schema.sql` in the Supabase SQL Editor (creates/refreshes the role
+   and its grants; idempotent).
+2. Copy the **Legacy JWT secret** from Project Settings > API > JWT Settings.
+3. Mint the token locally (the secret never leaves your machine):
+   `$env:SUPABASE_JWT_SECRET = "<secret>"; node proxy/scripts/mint-worker-jwt.mjs`
+4. `cd proxy && npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY` and paste the
+   minted token (the env var name is unchanged; only the credential shrank).
+5. Verify: a proxied call still works, and the blast radius is now 4 RPCs.
+
+Rollback: put the real service_role key back with the same `secret put`.
+If Supabase rotates the Legacy JWT secret, re-mint (step 3) and re-put (step 4).

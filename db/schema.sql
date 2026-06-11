@@ -936,4 +936,31 @@ alter table public.endpoints drop constraint if exists endpoints_cost_per_reques
 alter table public.endpoints add constraint endpoints_cost_per_request_check
   check (cost_per_request >= 0);
 
+-- Owners may permanently delete their REVOKED keys (active keys are protected:
+-- you must revoke first, which also evicts the edge cache).
+drop policy if exists "proxy_keys_delete_revoked_own" on public.proxy_keys;
+create policy "proxy_keys_delete_revoked_own" on public.proxy_keys
+  for delete using (auth.uid() = user_id and not is_active);
+
+-- =============================================================================
+-- Restricted worker role (least privilege for the edge proxy)
+-- =============================================================================
+-- The Cloudflare Worker only ever calls 4 RPCs. This role can execute exactly
+-- those and touch nothing else: no tables, no other functions, no vault.
+-- (The RPCs are SECURITY DEFINER, so they still work internally.)
+-- Pair with a JWT whose role claim is "proxy_worker" (see docs/RUNBOOK.md).
+do $$ begin
+  if not exists (select 1 from pg_roles where rolname = 'proxy_worker') then
+    create role proxy_worker nologin;
+  end if;
+end $$;
+grant proxy_worker to authenticator;          -- lets PostgREST assume the role
+grant usage on schema public to proxy_worker;
+revoke all on all tables    in schema public from proxy_worker;
+revoke all on all functions in schema public from proxy_worker;
+grant execute on function public.get_proxy_context(text) to proxy_worker;
+grant execute on function public.debit_wallet(uuid,uuid,numeric,text,int,int,int,int,int) to proxy_worker;
+grant execute on function public.wallets_needing_low_balance_alert() to proxy_worker;
+grant execute on function public.mark_low_balance_alerted(uuid) to proxy_worker;
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';

@@ -49,6 +49,26 @@ export async function revokeProxyKey(keyId: string): Promise<ActionResult> {
   return { ok: true };
 }
 
+/**
+ * Permanently delete a revoked key. RLS only permits deleting the owner's
+ * inactive keys, so an active key can never be removed without revoking first.
+ * Usage history is untouched (usage_events does not reference proxy_keys).
+ */
+export async function deleteProxyKey(keyId: string): Promise<ActionResult> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("proxy_keys")
+    .delete()
+    .eq("id", keyId)
+    .eq("is_active", false)
+    .select("id");
+  if (error || !data?.length) {
+    return { ok: false, error: "Could not remove the key. Revoke it first." };
+  }
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
 // ── Projects ─────────────────────────────────────────────────────────────────
 
 /** Create a project (a bundle of services billed to one key). */

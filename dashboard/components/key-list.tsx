@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { revokeProxyKey } from "@/app/dashboard/actions";
+import { deleteProxyKey, revokeProxyKey } from "@/app/dashboard/actions";
 import { toast } from "@/components/toaster";
 import { Button } from "@/components/ui/button";
 import { formatShortDate } from "@/lib/format";
@@ -37,6 +37,16 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
     });
   }
 
+  function remove(id: string) {
+    setRevoking(id);
+    startTransition(async () => {
+      const res = await deleteProxyKey(id);
+      if (!res.ok) toast(res.error ?? "Failed to remove the key.", "error");
+      else toast("Key removed.");
+      setRevoking(null);
+    });
+  }
+
   return (
     <ul className="space-y-1">
       {keys.map((k) => (
@@ -64,7 +74,7 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
               {k.monthlyLimit != null && <> · ${k.monthlyLimit}/mo cap</>}
             </div>
           </div>
-          {k.isActive && (
+          {k.isActive ? (
             <Button
               variant="danger"
               className="shrink-0 px-2.5 py-1.5 text-xs"
@@ -73,6 +83,15 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
             >
               {pending && revoking === k.id ? "Revoking…" : "Revoke"}
             </Button>
+          ) : (
+            <button
+              type="button"
+              className="shrink-0 text-xs text-[var(--text-faint)] underline-offset-2 hover:text-[var(--text-muted)] hover:underline disabled:opacity-50"
+              disabled={pending && revoking === k.id}
+              onClick={() => remove(k.id)}
+            >
+              {pending && revoking === k.id ? "Removing…" : "Remove"}
+            </button>
           )}
         </li>
       ))}
