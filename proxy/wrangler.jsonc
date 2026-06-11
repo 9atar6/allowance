@@ -39,6 +39,9 @@
   // Non-secret config only. Secrets go through `wrangler secret put` (see below).
   "vars": {
     "SUPABASE_URL": "https://izcxmonodmfoebaazxxe.supabase.co",
+    // Public by design (ships in the dashboard's browser bundle). Needed in the
+    // `apikey` header because the gateway rejects custom JWTs there.
+    "SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6Y3htb25vZG1mb2ViYWF6eHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4ODY1ODQsImV4cCI6MjA5NjQ2MjU4NH0.g3g2_lNs0KZOxZ28dQ-uHIVH4y9ZzIdetTbF-JP3arQ",
     "KV_CONTEXT_TTL_SECONDS": "60",
     "APP_URL": "https://getallowance.dev",
     "RESEND_FROM": "Allowance <alerts@getallowance.dev>"

@@ -963,4 +963,44 @@ grant execute on function public.debit_wallet(uuid,uuid,numeric,text,int,int,int
 grant execute on function public.wallets_needing_low_balance_alert() to proxy_worker;
 grant execute on function public.mark_low_balance_alerted(uuid) to proxy_worker;
 
+-- =============================================================================
+-- Privilege hardening (Supabase linter 0011 / 0028 / 0029)
+-- =============================================================================
+-- Postgres auto-grants EXECUTE on new functions to anon + authenticated.
+-- Backend-only RPCs must never be callable with the public anon key, and
+-- user-facing RPCs must require a signed-in session.
+
+-- Stop future functions from being auto-exposed.
+alter default privileges in schema public revoke execute on functions from anon, authenticated, public;
+
+-- Backend-only (worker / Polar webhook / triggers): service_role + proxy_worker only.
+revoke execute on function public.get_proxy_context(text) from anon, authenticated, public;
+revoke execute on function public.debit_wallet(uuid,uuid,numeric,text,int,int,int,int,int) from anon, authenticated, public;
+revoke execute on function public.issue_proxy_key(uuid,text,text,uuid,uuid,numeric,text,numeric) from anon, authenticated, public;
+revoke execute on function public.set_plan(uuid,text,text,text,text,timestamptz) from anon, authenticated, public;
+revoke execute on function public.wallets_needing_low_balance_alert() from anon, authenticated, public;
+revoke execute on function public.mark_low_balance_alerted(uuid) from anon, authenticated, public;
+revoke execute on function public.get_endpoint_credentials(uuid) from anon, authenticated, public;
+revoke execute on function public.handle_new_user() from anon, authenticated, public;
+revoke execute on function public.tg_set_updated_at() from anon, authenticated, public;
+
+-- User-facing RPCs: signed-in users only (each checks auth.uid() internally).
+revoke execute on function public.create_project(text,numeric) from anon, public;
+revoke execute on function public.create_endpoint(text,text,numeric,jsonb,text,numeric,numeric,uuid,text) from anon, public;
+revoke execute on function public.attach_service(uuid,uuid,text) from anon, public;
+revoke execute on function public.set_budget(numeric) from anon, public;
+revoke execute on function public.set_low_balance_threshold(numeric) from anon, public;
+revoke execute on function public.my_daily_usage(int) from anon, public;
+revoke execute on function public.my_service_usage(int) from anon, public;
+grant execute on function public.create_project(text,numeric) to authenticated;
+grant execute on function public.create_endpoint(text,text,numeric,jsonb,text,numeric,numeric,uuid,text) to authenticated;
+grant execute on function public.attach_service(uuid,uuid,text) to authenticated;
+grant execute on function public.set_budget(numeric) to authenticated;
+grant execute on function public.set_low_balance_threshold(numeric) to authenticated;
+grant execute on function public.my_daily_usage(int) to authenticated;
+grant execute on function public.my_service_usage(int) to authenticated;
+
+-- Pin the trigger helper's search_path (linter 0011).
+alter function public.tg_set_updated_at() set search_path = public;
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';

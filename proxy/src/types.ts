@@ -19,9 +19,13 @@ export interface Env {
   // Per-IP pre-auth limiter (blocks raw floods before key resolution).
   RATE_LIMITER_IP?: RateLimit;
 
-  // Supabase (service_role — backend only, never exposed).
+  // Supabase. The "service role key" secret may hold either the real
+  // service_role key or (preferred) a restricted proxy_worker JWT — see
+  // docs/RUNBOOK.md §9. The anon key is public; the gateway requires a
+  // recognized key in the `apikey` header, so it rides along in vars.
   SUPABASE_URL: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+  SUPABASE_ANON_KEY?: string;
 
   // Edge credential encryption (base64 of 32 random bytes).
   EDGE_ENCRYPTION_KEY: string;

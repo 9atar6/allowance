@@ -17,7 +17,10 @@ async function rpc<T>(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      // The gateway only admits recognized API keys in `apikey`; a custom
+      // restricted JWT is not one, so the (public) anon key fills that slot
+      // while the Authorization role does the actual authorization.
+      apikey: env.SUPABASE_ANON_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY,
       Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
     },
     body: JSON.stringify(args),
