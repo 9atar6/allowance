@@ -50,10 +50,11 @@ select 22, 'wallets balance >= 0 constraint dropped (debit_wallet v2)',
 
 union all
 select 23, 'endpoints cost check allows zero-cost connections',
+  -- Postgres renders the constant with a cast: ">= (0)::numeric".
   case when exists (
     select 1 from pg_constraint
     where conname = 'endpoints_cost_per_request_check'
-      and pg_get_constraintdef(oid) like '%>= 0%'
+      and pg_get_constraintdef(oid) ~ '>=\s*\(?0\)?'
   ) then 'PASS' else 'FAIL' end
 
 -- ── Functions: latest versions in place ──────────────────────────────────────
