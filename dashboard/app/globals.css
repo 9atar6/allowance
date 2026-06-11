@@ -178,6 +178,9 @@ details:not([open]) .chevron { transform: rotate(-90deg); }
    Plus a tactile "press" ripple on click. Desktop-only, reduced-motion aware
    (both gated in the component). */
 .cursor-glow {
+  /* Hidden by default: on touch devices the pointer script never runs, so
+     without this the glow sits over the page at full strength forever. */
+  opacity: 0;
   position: fixed;
   top: 0;
   left: 0;
