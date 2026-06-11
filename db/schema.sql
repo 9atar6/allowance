@@ -927,4 +927,13 @@ begin
   );
 end; $$;
 
+-- =============================================================================
+-- FIXES
+-- =============================================================================
+-- Allow zero-cost connections ("Blank = doesn't count" in the UI). The original
+-- check demanded > 0, which rejected free/untracked services.
+alter table public.endpoints drop constraint if exists endpoints_cost_per_request_check;
+alter table public.endpoints add constraint endpoints_cost_per_request_check
+  check (cost_per_request >= 0);
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';

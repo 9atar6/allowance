@@ -105,14 +105,13 @@ export function AddConnectionForm() {
       </Field>
 
       <Field
-        label="Auth header"
-        hint="Your real API key. Encrypted in a vault, never logged."
+        label="Auth header (optional)"
+        hint="Your real API key. Encrypted in a vault, never logged. Leave empty if the API needs no auth."
       >
         <Textarea
           name="headers"
           rows={2}
           placeholder="Authorization: Bearer sk-..."
-          required
         />
       </Field>
 

@@ -44,7 +44,8 @@ export const connectionSchema = z.object({
   name: z.string().trim().min(1).max(80),
   targetUrl: httpsPublicUrl,
   costPerRequest: z.coerce.number().min(0).max(1000),
-  headers: z.string().trim().min(1),
+  // Optional: APIs without auth (or with auth in the URL) need no header.
+  headers: z.string().trim().default(""),
   meteringMode: z.enum(["flat", "per_token"]).default("flat"),
   inputTokenCost: z.coerce.number().min(0).max(1).default(0),
   outputTokenCost: z.coerce.number().min(0).max(1).default(0),

@@ -127,7 +127,8 @@ export async function createConnection(formData: FormData): Promise<ActionResult
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input." };
   }
-  const headers = parseHeaders(parsed.data.headers);
+  // No header is valid (APIs without auth); a malformed one is not.
+  const headers = parsed.data.headers ? parseHeaders(parsed.data.headers) : {};
   if (!headers) return { ok: false, error: 'Headers must be "Name: value" lines.' };
 
   const supabase = await createClient();
