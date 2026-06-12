@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildWebhookPayload } from "../src/cron/spend-webhooks";
+import { buildWebhookPayload, isSafeWebhookUrl } from "../src/cron/spend-webhooks";
 import { recordErrorAndMaybeAlert } from "../src/lib/alert";
 import { base64ToBytes, bytesToBase64 } from "../src/lib/base64";
 import { decryptEdge, encryptEdge } from "../src/lib/edge-crypto";
@@ -145,6 +145,18 @@ describe("getCachedContext staleness", () => {
       cached_at: Date.now() - 61_000,
     });
     expect(await getCachedContext(env, "hash2")).toBeNull();
+  });
+});
+
+describe("isSafeWebhookUrl", () => {
+  it("allows public https URLs only", () => {
+    expect(isSafeWebhookUrl("https://discord.com/api/webhooks/x/y")).toBe(true);
+    expect(isSafeWebhookUrl("http://example.com")).toBe(false);
+    expect(isSafeWebhookUrl("https://localhost/x")).toBe(false);
+    expect(isSafeWebhookUrl("https://169.254.169.254/latest")).toBe(false);
+    expect(isSafeWebhookUrl("https://10.0.0.8/hook")).toBe(false);
+    expect(isSafeWebhookUrl("https://[fd00::1]/hook")).toBe(false);
+    expect(isSafeWebhookUrl("not a url")).toBe(false);
   });
 });
 

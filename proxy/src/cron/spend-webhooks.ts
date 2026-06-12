@@ -15,6 +15,29 @@ import type { Env } from "../types";
 
 const WEBHOOK_TIMEOUT_MS = 10_000;
 
+/**
+ * Defense in depth: the dashboard validates webhook URLs with a full SSRF
+ * guard, but the RPC is reachable by any signed-in user directly. Re-check
+ * here, at the point of use, before the worker POSTs anywhere.
+ */
+export function isSafeWebhookUrl(value: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return false;
+  }
+  if (url.protocol !== "https:") return false;
+  const h = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+  if (h === "localhost" || h.endsWith(".local") || h.endsWith(".internal")) return false;
+  if (h === "0.0.0.0" || h === "::1") return false;
+  if (/^127\./.test(h) || /^10\./.test(h) || /^192\.168\./.test(h)) return false;
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return false;
+  if (/^169\.254\./.test(h)) return false;
+  if (h.includes(":") && /^(fc|fd|fe80)/.test(h)) return false;
+  return true;
+}
+
 /** Payload sent to the user's URL. Pure + exported for tests. */
 export function buildWebhookPayload(
   row: SpendWebhookRow,
@@ -44,6 +67,10 @@ export async function runSpendWebhooks(env: Env): Promise<void> {
   }
 
   for (const row of rows) {
+    if (!isSafeWebhookUrl(row.url)) {
+      logEvent({ event: "spend_webhook_unsafe_url", userId: row.user_id });
+      continue;
+    }
     try {
       const res = await fetch(row.url, {
         method: "POST",
