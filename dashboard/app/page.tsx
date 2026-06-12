@@ -191,6 +191,63 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Built for agents */}
+      <section className="mx-auto max-w-5xl px-6 py-24">
+        <div className="grid items-center gap-12 md:grid-cols-2">
+          <div>
+            <Eyebrow>Built for agents</Eyebrow>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight">
+              Your agent can read
+              <br />
+              its own budget
+            </h2>
+            <p className="mt-5 max-w-md text-[15px] leading-relaxed text-[var(--text-muted)]">
+              A hard wall is hostile to autonomous agents. Allowance makes the
+              wall visible from a distance: every response carries spend
+              headers, a key can inspect itself at{" "}
+              <code className="font-mono text-sm text-[var(--text)]">
+                /v1/me
+              </code>
+              , and every 402 explains what tripped and what to do next. So an
+              agent finishes the task on a cheaper model instead of dying
+              mid-run.
+            </p>
+            <ul className="mt-6 space-y-2.5 text-sm text-[var(--text-muted)]">
+              <li className="flex gap-2.5">
+                <span className="text-accent">→</span>
+                x-allowance-* headers on every response
+              </li>
+              <li className="flex gap-2.5">
+                <span className="text-accent">→</span>
+                Webhooks at 50%, 80%, and 100% of budget
+              </li>
+              <li className="flex gap-2.5">
+                <span className="text-accent">→</span>
+                MCP server: budget tools your agent calls itself
+              </li>
+            </ul>
+            <a
+              href="https://github.com/9atar6/allowance/tree/main/mcp"
+              className="mt-7 inline-block text-sm font-medium text-[var(--accent)] hover:underline"
+            >
+              Get allowance-mcp →
+            </a>
+          </div>
+          <CodeBlock
+            label="your agent, mid-task"
+            code={`> check_budget
+
+{
+  "plan": "pro",
+  "budgetRemaining": 1.42,
+  "dailyCap": { "limit": 5, "spent": 3.58, "remaining": 1.42 }
+}
+
+# 71% spent. Switching to gpt-4o-mini to finish the run.`}
+          />
+        </div>
+      </section>
+
       {/* Pricing */}
       <section className="mx-auto max-w-5xl px-6 py-24">
         <div className="text-center">
