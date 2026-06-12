@@ -99,7 +99,7 @@ create table if not exists public.usage_events (
   id              uuid primary key default gen_random_uuid(),
   user_id         uuid not null references auth.users (id) on delete cascade,
   endpoint_id     uuid references public.endpoints (id) on delete set null,
-  request_id      text not null unique,   -- Lago idempotency key
+  request_id      text not null unique,   -- settlement idempotency key
   cost            numeric(14, 6) not null,
   status_code     int,
   chunk_count     int,
