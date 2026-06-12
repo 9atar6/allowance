@@ -1,0 +1,70 @@
+name: Nightly health check
+
+on:
+  schedule:
+    - cron: "17 4 * * *" # 04:17 UTC daily (odd minute avoids the top-of-hour rush)
+  workflow_dispatch: {} # manual trigger from the Actions tab
+
+jobs:
+  production-pages:
+    name: live site renders clean
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    env:
+      # Run the public tier against the LIVE site (no local server, no build).
+      E2E_BASE_URL: https://getallowance.dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test e2e/public.spec.ts
+
+  staging-journey:
+    name: full journey on staging
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://izcxmonodmfoebaazxxe.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6Y3htb25vZG1mb2ViYWF6eHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4ODY1ODQsImV4cCI6MjA5NjQ2MjU4NH0.g3g2_lNs0KZOxZ28dQ-uHIVH4y9ZzIdetTbF-JP3arQ
+      NEXT_PUBLIC_APP_URL: http://localhost:3100
+      STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+      STAGING_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+      STAGING_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npx playwright test e2e/dashboard.spec.ts --project=desktop
+
+  notify:
+    name: page Discord on failure
+    runs-on: ubuntu-latest
+    needs: [production-pages, staging-journey]
+    if: failure()
+    steps:
+      - name: Send Discord alert
+        env:
+          WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -n "$WEBHOOK" ]; then
+            curl -sS -X POST -H "Content-Type: application/json" \
+              -d "{\"content\":\"Allowance nightly health check FAILED: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" \
+              "$WEBHOOK"
+          else
+            echo "DISCORD_WEBHOOK_URL secret not set; skipping notification."
+          fi

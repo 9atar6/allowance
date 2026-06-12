@@ -4,10 +4,11 @@ import "server-only"; // build error if ever imported into a client component
 // (issue_proxy_key). NEVER expose this; use only inside server actions / route
 // handlers, and always scope writes to the authenticated user's id.
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { supabaseUrl } from "./env";
 
 export function createAdminClient() {
   return createSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl(),
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { autoRefreshToken: false, persistSession: false } },
   );

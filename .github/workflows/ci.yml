@@ -53,17 +53,23 @@ jobs:
       - run: npm run build
 
   e2e:
-    name: e2e (public pages)
+    name: e2e (public + staging journey)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: dashboard
     env:
-      # Public by design (these ship in the browser bundle). The authed
-      # journey (dashboard.spec.ts) self-skips without the service key.
+      # Public by design (these ship in the browser bundle).
       NEXT_PUBLIC_SUPABASE_URL: https://izcxmonodmfoebaazxxe.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6Y3htb25vZG1mb2ViYWF6eHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4ODY1ODQsImV4cCI6MjA5NjQ2MjU4NH0.g3g2_lNs0KZOxZ28dQ-uHIVH4y9ZzIdetTbF-JP3arQ
       NEXT_PUBLIC_APP_URL: http://localhost:3100
+      # Staging credentials (repo secrets). When present, the authed journey
+      # runs against the staging Supabase + staging worker; when absent
+      # (e.g. fork PRs), dashboard.spec.ts self-skips and only the public
+      # tier runs.
+      STAGING_SUPABASE_URL: ${{ secrets.STAGING_SUPABASE_URL }}
+      STAGING_SUPABASE_ANON_KEY: ${{ secrets.STAGING_SUPABASE_ANON_KEY }}
+      STAGING_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.STAGING_SUPABASE_SERVICE_ROLE_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -74,7 +80,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run build
-      - run: npx playwright test e2e/public.spec.ts
+      - run: npx playwright test
       - uses: actions/upload-artifact@v4
         if: failure()
         with:

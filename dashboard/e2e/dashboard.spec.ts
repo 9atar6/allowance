@@ -15,6 +15,10 @@ import {
   type TestUser,
 } from "./supabase-helpers";
 
+// The proxy the journey talks to: the staging worker when configured (CI),
+// the live one otherwise (local runs against production).
+const PROXY = process.env.E2E_PROXY_URL ?? "https://api.getallowance.dev";
+
 test.describe("authenticated journey", () => {
   test.describe.configure({ mode: "serial" });
   test.skip(!tier2Available(), "needs SUPABASE_SERVICE_ROLE_KEY (local only)");
@@ -103,7 +107,7 @@ test.describe("authenticated journey", () => {
   });
 
   test("the key can inspect itself via /v1/me", async ({ request }) => {
-    const res = await request.get("https://api.getallowance.dev/v1/me", {
+    const res = await request.get(`${PROXY}/v1/me`, {
       headers: { Authorization: `Bearer ${mintedKey}` },
     });
     expect(res.status()).toBe(200);
@@ -124,7 +128,7 @@ test.describe("authenticated journey", () => {
       .poll(
         async () => {
           const res = await request.get(
-            "https://api.getallowance.dev/v1/proxy/github/users/octocat",
+            `${PROXY}/v1/proxy/github/users/octocat`,
             { headers: { Authorization: `Bearer ${mintedKey}` } },
           );
           return res.status();
