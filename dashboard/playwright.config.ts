@@ -44,7 +44,10 @@ export default defineConfig({
   testDir: "./e2e",
   fullyParallel: false, // the authed journey is one ordered story
   retries: process.env.CI ? 2 : 0,
-  reporter: process.env.CI ? [["github"], ["list"]] : [["list"]],
+  // html report (never auto-opened) so CI failures upload a browsable artifact.
+  reporter: process.env.CI
+    ? [["github"], ["list"], ["html", { open: "never" }]]
+    : [["list"]],
   timeout: 60_000,
   use: {
     baseURL: process.env.E2E_BASE_URL ?? `http://localhost:${PORT}`,

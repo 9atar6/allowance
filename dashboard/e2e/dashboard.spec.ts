@@ -144,12 +144,14 @@ test.describe("authenticated journey", () => {
     await expect(page.getByText(/New key\. Copy it now/)).toBeVisible({ timeout: 15_000 });
     await expect(page.getByText("(expiring)")).toBeVisible();
 
-    // Revoke every active key; Remove buttons appear for revoked ones.
+    // Revoke every active key (original + rotated). Assert on the button
+    // COUNT dropping: counts auto-wait through the re-render after each
+    // revalidation, and can't hit strict-mode ambiguity like stacked toasts.
     const revoke = page.getByRole("button", { name: "Revoke" });
-    while ((await revoke.count()) > 0) {
+    await expect(revoke).toHaveCount(2, { timeout: 15_000 });
+    for (let remaining = 2; remaining > 0; remaining--) {
       await revoke.first().click();
-      await expect(page.getByText(/Key revoked/)).toBeVisible({ timeout: 15_000 });
-      await page.waitForTimeout(500);
+      await expect(revoke).toHaveCount(remaining - 1, { timeout: 15_000 });
     }
     await expect(page.getByRole("button", { name: "Remove" }).first()).toBeVisible();
   });
