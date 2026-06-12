@@ -25,3 +25,10 @@ supabase/.temp/
 
 # Generated test coverage reports
 coverage/
+
+# Playwright
+dashboard/playwright-report/
+dashboard/test-results/
+dashboard/.e2e-ca.pem
+mcp/dist/
+mcp/node_modules/

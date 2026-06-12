@@ -356,6 +356,17 @@ x-allowance-project-remaining: 8.40000 # only if the project has a budget`}
                   dies on its own, perfect for CI runs, demos, or one-off agent
                   tasks. A leaked ephemeral key is a self-cleaning incident.
                 </p>
+                <p>
+                  <strong className="text-[var(--text)]">
+                    Spend webhook:
+                  </strong>{" "}
+                  add an https URL on the dashboard and we POST to it when your
+                  budget consumption crosses 50%, 80%, and 100%, so your own
+                  systems (a Discord channel, an agent orchestrator, a pager)
+                  can react before the wall. Each threshold fires once per
+                  budget; setting a new budget re-arms them. Delivery checks
+                  run every 15 minutes.
+                </p>
               </Step>
 
               <Step id="revoke" title="Revoke a leaked key">

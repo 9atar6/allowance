@@ -10,6 +10,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   attachServiceSchema,
   connectionSchema,
+  isPublicHttpsUrl,
   projectSchema,
 } from "@/lib/validation";
 
@@ -375,6 +376,29 @@ export async function setMonthlyAllowance(
     p_amount: value,
   });
   if (error) return { ok: false, error: "Could not save the allowance." };
+  revalidatePath("/dashboard");
+  return { ok: true };
+}
+
+/**
+ * Set or clear the spend webhook URL. The worker POSTs there when budget
+ * consumption crosses 50/80/100% of the baseline. https only, validated
+ * against private hosts with the same SSRF guard as connections.
+ */
+export async function setSpendWebhook(url: string | null): Promise<ActionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated." };
+
+  const trimmed = url?.trim() || null;
+  if (trimmed && !isPublicHttpsUrl(trimmed)) {
+    return { ok: false, error: "Webhook must be an https URL on a public host." };
+  }
+
+  const { error } = await supabase.rpc("set_spend_webhook", { p_url: trimmed });
+  if (error) return { ok: false, error: "Could not save the webhook." };
   revalidatePath("/dashboard");
   return { ok: true };
 }

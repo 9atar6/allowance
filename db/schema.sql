@@ -1130,4 +1130,151 @@ revoke all on function public.reset_monthly_allowances() from public, anon, auth
 grant execute on function public.reset_monthly_allowances() to service_role;
 grant execute on function public.reset_monthly_allowances() to proxy_worker;
 
+-- =============================================================================
+-- Spend webhooks (v8): POST to a user URL when budget consumption crosses
+-- 50% / 80% / 100% of the baseline (the amount the budget was last set or
+-- auto-refilled to). Fired from the worker cron; each threshold fires once
+-- per baseline (re-armed whenever the budget is set or refilled).
+-- =============================================================================
+alter table public.wallets add column if not exists spend_webhook_url text;
+alter table public.wallets add column if not exists budget_baseline numeric(14, 6);
+alter table public.wallets add column if not exists webhook_fired_mask int not null default 0;
+
+-- set_budget v2: also records the baseline and re-arms the webhook thresholds.
+create or replace function public.set_budget(p_amount numeric)
+returns void language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if auth.uid() is null then raise exception 'auth required'; end if;
+  if p_amount is null or p_amount < 0 or p_amount > 1000000 then
+    raise exception 'budget must be between 0 and 1,000,000';
+  end if;
+  update public.wallets
+     set balance = p_amount,
+         budget_baseline = nullif(p_amount, 0),
+         webhook_fired_mask = 0,
+         low_balance_alerted_at = null,
+         updated_at = now()
+   where user_id = auth.uid();
+end; $$;
+
+-- set_monthly_allowance v2: enabling also sets the baseline and re-arms.
+create or replace function public.set_monthly_allowance(p_amount numeric)
+returns void language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if auth.uid() is null then raise exception 'auth required'; end if;
+  if p_amount is not null and (p_amount < 0 or p_amount > 1000000) then
+    raise exception 'allowance must be between 0 and 1,000,000';
+  end if;
+  if coalesce(p_amount, 0) <= 0 then
+    update public.wallets set monthly_allowance = null, updated_at = now()
+     where user_id = auth.uid();
+  else
+    update public.wallets
+       set monthly_allowance = p_amount,
+           balance = p_amount,
+           budget_baseline = p_amount,
+           webhook_fired_mask = 0,
+           allowance_reset_month = to_char(now() at time zone 'utc', 'YYYY-MM'),
+           low_balance_alerted_at = null,
+           updated_at = now()
+     where user_id = auth.uid();
+  end if;
+end; $$;
+
+-- reset_monthly_allowances v2: a refill is a fresh baseline; re-arm webhooks.
+create or replace function public.reset_monthly_allowances()
+returns integer language sql security definer set search_path = public as $$
+  with bumped as (
+    update public.wallets
+       set balance = monthly_allowance,
+           budget_baseline = monthly_allowance,
+           webhook_fired_mask = 0,
+           allowance_reset_month = to_char(now() at time zone 'utc', 'YYYY-MM'),
+           low_balance_alerted_at = null,
+           updated_at = now()
+     where monthly_allowance is not null
+       and allowance_reset_month is distinct from to_char(now() at time zone 'utc', 'YYYY-MM')
+    returning 1
+  )
+  select count(*)::int from bumped;
+$$;
+
+-- User-facing: set or clear the webhook URL (https only).
+create or replace function public.set_spend_webhook(p_url text)
+returns void language plpgsql security definer set search_path = public, pg_temp as $$
+begin
+  if auth.uid() is null then raise exception 'auth required'; end if;
+  if p_url is not null and btrim(p_url) <> '' and p_url !~ '^https://' then
+    raise exception 'webhook URL must start with https://';
+  end if;
+  update public.wallets
+     set spend_webhook_url = nullif(btrim(coalesce(p_url, '')), ''),
+         webhook_fired_mask = 0,
+         updated_at = now()
+   where user_id = auth.uid();
+end; $$;
+revoke all on function public.set_spend_webhook(text) from public, anon;
+grant execute on function public.set_spend_webhook(text) to authenticated;
+
+-- Cron-called: wallets whose consumption crossed a not-yet-fired threshold.
+-- Bitmask: 50% -> 1, 80% -> 2, 100% -> 4.
+create or replace function public.wallets_needing_spend_webhook()
+returns table(
+  user_id uuid, url text, balance numeric, baseline numeric,
+  new_mask int, thresholds int[]
+)
+language sql security definer set search_path = public as $$
+  with calc as (
+    select w.user_id, w.spend_webhook_url as url, w.balance, w.budget_baseline as baseline,
+           w.webhook_fired_mask as fired,
+           case when w.balance <= 0 then 100.0
+                else (1 - w.balance / w.budget_baseline) * 100.0 end as pct
+    from public.wallets w
+    where w.spend_webhook_url is not null and w.budget_baseline > 0
+  ),
+  crossed as (
+    select c.*,
+      (case when c.pct >= 50  then 1 else 0 end
+       | case when c.pct >= 80  then 2 else 0 end
+       | case when c.pct >= 100 then 4 else 0 end) as due_mask
+    from calc c
+  )
+  select user_id, url, balance, baseline,
+         (fired | due_mask) as new_mask,
+         array_remove(array[
+           case when (due_mask & 1) <> 0 and (fired & 1) = 0 then 50 end,
+           case when (due_mask & 2) <> 0 and (fired & 2) = 0 then 80 end,
+           case when (due_mask & 4) <> 0 and (fired & 4) = 0 then 100 end
+         ], null) as thresholds
+  from crossed
+  where (due_mask | fired) <> fired;
+$$;
+
+-- Cron-called: latch the fired thresholds after a successful POST.
+create or replace function public.mark_spend_webhook_sent(p_user_id uuid, p_mask int)
+returns void language sql security definer set search_path = public as $$
+  update public.wallets set webhook_fired_mask = p_mask, updated_at = now()
+  where user_id = p_user_id;
+$$;
+
+-- handle_new_user v2: new accounts start with a $10 budget (it is a FREE cap,
+-- not money). A $0 default meant the very first proxied call answered 402,
+-- which made onboarding fail before the user ever saw the product work.
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer
+set search_path = public, pg_temp as $$
+begin
+  insert into public.profiles (id, email) values (new.id, new.email)
+    on conflict (id) do nothing;
+  insert into public.wallets (user_id, balance, budget_baseline)
+    values (new.id, 10, 10)
+    on conflict (user_id) do nothing;
+  return new;
+end; $$;
+
+revoke all on function public.wallets_needing_spend_webhook() from public, anon, authenticated;
+revoke all on function public.mark_spend_webhook_sent(uuid, int) from public, anon, authenticated;
+grant execute on function public.wallets_needing_spend_webhook() to service_role, proxy_worker;
+grant execute on function public.mark_spend_webhook_sent(uuid, int) to service_role, proxy_worker;
+
 -- Done. Verify with:  select tablename from pg_tables where schemaname='public';

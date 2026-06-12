@@ -86,6 +86,22 @@ select 33, 'allowance RPCs installed',
   then 'PASS' else 'FAIL' end
 
 union all
+select 35, 'spend webhook RPCs + columns installed (v8)',
+  case when to_regprocedure('public.set_spend_webhook(text)') is not null
+    and to_regprocedure('public.wallets_needing_spend_webhook()') is not null
+    and exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' and table_name = 'wallets'
+        and column_name = 'spend_webhook_url'
+    )
+  then 'PASS' else 'FAIL' end
+
+union all
+select 36, 'new accounts start with a $10 budget (handle_new_user v2)',
+  case when pg_get_functiondef(to_regprocedure('public.handle_new_user()')) like '%10, 10%'
+  then 'PASS' else 'FAIL: re-paste schema' end
+
+union all
 select 34, 'trigger helper search_path pinned (linter 0011)',
   case when exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
@@ -109,13 +125,15 @@ select 41, 'proxy_worker granted to authenticator (PostgREST can assume it)',
   ) then 'PASS' else 'FAIL' end
 
 union all
-select 42, 'proxy_worker can run its 5 RPCs (and only needs those)',
+select 42, 'proxy_worker can run its 7 RPCs (and only needs those)',
   case when
     has_function_privilege('proxy_worker', 'public.get_proxy_context(text)', 'execute')
     and has_function_privilege('proxy_worker', 'public.debit_wallet(uuid,uuid,numeric,text,int,int,int,int,int)', 'execute')
     and has_function_privilege('proxy_worker', 'public.wallets_needing_low_balance_alert()', 'execute')
     and has_function_privilege('proxy_worker', 'public.mark_low_balance_alerted(uuid)', 'execute')
     and has_function_privilege('proxy_worker', 'public.reset_monthly_allowances()', 'execute')
+    and has_function_privilege('proxy_worker', 'public.wallets_needing_spend_webhook()', 'execute')
+    and has_function_privilege('proxy_worker', 'public.mark_spend_webhook_sent(uuid,int)', 'execute')
   then 'PASS' else 'FAIL' end
 
 union all

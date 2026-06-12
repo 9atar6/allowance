@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "next lint",
-    "test:ci": "vitest run --coverage"
+    "test:ci": "vitest run --coverage",
+    "e2e": "playwright test",
+    "e2e:public": "playwright test e2e/public.spec.ts"
   },
   "dependencies": {
     "@polar-sh/sdk": "^0.48.1",
@@ -24,6 +26,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.2",
     "@types/react": "^19.0.2",

@@ -6,7 +6,9 @@ import {
 } from "@/components/connections-section";
 import { LowBalanceSetting } from "@/components/low-balance-setting";
 import { MonthlyAllowanceSetting } from "@/components/monthly-allowance-setting";
+import { SpendWebhookSetting } from "@/components/spend-webhook-setting";
 import { Onboarding } from "@/components/onboarding";
+import { OnboardingGate } from "@/components/onboarding-gate";
 import { PlanCard } from "@/components/plan-card";
 import {
   ProjectsSection,
@@ -93,7 +95,7 @@ export default async function DashboardPage({
     supabase
       .from("wallets")
       .select(
-        "balance, currency, plan, current_period_end, low_balance_threshold, monthly_allowance",
+        "balance, currency, plan, current_period_end, low_balance_threshold, monthly_allowance, spend_webhook_url",
       )
       .single(),
     supabase
@@ -144,6 +146,7 @@ export default async function DashboardPage({
       : null;
   const monthlyAllowance =
     wallet?.monthly_allowance != null ? Number(wallet.monthly_allowance) : null;
+  const spendWebhookUrl = (wallet?.spend_webhook_url as string | null) ?? null;
   const monthlyUsed = monthlyCount ?? 0;
   const monthlyLimit = monthlyQuota(plan);
   const endpointList = (endpoints ?? []) as Endpoint[];
@@ -294,6 +297,7 @@ export default async function DashboardPage({
             <SetBudget current={Number(balance)} />
             <MonthlyAllowanceSetting current={monthlyAllowance} />
             <LowBalanceSetting current={lowThreshold} />
+            <SpendWebhookSetting current={spendWebhookUrl} />
           </div>
         </div>
 
@@ -319,31 +323,36 @@ export default async function DashboardPage({
         </div>
       </CollapsibleCard>
 
-      {isFreshAccount ? (
-        /* Fresh account: guided 3-step setup to the first capped call */
-        <Onboarding
-          connections={connectionOptions}
-          firstProject={firstProject}
-          firstSlug={firstSlug}
-        />
-      ) : (
-        <>
-          {/* Connections (reusable APIs), define an API first, then attach it */}
-          <CollapsibleCard title="Connections">
-            <ConnectionsSection connections={connections} />
-          </CollapsibleCard>
+      {/* Sticky choice: minting the first key must not unmount onboarding
+          mid-flow (the one-time key display lives there). */}
+      <OnboardingGate
+        isFreshAccount={isFreshAccount}
+        onboarding={
+          <Onboarding
+            connections={connectionOptions}
+            firstProject={firstProject}
+            firstSlug={firstSlug}
+          />
+        }
+        dashboard={
+          <>
+            {/* Connections (reusable APIs), define an API first, then attach it */}
+            <CollapsibleCard title="Connections">
+              <ConnectionsSection connections={connections} />
+            </CollapsibleCard>
 
-          {/* Projects, attach connections + mint keys */}
-          <CollapsibleCard title="Projects">
-            <ProjectsSection
-              projects={projectList}
-              attachments={attachments}
-              connections={connectionOptions}
-              keys={keyList}
-            />
-          </CollapsibleCard>
-        </>
-      )}
+            {/* Projects, attach connections + mint keys */}
+            <CollapsibleCard title="Projects">
+              <ProjectsSection
+                projects={projectList}
+                attachments={attachments}
+                connections={connectionOptions}
+                keys={keyList}
+              />
+            </CollapsibleCard>
+          </>
+        }
+      />
 
       {/* Usage analytics (Pro) */}
       <CollapsibleCard

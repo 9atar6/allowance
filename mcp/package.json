@@ -1,0 +1,28 @@
+{
+  "name": "allowance-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Allowance (getallowance.dev): lets AI agents check their own API spending budget and caps.",
+  "license": "MIT",
+  "type": "module",
+  "bin": { "allowance-mcp": "dist/index.js" },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "start": "node dist/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/9atar6/allowance.git",
+    "directory": "mcp"
+  },
+  "keywords": ["mcp", "model-context-protocol", "allowance", "budget", "agents", "spend-control"],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  }
+}

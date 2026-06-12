@@ -21,7 +21,21 @@ export async function getCachedContext(
   env: Env,
   hash: string,
 ): Promise<CachedProxyContext | null> {
-  return env.WALLET_KV.get<CachedProxyContext>(keyFor(hash), "json");
+  const cached = await env.WALLET_KV.get<CachedProxyContext>(
+    keyFor(hash),
+    "json",
+  );
+  if (!cached) return null;
+  // Hard-expire by ORIGINAL fetch time, not last write: settlement re-puts the
+  // snapshot (fresh KV TTL) after every call, so steady traffic would
+  // otherwise keep a stale balance alive forever and outrun budget changes.
+  if (
+    typeof cached.cached_at === "number" &&
+    Date.now() - cached.cached_at > ttlSeconds(env) * 1000
+  ) {
+    return null;
+  }
+  return cached;
 }
 
 export async function putCachedContext(

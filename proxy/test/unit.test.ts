@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { buildWebhookPayload } from "../src/cron/spend-webhooks";
 import { recordErrorAndMaybeAlert } from "../src/lib/alert";
 import { base64ToBytes, bytesToBase64 } from "../src/lib/base64";
 import { decryptEdge, encryptEdge } from "../src/lib/edge-crypto";
@@ -112,6 +113,73 @@ describe("buildTargetUrl", () => {
     expect(
       buildTargetUrl("https://proxy.test/v1/proxy", "https://upstream.test/v1", "/v1/proxy"),
     ).toBe("https://upstream.test/v1");
+  });
+});
+
+describe("getCachedContext staleness", () => {
+  it("discards snapshots older than the TTL even if KV still holds them", async () => {
+    const { getCachedContext, putCachedContext } = await import(
+      "../src/cache/context"
+    );
+    const env = makeEnv(); // KV_CONTEXT_TTL_SECONDS = 60
+    const base = {
+      user_id: "u1",
+      balance: 5,
+      plan: "free" as const,
+      daily_limit: null,
+      monthly_limit: null,
+      project_id: null,
+      monthly_budget: null,
+      single: null,
+      routes: [],
+    };
+
+    // Fresh snapshot: returned.
+    await putCachedContext(env, "hash1", { ...base, cached_at: Date.now() });
+    expect(await getCachedContext(env, "hash1")).not.toBeNull();
+
+    // Snapshot fetched 61s ago: must be treated as a miss, even though
+    // settlement keeps re-putting it (which resets the KV TTL).
+    await putCachedContext(env, "hash2", {
+      ...base,
+      cached_at: Date.now() - 61_000,
+    });
+    expect(await getCachedContext(env, "hash2")).toBeNull();
+  });
+});
+
+describe("buildWebhookPayload", () => {
+  it("reports thresholds, remaining, and consumed percent", () => {
+    const p = buildWebhookPayload(
+      {
+        user_id: "u1",
+        url: "https://hook.test",
+        balance: 1,
+        baseline: 5,
+        new_mask: 3,
+        thresholds: [50, 80],
+      },
+      "2026-06-12T00:00:00.000Z",
+    );
+    expect(p.type).toBe("allowance.threshold_crossed");
+    expect(p.thresholds).toEqual([50, 80]);
+    expect(p.budgetRemaining).toBe(1);
+    expect(p.consumedPercent).toBe(80);
+    expect(p.firedAt).toBe("2026-06-12T00:00:00.000Z");
+  });
+  it("clamps consumed percent at 100 for negative balances", () => {
+    const p = buildWebhookPayload(
+      {
+        user_id: "u1",
+        url: "https://hook.test",
+        balance: -0.02,
+        baseline: 5,
+        new_mask: 7,
+        thresholds: [100],
+      },
+      "2026-06-12T00:00:00.000Z",
+    );
+    expect(p.consumedPercent).toBe(100);
   });
 });
 

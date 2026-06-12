@@ -51,3 +51,33 @@ jobs:
           cache-dependency-path: dashboard/package-lock.json
       - run: npm ci
       - run: npm run build
+
+  e2e:
+    name: e2e (public pages)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: dashboard
+    env:
+      # Public by design (these ship in the browser bundle). The authed
+      # journey (dashboard.spec.ts) self-skips without the service key.
+      NEXT_PUBLIC_SUPABASE_URL: https://izcxmonodmfoebaazxxe.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Iml6Y3htb25vZG1mb2ViYWF6eHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4ODY1ODQsImV4cCI6MjA5NjQ2MjU4NH0.g3g2_lNs0KZOxZ28dQ-uHIVH4y9ZzIdetTbF-JP3arQ
+      NEXT_PUBLIC_APP_URL: http://localhost:3100
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npx playwright test e2e/public.spec.ts
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: dashboard/playwright-report/
+          retention-days: 7

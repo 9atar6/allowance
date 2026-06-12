@@ -8,6 +8,7 @@
 import { Hono } from "hono";
 import { handlePurge } from "./admin/purge";
 import { runLowBalanceAlerts } from "./cron/low-balance";
+import { runSpendWebhooks } from "./cron/spend-webhooks";
 import { recordErrorAndMaybeAlert } from "./lib/alert";
 import {
   getDailySpend,
@@ -330,5 +331,7 @@ export default {
         })
         .catch(() => logEvent({ event: "allowances_reset_failed" })),
     );
+    // Spend webhooks: notify user URLs when 50/80/100% thresholds cross.
+    ctx.waitUntil(runSpendWebhooks(env));
   },
 };

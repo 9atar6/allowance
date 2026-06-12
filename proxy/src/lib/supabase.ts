@@ -55,6 +55,34 @@ export function markLowBalanceAlerted(
   return rpc<unknown>(env, "mark_low_balance_alerted", { p_user_id: userId });
 }
 
+export interface SpendWebhookRow {
+  user_id: string;
+  url: string;
+  balance: number;
+  baseline: number;
+  new_mask: number;
+  thresholds: number[];
+}
+
+/** Wallets whose budget consumption crossed a not-yet-fired threshold. */
+export function walletsNeedingSpendWebhook(
+  env: Env,
+): Promise<SpendWebhookRow[]> {
+  return rpc<SpendWebhookRow[]>(env, "wallets_needing_spend_webhook", {});
+}
+
+/** Latch the fired thresholds so they fire once per baseline. */
+export function markSpendWebhookSent(
+  env: Env,
+  userId: string,
+  mask: number,
+): Promise<unknown> {
+  return rpc<unknown>(env, "mark_spend_webhook_sent", {
+    p_user_id: userId,
+    p_mask: mask,
+  });
+}
+
 /** Refill wallets with a monthly allowance that has not run this month. */
 export function resetMonthlyAllowances(env: Env): Promise<number> {
   return rpc<number>(env, "reset_monthly_allowances", {});
