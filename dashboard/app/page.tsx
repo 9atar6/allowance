@@ -240,10 +240,15 @@ export default function Landing() {
 {
   "plan": "pro",
   "budgetRemaining": 1.42,
-  "dailyCap": { "limit": 5, "spent": 3.58, "remaining": 1.42 }
+  "dailyCap": {
+    "limit": 5,
+    "spent": 3.58,
+    "remaining": 1.42
+  }
 }
 
-# 71% spent. Switching to gpt-4o-mini to finish the run.`}
+# 71% spent. Switching to
+# gpt-4o-mini to finish the run.`}
           />
         </div>
       </section>
