@@ -1,0 +1,166 @@
+openapi: 3.1.0
+info:
+  title: Allowance Proxy API
+  version: "1.0"
+  description: |
+    The Allowance spend-control gateway. Route any HTTPS API through one
+    alw_live_ key with a hard budget cap. Calls stop with HTTP 402 at any cap;
+    every response carries x-allowance-* spend headers so agents can adapt
+    before hitting the wall. Source: https://github.com/9atar6/allowance
+  contact:
+    url: https://github.com/9atar6/allowance/issues
+servers:
+  - url: https://api.getallowance.dev
+security:
+  - allowanceKey: []
+# Shared response set for the proxy verbs (YAML anchor, resolved at parse).
+x-proxy-responses: &proxyResponses
+  "200":
+    description: |
+      The upstream's response, streamed through unchanged, plus
+      x-allowance-* spend headers.
+    headers:
+      x-allowance-budget-remaining:
+        schema: { type: string }
+        description: Account budget left (USD, 6 decimals, snapshot).
+      x-allowance-requests-remaining:
+        schema: { type: string }
+        description: Free-plan requests left this month (free plan only).
+      x-allowance-daily-remaining:
+        schema: { type: string }
+        description: USD left under the key's daily cap (only if set).
+      x-allowance-monthly-remaining:
+        schema: { type: string }
+        description: USD left under the key's monthly cap (only if set).
+      x-allowance-project-remaining:
+        schema: { type: string }
+        description: USD left under the project budget (only if set).
+  "401": { $ref: "#/components/responses/Unauthorized" }
+  "402": { $ref: "#/components/responses/PaymentRequired" }
+  "404":
+    description: No service attached under this slug.
+  "413":
+    description: Request body over 10 MB.
+  "429": { $ref: "#/components/responses/RateLimited" }
+  "502":
+    description: Upstream unreachable. The call is not charged.
+  "503":
+    description: The connected service is disabled.
+  "504":
+    description: Upstream sent no response headers within 60s. Not charged.
+paths:
+  /healthz:
+    get:
+      summary: Liveness probe
+      security: []
+      responses:
+        "200":
+          description: Proxy is up.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+  /v1/me:
+    get:
+      summary: Key self-inspection
+      description: |
+        Returns the calling key's spend state without making a billable
+        upstream call: plan, budget remaining, and every configured cap with
+        spent/remaining. Values are edge snapshots (refresh window <= 60s).
+      responses:
+        "200":
+          description: Spend state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SpendState"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /v1/proxy/{slug}/{path}:
+    parameters:
+      - name: slug
+        in: path
+        required: true
+        schema: { type: string, pattern: "^[a-z0-9-]{1,40}$" }
+        description: The service slug attached to your project (e.g. openai).
+      - name: path
+        in: path
+        required: true
+        schema: { type: string }
+        description: Forwarded verbatim to the connected API's base URL.
+    get:
+      summary: Proxy a GET request
+      responses: *proxyResponses
+    post:
+      summary: Proxy a POST request (streaming passes through)
+      requestBody:
+        description: Forwarded verbatim (10 MB max).
+        content:
+          application/json:
+            schema: {}
+      responses: *proxyResponses
+components:
+  securitySchemes:
+    allowanceKey:
+      type: http
+      scheme: bearer
+      description: Your alw_live_ key. Shown once at mint; stored only as a hash.
+  responses:
+    Unauthorized:
+      description: Missing, revoked, or expired key.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string, enum: [missing_api_key, invalid_api_key] }
+    RateLimited:
+      description: Per-key or per-IP rate limit exceeded.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error: { type: string, enum: [rate_limited] }
+    PaymentRequired:
+      description: |
+        A cap tripped. The body says which one, what remains, and what to do.
+        Variants of `error`: PAYMENT_REQUIRED (account budget),
+        free_quota_reached, daily_limit_reached, monthly_limit_reached,
+        project_budget_reached.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/PaymentRequired"
+  schemas:
+    SpendState:
+      type: object
+      properties:
+        plan: { type: string, enum: [free, pro, enterprise] }
+        budgetRemaining: { type: number }
+        snapshotMaxAgeSeconds: { type: integer }
+        manageUrl: { type: string }
+        requestsThisMonth:
+          type: object
+          properties:
+            used: { type: integer }
+            limit: { type: integer }
+            remaining: { type: integer }
+        dailyCap: { $ref: "#/components/schemas/Cap" }
+        monthlyCap: { $ref: "#/components/schemas/Cap" }
+        projectBudget: { $ref: "#/components/schemas/Cap" }
+    Cap:
+      type: object
+      properties:
+        limit: { type: number }
+        spent: { type: number }
+        remaining: { type: number }
+    PaymentRequired:
+      type: object
+      properties:
+        error: { type: string }
+        remaining: { type: number }
+        retryHint: { type: string }
+        manageUrl: { type: string }

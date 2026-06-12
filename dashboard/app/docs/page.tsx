@@ -203,10 +203,38 @@ curl "${PROXY}/v1/proxy/gemini/models/gemini-1.5-flash:generateContent" \\
   -H "Content-Type: application/json" \\
   -d '{ "contents": [{ "parts": [{ "text": "hi" }] }] }'`}
                 />
+                <CodeBlock
+                  label="vercel ai sdk"
+                  code={`import { createOpenAI } from "@ai-sdk/openai";
+
+const openai = createOpenAI({
+  apiKey: "alw_live_your_key",
+  baseURL: "${PROXY}/v1/proxy/openai",
+});
+// then: generateText({ model: openai("gpt-4o-mini"), ... })`}
+                />
+                <CodeBlock
+                  label="langchain (python)"
+                  code={`from langchain_openai import ChatOpenAI
+
+llm = ChatOpenAI(
+    api_key="alw_live_your_key",
+    base_url="${PROXY}/v1/proxy/openai",
+    model="gpt-4o-mini",
+)`}
+                />
                 <p>
                   The slug (<Mono>openai</Mono>, <Mono>anthropic</Mono>, …) is
                   whatever you chose when attaching the connection to your
-                  project.
+                  project. Anything that lets you set a base URL works the same
+                  way. Machine-readable spec:{" "}
+                  <a
+                    href="/openapi.yaml"
+                    className="text-[var(--accent)] hover:underline"
+                  >
+                    openapi.yaml
+                  </a>
+                  .
                 </p>
               </Step>
 

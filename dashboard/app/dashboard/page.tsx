@@ -4,6 +4,7 @@ import {
   ConnectionsSection,
   type ConnectionRow,
 } from "@/components/connections-section";
+import { forecastDepletion } from "@/lib/forecast";
 import { LowBalanceSetting } from "@/components/low-balance-setting";
 import { MonthlyAllowanceSetting } from "@/components/monthly-allowance-setting";
 import { SpendWebhookSetting } from "@/components/spend-webhook-setting";
@@ -215,6 +216,12 @@ export default async function DashboardPage({
     const hit = dailyMap.get(key);
     daily.push({ day: key, requests: hit?.requests ?? 0, cost: hit?.cost ?? 0 });
   }
+  // Burn-rate forecast for the budget card (null when not meaningful).
+  const depletion = forecastDepletion(
+    Number(balance),
+    daily.map((d) => d.cost),
+  );
+
   const serviceRows: ServicePoint[] = (
     (serviceRaw ?? []) as { endpoint_id: string | null; requests: number; cost: number }[]
   ).map((s) => ({
@@ -293,6 +300,15 @@ export default async function DashboardPage({
             A free cap you set, your providers still bill you directly, we never
             charge for usage. Calls stop with HTTP 402 when it reaches zero.
           </p>
+          {depletion && (
+            <p className="mt-2 text-xs text-[var(--text-muted)]">
+              At your 7-day pace, this budget lasts until about{" "}
+              <span className="font-medium text-[var(--text)]">
+                {depletion.dateLabel}
+              </span>
+              .
+            </p>
+          )}
           <div className="mt-auto pt-6">
             <SetBudget current={Number(balance)} />
             <MonthlyAllowanceSetting current={monthlyAllowance} />

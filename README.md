@@ -20,7 +20,8 @@ puts all of that in your agent's toolbox.
 
 Live: [getallowance.dev](https://getallowance.dev) ·
 [Security model](https://getallowance.dev/security) ·
-[Docs](https://getallowance.dev/docs)
+[Docs](https://getallowance.dev/docs) ·
+[OpenAPI](https://getallowance.dev/openapi.yaml)
 
 ## Architecture
 
