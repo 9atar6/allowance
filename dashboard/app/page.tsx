@@ -50,7 +50,7 @@ const features = [
   { icon: IconLayers, title: "Any API", body: "Not just AI. Maps, SMS, data, your own services." },
   { icon: IconStream, title: "Streaming", body: "Token streams pass straight through, in real time." },
   { icon: IconShield, title: "Sealed keys", body: "Real credentials are encrypted and never logged." },
-  { icon: IconZap, title: "Edge-fast", body: "Checked at the edge. The extra hop is negligible." },
+  { icon: IconZap, title: "Agent-aware", body: "Spend headers on every response, self-inspection at /v1/me, webhooks at 50/80/100%." },
 ];
 
 // Only claims that are actually enforced/built today. Update as features land.
@@ -62,7 +62,8 @@ const plans = [
     features: [
       "5,000 requests / mo",
       "Hard budget cap + kill switch",
-      "Projects, keys, per-key limits",
+      "Projects, keys, rotation, ephemeral keys",
+      "Monthly auto-refill + spend webhooks",
       "Low-budget email alerts",
     ],
     cta: "Start free",
