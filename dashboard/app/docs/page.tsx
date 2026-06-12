@@ -311,6 +311,29 @@ x-allowance-project-remaining: 8.40000 # only if the project has a budget`}
                   the plan, budget left, and every configured cap with its
                   spent/remaining numbers as JSON.
                 </p>
+                <p>
+                  <strong className="text-[var(--text)]">MCP server:</strong>{" "}
+                  if your agent speaks the Model Context Protocol (Claude,
+                  Cursor, and most agent frameworks do), give it the{" "}
+                  <a
+                    href="https://github.com/9atar6/allowance/tree/main/mcp"
+                    className="text-[var(--accent)] hover:underline"
+                  >
+                    allowance-mcp
+                  </a>{" "}
+                  server and it gets three tools: <Mono>check_budget</Mono>{" "}
+                  (its full spend state, free to call),{" "}
+                  <Mono>explain_payment_required</Mono> (turns a 402 body into
+                  a plain-language next step), and{" "}
+                  <Mono>check_service_health</Mono>. Read-only by design: an
+                  agent can watch its allowance, never raise it.
+                </p>
+                <CodeBlock
+                  label="claude code"
+                  code={`claude mcp add allowance \\
+  --env ALLOWANCE_API_KEY=alw_live_your_key \\
+  -- node /path/to/allowance/mcp/dist/index.js`}
+                />
                 <CodeBlock
                   label="self-inspection"
                   code={`curl https://api.getallowance.dev/v1/me \\
