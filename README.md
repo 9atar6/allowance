@@ -60,7 +60,7 @@ db/  Supabase (Postgres + Vault)         dashboard/  Next.js 15 (Vercel)
 | `proxy/` | Edge proxy: auth, caps, streaming, metering, settlement, alerts | Hono · Cloudflare Workers |
 | `dashboard/` | Onboarding, connections/projects/keys, analytics, Pro billing | Next.js 15 · Tailwind v4 |
 | `mcp/` | MCP server: agents check their own budget and decode 402s | Model Context Protocol |
-| `docs/` | RUNBOOK (ops), E2E (testing), LAUNCH + VALIDATION, architecture | - |
+| `docs/` | RUNBOOK (ops), E2E (testing), architecture | - |
 
 ## Quick start (local)
 

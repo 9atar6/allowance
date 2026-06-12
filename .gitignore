@@ -32,3 +32,6 @@ dashboard/test-results/
 dashboard/.e2e-ca.pem
 mcp/dist/
 mcp/node_modules/
+
+# Internal planning (not for the public repo)
+private/

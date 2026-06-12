@@ -123,18 +123,20 @@ Setup / rotation:
 Rollback: put the real service_role key back with the same `secret put`.
 If Supabase rotates the Legacy JWT secret, re-mint (step 3) and re-put (step 4).
 
-## 10. Node "unable to verify the first certificate" on this machine
+## 10. Node "unable to verify the first certificate" (TLS interception)
 
-The local antivirus intercepts TLS, so Node tools (wrangler deploy, Playwright
-browser downloads, supabase-js in tests) fail while browsers/PowerShell work.
-Fix: export the presented chain once into a PEM and point Node at it.
+If the dev machine runs antivirus/corporate TLS interception, Node tools
+(wrangler deploy, Playwright browser downloads, supabase-js in tests) fail
+while browsers and PowerShell work (they use the OS cert store; Node ships
+its own CAs). Fix: export the presented chain once into a PEM and point Node
+at it.
 
 ```powershell
-# grab chains (script writes dashboard/.e2e-ca.pem; gitignored)
-# see git history for the SslStream export snippet, or re-run it per host
-$env:NODE_EXTRA_CA_CERTS = "C:\Users\axela\Desktop\apikey\dashboard\.e2e-ca.pem"
-npx wrangler deploy        # now works from this machine
+# export each host's chain (System.Net.Security.SslStream with a callback
+# that captures chain.ChainElements) into one PEM, then:
+$env:NODE_EXTRA_CA_CERTS = "<repo>\dashboard\.e2e-ca.pem"   # gitignored
+npx wrangler deploy        # now works
 ```
 
-The bundle currently covers: playwright CDN, Supabase, api.getallowance.dev,
-api.cloudflare.com. Add hosts by appending their chains to the same PEM.
+Hosts worth covering: the Playwright CDN, your Supabase project host,
+api.getallowance.dev, api.cloudflare.com. Append chains to the same PEM.
