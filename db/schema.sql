@@ -324,7 +324,7 @@ begin
 end; $$;
 
 -- (credit_wallet was removed with the Model-A pivot — the budget is set
---  directly via set_budget. Dropped by db/migrations/2026-06-10-cleanup.sql.)
+--  directly via set_budget. Dropped in the LEGACY CLEANUP section below.)
 
 -- (issue_proxy_key is defined ONCE, in its latest form, further down — see the
 --  PER-KEY MONTHLY LIMIT section.)
@@ -692,7 +692,7 @@ grant execute on function public.wallets_needing_low_balance_alert() to service_
 grant execute on function public.mark_low_balance_alerted(uuid) to service_role;
 
 -- (Auto-reload was removed with the Model-A pivot. Its leftover columns and
---  functions are dropped by db/migrations/2026-06-10-cleanup.sql.)
+--  functions are dropped in the LEGACY CLEANUP section below.)
 
 -- =============================================================================
 -- REUSABLE CONNECTIONS  (define an API once → attach it to many projects)
@@ -927,6 +927,26 @@ begin
     from public.endpoints e where e.id = k.endpoint_id
   );
 end; $$;
+
+-- =============================================================================
+-- LEGACY CLEANUP (all IF EXISTS — no-ops on fresh databases)
+-- =============================================================================
+-- Drops everything left dead by the Model-A pivot (the prepaid/auto-reload
+-- experiment). Kept here so one paste of this file fully describes the DB.
+
+drop function if exists public.set_auto_reload(uuid, text, text, numeric, boolean);
+drop function if exists public.set_auto_reload_enabled(boolean);
+drop function if exists public.wallets_needing_auto_reload();
+drop function if exists public.mark_auto_reload_attempted(uuid);
+drop function if exists public.credit_wallet(uuid, numeric, public.txn_type, text);
+
+alter table public.wallets drop column if exists auto_reload_enabled;
+alter table public.wallets drop column if exists auto_reload_amount;
+alter table public.wallets drop column if exists auto_reload_attempted_at;
+alter table public.wallets drop column if exists stripe_payment_method_id;
+
+drop function if exists public.issue_proxy_key(uuid, text, text, uuid);
+drop function if exists public.create_endpoint(text, text, numeric, jsonb);
 
 -- =============================================================================
 -- FIXES
