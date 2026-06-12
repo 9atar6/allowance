@@ -475,6 +475,24 @@ x-allowance-project-remaining: 8.40000 # only if the project has a budget`}
                 <div className="space-y-5">
                   <div>
                     <p className="font-medium text-[var(--text)]">
+                      How much latency does Allowance add?
+                    </p>
+                    <p className="mt-1">
+                      Measured: ~35 ms median (~50 ms p95) on top of calling
+                      the provider directly, mostly the extra network hop; the
+                      budget checks themselves cost ~19 ms. Streaming is
+                      affected only on time-to-first-byte. Method and caveats:{" "}
+                      <a
+                        href="https://github.com/9atar6/allowance/blob/main/docs/PERFORMANCE.md"
+                        className="text-[var(--accent)] hover:underline"
+                      >
+                        docs/PERFORMANCE.md
+                      </a>
+                      .
+                    </p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-[var(--text)]">
                       Does Allowance charge me for my API usage?
                     </p>
                     <p className="mt-1">
