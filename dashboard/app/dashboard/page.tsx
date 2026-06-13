@@ -295,24 +295,26 @@ export default async function DashboardPage({
         {/* Budget (a free spend cap, your providers still bill you directly) */}
         <div className="flex flex-col pb-6 md:pb-0 md:pr-8">
           <CardTitle>Budget left</CardTitle>
-          <p className="mt-3 text-5xl font-semibold tracking-tight tabular-nums">
+          <p className="font-mono mt-3 text-5xl tabular-nums tracking-tight">
             {usd(Number(balance))}
           </p>
-          <p className="mt-2 text-xs leading-relaxed text-[var(--text-faint)]">
-            A free cap you set, your providers still bill you directly, we never
-            charge for usage. Calls stop with HTTP 402 when it reaches zero.
+          <p className="mt-3 max-w-sm text-xs leading-relaxed text-[var(--text-faint)]">
+            A free cap you set. Your providers still bill you directly; we never
+            charge for usage. Calls stop with HTTP 402 at zero.
+            {depletion && (
+              <>
+                {" "}At your 7-day pace, it lasts until about{" "}
+                <span className="text-[var(--text-muted)]">
+                  {depletion.dateLabel}
+                </span>
+                .
+              </>
+            )}
           </p>
-          {depletion && (
-            <p className="mt-2 text-xs text-[var(--text-muted)]">
-              At your 7-day pace, this budget lasts until about{" "}
-              <span className="font-medium text-[var(--text)]">
-                {depletion.dateLabel}
-              </span>
-              .
-            </p>
-          )}
-          <div className="mt-auto pt-6">
+          <div className="mt-5">
             <SetBudget current={Number(balance)} />
+          </div>
+          <div className="mt-5 space-y-2.5 border-t border-[var(--line)] pt-4">
             <MonthlyAllowanceSetting current={monthlyAllowance} />
             <LowBalanceSetting current={lowThreshold} />
             <SpendWebhookSetting current={spendWebhookUrl} />

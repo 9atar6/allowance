@@ -44,7 +44,7 @@ export default function Security() {
     <div className="min-h-screen text-[var(--text)]">
       <SiteNav />
       <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-4xl font-semibold tracking-tight">Security</h1>
+        <h1 className="font-display text-4xl">Security</h1>
         <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-[var(--text-muted)]">
           You are trusting us with API keys, so this page does not do marketing.
           Every claim below is implemented in our open-source code, with a link

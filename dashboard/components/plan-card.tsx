@@ -87,7 +87,7 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
         )}
       </div>
 
-      <div className="mt-auto pt-6">
+      <div className="mt-6">
         {plan === "free" ? (
           <Button
             onClick={() => go(startProCheckout)}

@@ -33,9 +33,9 @@ export function MonthlyAllowanceSetting({ current }: { current: number | null })
   }
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
-      <span className="text-[var(--text-faint)]">Auto-refill monthly</span>
-      <div className="relative">
+    <div className="flex items-center gap-2 text-xs">
+      <span className="w-32 shrink-0 text-[var(--text-faint)]">Auto-refill monthly</span>
+      <div className="relative flex-1">
         <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-faint)]">
           $
         </span>
@@ -46,14 +46,14 @@ export function MonthlyAllowanceSetting({ current }: { current: number | null })
           min="0"
           step="1"
           placeholder="off"
-          className="neu-inset w-24 py-1.5 pl-5 pr-2 text-[var(--text)] placeholder:text-[var(--text-faint)] focus:outline-none"
+          className="neu-inset w-full py-1.5 pl-5 pr-2 text-[var(--text)] placeholder:text-[var(--text-faint)] focus:outline-none"
         />
       </div>
       <button
         type="button"
         onClick={save}
         disabled={pending}
-        className="neu-sm pressable px-2.5 py-1.5 font-medium text-[var(--text-muted)] hover:text-[var(--text)]"
+        className="neu-sm pressable w-16 shrink-0 py-1.5 text-center font-medium text-[var(--text-muted)] hover:text-[var(--text)]"
       >
         {pending ? "…" : saved ? "Saved" : "Save"}
       </button>

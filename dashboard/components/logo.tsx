@@ -22,13 +22,14 @@ export function LogoMark({ size = 28 }: { size?: number }) {
         strokeWidth="3.5"
         transform="rotate(-4 32 32)"
       />
+      {/* Explicit baseline (alphabetic) so the lowercase a sits optically
+         centered regardless of how the renderer treats dominant-baseline. */}
       <text
         x="32"
-        y="33"
+        y="41.5"
         textAnchor="middle"
-        dominantBaseline="central"
         fontFamily="Sentient, Georgia, serif"
-        fontSize="38"
+        fontSize="32"
         fill="currentColor"
       >
         a

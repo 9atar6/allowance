@@ -80,31 +80,46 @@ export default function Landing() {
         </a>
 
         {/* Hero receipt: the canonical money display, not a fake terminal. */}
-        <div className="receipt mx-auto mt-16 max-w-md p-6 text-left text-sm">
-          <div className="flex items-center justify-between">
-            <span className="label-caps">Allowance · this month</span>
-            <span className="text-xs text-[var(--text-faint)]">UTC</span>
+        <div className="receipt mx-auto mt-16 max-w-md p-7 text-left text-[13px]">
+          <div className="text-center">
+            <p className="font-display text-lg lowercase tracking-tight">allowance</p>
+            <p className="mt-1 label-caps">spend receipt</p>
           </div>
-          <div className="mt-5 receipt-line">
-            <span className="text-[var(--text-muted)]">gpt-4o-mini</span>
+          <div className="mt-4 flex items-center justify-between text-[11px] text-[var(--text-faint)]">
+            <span>jun 2026</span>
+            <span>no. 00481 · utc</span>
+          </div>
+          <div className="my-3 border-t border-dashed border-[var(--line-strong)]" />
+          {[
+            ["openai · gpt-4o-mini", "1,204 calls", "-$2.10"],
+            ["openai · gpt-4o", "96 calls", "-$0.96"],
+            ["anthropic · haiku", "318 calls", "-$0.32"],
+            ["maps · geocode", "410 calls", "-$0.41"],
+            ["twilio · verify", "18 calls", "-$0.18"],
+            ["sub-agent · research", "pocket money", "-$0.61"],
+          ].map(([svc, sub, amt]) => (
+            <div key={svc} className="mt-2 receipt-line">
+              <span className="text-[var(--text-muted)]">
+                {svc}
+                <span className="ml-2 text-[11px] text-[var(--text-faint)]">{sub}</span>
+              </span>
+              <span className="leader" />
+              <span className="tabular-nums text-[var(--text-muted)]">{amt}</span>
+            </div>
+          ))}
+          <div className="my-3 border-t border-dashed border-[var(--line-strong)]" />
+          <div className="receipt-line">
+            <span className="text-[var(--text-faint)]">spent this month</span>
             <span className="leader" />
-            <span className="tabular-nums text-[var(--text-muted)]">-$3.58</span>
+            <span className="tabular-nums text-[var(--text-faint)]">-$4.58</span>
           </div>
-          <div className="mt-2 receipt-line">
-            <span className="text-[var(--text-muted)]">maps · geocode</span>
-            <span className="leader" />
-            <span className="tabular-nums text-[var(--text-muted)]">-$0.41</span>
-          </div>
-          <div className="mt-2 receipt-line">
-            <span className="text-[var(--text-muted)]">sub-agent · research</span>
-            <span className="leader" />
-            <span className="tabular-nums text-[var(--text-muted)]">-$0.59</span>
-          </div>
-          <div className="my-4 border-t border-dashed border-[var(--line-strong)]" />
-          <div className="receipt-line text-base">
-            <span className="text-[var(--text)]">Left of $5.00 cap</span>
+          <div className="mt-2 receipt-line text-base">
+            <span className="text-[var(--text)]">left of $5.00 cap</span>
             <span className="leader" />
             <span className="tabular-nums font-medium text-[var(--vault)]">$0.42</span>
+          </div>
+          <div className="mt-5 text-center text-[11px] tracking-[0.16em] text-[var(--text-faint)]">
+            ALLOW ONCE · NO OVERDRAFTS
           </div>
         </div>
       </section>

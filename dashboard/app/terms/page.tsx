@@ -13,7 +13,7 @@ export default function Terms() {
     <div className="min-h-screen text-[var(--text)]">
       <SiteNav />
       <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-4xl font-semibold tracking-tight">
+        <h1 className="font-display text-4xl">
           Terms of Service
         </h1>
         <p className="mt-3 text-sm text-[var(--text-faint)]">

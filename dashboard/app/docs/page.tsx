@@ -90,9 +90,7 @@ export default function Docs() {
 
           {/* Content */}
           <main className="min-w-0">
-            <h1 className="text-5xl font-semibold tracking-tight">
-              Quickstart
-            </h1>
+            <h1 className="font-display text-5xl">Quickstart</h1>
             <p className="mt-5 text-lg leading-relaxed text-[var(--text-muted)]">
               Allowance is a spend-control proxy for any pay-per-use API. You set
               a budget, route your traffic through one key, and it stops at your

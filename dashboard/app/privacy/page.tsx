@@ -13,7 +13,7 @@ export default function Privacy() {
     <div className="min-h-screen text-[var(--text)]">
       <SiteNav />
       <main className="mx-auto max-w-3xl px-6 py-12">
-        <h1 className="text-4xl font-semibold tracking-tight">Privacy Policy</h1>
+        <h1 className="font-display text-4xl">Privacy Policy</h1>
         <p className="mt-3 text-sm text-[var(--text-faint)]">
           Last updated: June 9, 2026
         </p>
