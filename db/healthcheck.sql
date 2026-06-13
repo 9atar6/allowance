@@ -102,6 +102,22 @@ select 36, 'new accounts start with a $10 budget (handle_new_user v2)',
   then 'PASS' else 'FAIL: re-paste schema' end
 
 union all
+select 37, 'sub-budget columns + issue_child_key installed (v9)',
+  case when to_regprocedure('public.issue_child_key(text,text,text,numeric,timestamptz,text)') is not null
+    and 2 = (
+      select count(*) from information_schema.columns
+      where table_schema = 'public' and table_name = 'proxy_keys'
+        and column_name in ('parent_key_id', 'budget_limit')
+    )
+    and pg_get_functiondef(to_regprocedure('public.get_proxy_context(text)')) ilike '%parent_key_id%'
+  then 'PASS' else 'FAIL: re-paste schema' end
+
+union all
+select 44, 'proxy_worker can mint child keys',
+  case when has_function_privilege('proxy_worker', 'public.issue_child_key(text,text,text,numeric,timestamptz,text)', 'execute')
+  then 'PASS' else 'FAIL' end
+
+union all
 select 34, 'trigger helper search_path pinned (linter 0011)',
   case when exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace

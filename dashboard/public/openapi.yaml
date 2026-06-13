@@ -35,6 +35,9 @@ x-proxy-responses: &proxyResponses
       x-allowance-project-remaining:
         schema: { type: string }
         description: USD left under the project budget (only if set).
+      x-allowance-pocket-remaining:
+        schema: { type: string }
+        description: USD left on a child key's lifetime allowance (child keys only).
   "401": { $ref: "#/components/responses/Unauthorized" }
   "402": { $ref: "#/components/responses/PaymentRequired" }
   "404":
@@ -77,6 +80,47 @@ paths:
               schema:
                 $ref: "#/components/schemas/SpendState"
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /v1/keys:
+    post:
+      summary: Mint a child key ("pocket money")
+      description: |
+        Authenticated by a PARENT project key. Mints a child key carved from
+        the parent: same services, a lifetime spend cap, and an optional
+        expiry. Child spend also debits the shared account. One level deep
+        (a child cannot mint). The child key is returned exactly once.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [budget]
+              properties:
+                budget:
+                  type: number
+                  description: Lifetime spend cap for the child, USD (0 < n <= 1e6).
+                expiresInHours:
+                  type: number
+                  description: Optional expiry, 1 to 2160 hours.
+                name:
+                  type: string
+      responses:
+        "201":
+          description: Child key minted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  key: { type: string, description: The child key (shown once). }
+                  budget: { type: number }
+                  expiresAt: { type: string, nullable: true }
+        "400":
+          description: Parent is not a project key, or the budget is invalid.
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403":
+          description: Parent cannot delegate (revoked, expired, or itself a child).
         "429": { $ref: "#/components/responses/RateLimited" }
   /v1/proxy/{slug}/{path}:
     parameters:

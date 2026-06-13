@@ -65,6 +65,8 @@ interface ProxyKey {
   created_at: string | null;
   last_used_at: string | null;
   expires_at: string | null;
+  parent_key_id: string | null;
+  budget_limit: number | null;
 }
 
 export default async function DashboardPage({
@@ -105,7 +107,7 @@ export default async function DashboardPage({
       .order("created_at", { ascending: false }),
     supabase
       .from("proxy_keys")
-      .select("id, key_prefix, is_active, endpoint_id, project_id, daily_limit, monthly_limit, name, created_at, last_used_at, expires_at")
+      .select("id, key_prefix, is_active, endpoint_id, project_id, daily_limit, monthly_limit, name, created_at, last_used_at, expires_at, parent_key_id, budget_limit")
       .order("created_at", { ascending: false }),
     // Request-level detail, used to enrich debit rows in the activity feed.
     supabase

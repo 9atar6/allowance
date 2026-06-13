@@ -353,14 +353,37 @@ x-allowance-project-remaining: 8.40000 # only if the project has a budget`}
                   (its full spend state, free to call),{" "}
                   <Mono>explain_payment_required</Mono> (turns a 402 body into
                   a plain-language next step), and{" "}
-                  <Mono>check_service_health</Mono>. Read-only by design: an
-                  agent can watch its allowance, never raise it.
+                  <Mono>check_service_health</Mono>, plus{" "}
+                  <Mono>mint_pocket_money</Mono> for handing a sub-agent a
+                  capped child key. A key can watch and delegate its allowance,
+                  never raise its own cap.
                 </p>
                 <CodeBlock
                   label="claude code"
                   code={`claude mcp add allowance \\
   --env ALLOWANCE_API_KEY=alw_live_your_key \\
   -- node /path/to/allowance/mcp/dist/index.js`}
+                />
+                <p>
+                  <strong className="text-[var(--text)]">
+                    Pocket money (sub-budgets):
+                  </strong>{" "}
+                  an agent that spawns sub-agents can hand each one a capped,
+                  expiring child key carved from its own access, with{" "}
+                  <Mono>POST /v1/keys</Mono> (or the{" "}
+                  <Mono>mint_pocket_money</Mono> MCP tool). The child spends up
+                  to its allowance, inherits the same services, and dies if the
+                  parent is revoked. Child spend also counts against your
+                  account budget, so delegation can never exceed the wall.
+                </p>
+                <CodeBlock
+                  label="give a sub-agent $5, expiring in 24h"
+                  code={`curl -X POST ${PROXY}/v1/keys \\
+  -H "Authorization: Bearer alw_live_parent_key" \\
+  -H "Content-Type: application/json" \\
+  -d '{ "budget": 5, "expiresInHours": 24, "name": "research-subagent" }'
+
+{ "key": "alw_live_...", "budget": 5, "expiresAt": "..." }`}
                 />
                 <CodeBlock
                   label="self-inspection"
@@ -451,6 +474,7 @@ x-allowance-project-remaining: 8.40000 # only if the project has a budget`}
                         ["402", "daily_limit_reached", "This key's $/day cap tripped. Resets midnight UTC."],
                         ["402", "monthly_limit_reached", "This key's $/month cap tripped. Resets monthly."],
                         ["402", "project_budget_reached", "The project's monthly budget tripped."],
+                        ["402", "pocket_money_exhausted", "A child key's lifetime allowance is used up."],
                         ["404", "unknown_service", "The slug after /v1/proxy/ doesn't match an attached service."],
                         ["413", "payload_too_large", "Request body over 10 MB."],
                         ["429", "rate_limited", "Too many requests (per key or per IP). Back off and retry."],

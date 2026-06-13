@@ -36,6 +36,8 @@ export interface ProjectKeyRow {
   created_at: string | null;
   last_used_at: string | null;
   expires_at: string | null;
+  parent_key_id: string | null;
+  budget_limit: number | null;
 }
 
 interface Props {
@@ -94,7 +96,20 @@ export function ProjectsSection({
                 createdAt: k.created_at,
                 lastUsedAt: k.last_used_at,
                 expiresAt: k.expires_at,
+                parentKeyId: k.parent_key_id,
+                budgetLimit: k.budget_limit,
               }));
+            // Group child keys directly under their parent (parents keep their
+            // created-desc order; orphans fall through at the end).
+            const parents = projKeys.filter((k) => !k.parentKeyId);
+            const childrenOf = (id: string) =>
+              projKeys.filter((k) => k.parentKeyId === id);
+            const orderedKeys: KeyItem[] = [
+              ...parents.flatMap((p) => [p, ...childrenOf(p.id)]),
+              ...projKeys.filter(
+                (k) => k.parentKeyId && !parents.some((p) => p.id === k.parentKeyId),
+              ),
+            ];
 
             return (
               <div key={p.id} className="neu-inset p-5">
@@ -172,7 +187,7 @@ export function ProjectsSection({
                 {/* Keys */}
                 <div className="mt-5 border-t border-[var(--line)] pt-5">
                   <GroupLabel>Keys</GroupLabel>
-                  <KeyList keys={projKeys} />
+                  <KeyList keys={orderedKeys} />
                   <div className="mt-3">
                     <CreateProjectKeyButton
                       projectId={p.id}

@@ -21,6 +21,8 @@ export interface KeyItem {
   createdAt?: string | null;
   lastUsedAt?: string | null;
   expiresAt?: string | null;
+  parentKeyId?: string | null;
+  budgetLimit?: number | null;
 }
 
 const shortDate = formatShortDate;
@@ -106,11 +108,22 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
 
       <ul className="space-y-1">
         {keys.map((k) => (
-          <li key={k.id} className="flex items-center justify-between gap-2 text-xs">
+          <li
+            key={k.id}
+            className={`flex items-center justify-between gap-2 text-xs ${
+              k.parentKeyId ? "ml-4 border-l border-[var(--line)] pl-3" : ""
+            }`}
+          >
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 {k.name && (
                   <span className="font-medium text-[var(--text)]">{k.name}</span>
+                )}
+                {k.parentKeyId && (
+                  <span className="text-[var(--accent)]">
+                    pocket money
+                    {k.budgetLimit != null && ` · $${k.budgetLimit}`}
+                  </span>
                 )}
                 <code className="font-mono text-[var(--text-muted)]">
                   {k.keyPrefix}…
@@ -143,7 +156,7 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
             </div>
             {k.isActive ? (
               <div className="flex shrink-0 items-center gap-2">
-                {!isExpiring(k) && !isExpired(k) && (
+                {!isExpiring(k) && !isExpired(k) && !k.parentKeyId && (
                   <button
                     type="button"
                     className="text-xs text-[var(--text-faint)] underline-offset-2 hover:text-[var(--text-muted)] hover:underline disabled:opacity-50"

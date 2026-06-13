@@ -11,6 +11,9 @@ An agent holding an Allowance key (`alw_live_...`) can:
   a plain-language explanation and a recommended next step.
 - **check_service_health** — distinguish "Allowance is down" from "my key or
   budget has a problem".
+- **mint_pocket_money** — hand a sub-agent a capped, optionally-expiring child
+  key carved from this key's access (child spend also debits the parent
+  account; one level deep).
 
 Read-only by design: the key can spend (through the proxy) and inspect
 itself, but can never raise its own limits. Humans manage budgets on the

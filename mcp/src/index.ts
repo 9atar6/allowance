@@ -118,6 +118,63 @@ server.tool(
 );
 
 server.tool(
+  "mint_pocket_money",
+  "Mint a new child key ('pocket money') carved from this key's access, for " +
+    "handing to a sub-agent. The child can spend up to `budget` USD total, " +
+    "optionally expires, inherits the same services, and its spend also counts " +
+    "against the parent account. Returns the child key ONCE. Requires this key " +
+    "to be a project key (not itself a child).",
+  {
+    budget: z.number().positive().describe("Lifetime spend cap for the child, USD"),
+    expiresInHours: z
+      .number()
+      .positive()
+      .optional()
+      .describe("Optional expiry (1 to 2160 hours); omit for no expiry"),
+    name: z.string().optional().describe("Optional label for the child key"),
+  },
+  async ({ budget, expiresInHours, name }): Promise<ToolResult> => {
+    if (!API_KEY) {
+      return text("ALLOWANCE_API_KEY is not set.", true);
+    }
+    try {
+      const res = await fetch(`${BASE_URL}/v1/keys`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${API_KEY}`,
+        },
+        body: JSON.stringify({ budget, expiresInHours, name }),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (res.status === 201) {
+        const body = (await res.json()) as Record<string, unknown>;
+        return text(
+          `Minted a child key with a $${budget} allowance` +
+            (body.expiresAt ? `, expiring ${body.expiresAt}` : "") +
+            `. Hand this to the sub-agent (shown once):\n\n${body.key}`,
+        );
+      }
+      if (res.status === 400) {
+        return text(
+          "This key can't delegate: it must be a project key (one that routes to attached services), and the budget must be 0 < n <= 1000000.",
+          true,
+        );
+      }
+      if (res.status === 403) {
+        return text(
+          "This key can't delegate (it may itself be a child key, or be revoked/expired). Pocket money is one level deep.",
+          true,
+        );
+      }
+      return text(`Allowance answered ${res.status}.`, true);
+    } catch {
+      return text("Could not reach the Allowance API.", true);
+    }
+  },
+);
+
+server.tool(
   "check_service_health",
   "Check whether the Allowance proxy itself is up (its /healthz endpoint). " +
     "Useful to distinguish 'Allowance is down' from 'my key/budget has a problem'.",
