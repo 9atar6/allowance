@@ -63,6 +63,14 @@ db/  Supabase (Postgres + Vault)         dashboard/  Next.js 15 (Vercel)
 | `mcp/` | MCP server: agents check their own budget and decode 402s | Model Context Protocol |
 | `docs/` | RUNBOOK (ops), E2E (testing), architecture | - |
 
+## Self-hosting
+
+Allowance is MIT-licensed and built to run as your own instance, where every
+secret (provider keys, vault, edge encryption key) lives on infrastructure
+**you** control and we see nothing. See [SELFHOST.md](SELFHOST.md) for the
+10-minute guide (your Supabase + your Cloudflare Worker + a Dockerized
+dashboard).
+
 ## Quick start (local)
 
 See [DEPLOY.md](DEPLOY.md) for the full runbook. Short version:

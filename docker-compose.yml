@@ -1,0 +1,30 @@
+# Self-host the Allowance dashboard against YOUR own Supabase + YOUR own
+# deployed Worker. The proxy runs on Cloudflare Workers (your account) — see
+# SELFHOST.md; it is not part of this compose file by design.
+#
+#   1. cp .env.selfhost.example .env.selfhost  &&  fill it in
+#   2. docker compose up --build
+#   3. open http://localhost:3000
+
+services:
+  dashboard:
+    build:
+      context: ./dashboard
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    ports:
+      - "3000:3000"
+    environment:
+      # Server-only secret — provided at runtime, never baked into the image.
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      PROXY_URL: ${PROXY_URL}
+      PROXY_ADMIN_URL: ${PROXY_URL}
+      PROXY_PURGE_SECRET: ${PROXY_PURGE_SECRET:-}
+      POLAR_ACCESS_TOKEN: ${POLAR_ACCESS_TOKEN:-}
+      POLAR_WEBHOOK_SECRET: ${POLAR_WEBHOOK_SECRET:-}
+      POLAR_PRO_PRODUCT_ID: ${POLAR_PRO_PRODUCT_ID:-}
+    env_file:
+      - .env.selfhost
+    restart: unless-stopped
