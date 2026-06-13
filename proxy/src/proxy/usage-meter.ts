@@ -92,6 +92,11 @@ export class UsageExtractor {
     return { promptTokens: this.prompt, completionTokens: this.completion };
   }
 
+  /** Latest partial counts seen so far (either may still be null mid-stream). */
+  current(): { prompt: number | null; completion: number | null } {
+    return { prompt: this.prompt, completion: this.completion };
+  }
+
   private consume(line: string): void {
     const trimmed = line.trim();
     // Accept both raw JSON (non-stream body) and "data: {...}" SSE frames.

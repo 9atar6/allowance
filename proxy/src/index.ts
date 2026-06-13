@@ -35,6 +35,7 @@ import {
   streamWithCount,
   UpstreamTimeoutError,
 } from "./proxy/forward";
+import { guardApplies } from "./proxy/stream-guard";
 import { resolveActive } from "./proxy/route";
 import { settle } from "./settlement/settle";
 import type { Env, Variables } from "./types";
@@ -261,11 +262,24 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
   // Register ONE waitUntil synchronously (before returning) that keeps the
   // worker alive until the body finishes piping, then settles. Scheduling
   // waitUntil from a later callback would be dropped by the runtime.
-  const { response, done } = streamWithCount(upstream);
+  // Mid-stream budget guard: only for per-token billing with a finite balance,
+  // so normal traffic streams through untouched. Caps the overshoot a single
+  // long generation could cause before settlement runs.
+  const guard = guardApplies(active.meteringMode, ctx.balance)
+    ? {
+        inputTokenCost: active.inputTokenCost,
+        outputTokenCost: active.outputTokenCost,
+        balanceRemaining: ctx.balance,
+      }
+    : undefined;
+  const { response, done } = streamWithCount(upstream, guard);
   const withSpend = withExtraHeaders(response, spendHeaders(spend));
 
   c.executionCtx.waitUntil(
-    done.then(({ chunkCount, usage }) => {
+    done.then(({ chunkCount, usage, stoppedForBudget }) => {
+      if (stoppedForBudget) {
+        logEvent({ event: "stream_budget_stop", requestId, userId: ctx.userId });
+      }
       // Don't charge the user for the upstream provider's own server errors.
       if (upstream.status >= 500) {
         logEvent({

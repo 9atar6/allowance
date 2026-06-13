@@ -13,11 +13,20 @@ import {
   UPSTREAM_HEADERS_TIMEOUT_MS,
 } from "../config";
 import type { ActiveRequest, TokenUsage } from "../types";
+import {
+  BudgetMeter,
+  detectFormat,
+  terminalFrame,
+  type GuardConfig,
+  type StreamFormat,
+} from "./stream-guard";
 import { UsageExtractor } from "./usage-meter";
 
 export interface StreamResult {
   chunkCount: number;
   usage: TokenUsage | null;
+  /** True if the budget guard ended the stream early to protect the cap. */
+  stoppedForBudget?: boolean;
 }
 
 /** Join a base path and a sub-path without doubling slashes. */
@@ -115,7 +124,10 @@ export async function forwardRequest(
  * callback after the handler returns is a no-op on Cloudflare, which would drop
  * settlement entirely — hence this shape.)
  */
-export function streamWithCount(upstream: Response): {
+export function streamWithCount(
+  upstream: Response,
+  guard?: GuardConfig,
+): {
   response: Response;
   done: Promise<StreamResult>;
 } {
@@ -128,9 +140,14 @@ export function streamWithCount(upstream: Response): {
   const reader = upstream.body.getReader();
   const writer = writable.getWriter();
   const meter = new UsageExtractor();
+  const budget = guard ? new BudgetMeter(guard) : null;
+  const encoder = budget ? new TextEncoder() : null;
+  const decoder = budget ? new TextDecoder() : null;
 
   const done = (async (): Promise<StreamResult> => {
     let chunkCount = 0;
+    let stoppedForBudget = false;
+    let format: StreamFormat = "unknown";
     try {
       for (;;) {
         const { done: finished, value } = await reader.read();
@@ -138,6 +155,22 @@ export function streamWithCount(upstream: Response): {
         chunkCount++;
         meter.push(value); // scan for token usage as bytes pass through
         await writer.write(value);
+
+        if (budget && decoder && encoder) {
+          budget.noteBytes(value.byteLength);
+          const seen = meter.current();
+          budget.noteUsage(seen.prompt, seen.completion);
+          format = detectFormat(decoder.decode(value, { stream: true }), format);
+          if (budget.exceeds()) {
+            // Inject a clean terminal frame so the client SDK sees a normal
+            // truncation, then stop reading from upstream.
+            const frame = terminalFrame(format, budget.outputTokens());
+            if (frame) await writer.write(encoder.encode(frame));
+            stoppedForBudget = true;
+            await reader.cancel().catch(() => undefined);
+            break;
+          }
+        }
       }
     } catch {
       // Client disconnect / upstream abort — settle with what we counted.
@@ -145,7 +178,7 @@ export function streamWithCount(upstream: Response): {
       await writer.close().catch(() => undefined);
     }
     meter.end();
-    return { chunkCount, usage: meter.result() };
+    return { chunkCount, usage: meter.result(), stoppedForBudget };
   })();
 
   const response = new Response(readable, {
