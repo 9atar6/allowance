@@ -69,7 +69,7 @@ async function encryptRoute(env: Env, r: RpcRoute): Promise<CachedRoute> {
 }
 
 async function rpcToCached(env: Env, ctx: RpcProxyContext): Promise<CachedProxyContext> {
-  const common = { user_id: ctx.user_id, balance: ctx.balance, plan: ctx.plan ?? "free", daily_limit: ctx.daily_limit, monthly_limit: ctx.monthly_limit ?? null, project_id: ctx.project_id ?? null, monthly_budget: ctx.monthly_budget ?? null, cached_at: Date.now() };
+  const common = { user_id: ctx.user_id, balance: ctx.balance, plan: ctx.plan ?? "free", daily_limit: ctx.daily_limit, monthly_limit: ctx.monthly_limit ?? null, budget_limit: ctx.budget_limit ?? null, project_id: ctx.project_id ?? null, monthly_budget: ctx.monthly_budget ?? null, cached_at: Date.now() };
   if (ctx.routes) {
     const routes = await Promise.all(ctx.routes.map((r) => encryptRoute(env, r)));
     return { ...common, single: null, routes };
@@ -109,7 +109,7 @@ function rpcRouteToEndpoint(r: RpcRoute): ResolvedEndpoint {
 }
 
 function rpcToResolved(ctx: RpcProxyContext, keyHash: string): ResolvedContext {
-  const common = { userId: ctx.user_id, balance: ctx.balance, plan: ctx.plan ?? "free", dailyLimit: ctx.daily_limit, monthlyLimit: ctx.monthly_limit ?? null, projectId: ctx.project_id ?? null, monthlyBudget: ctx.monthly_budget ?? null, keyHash };
+  const common = { userId: ctx.user_id, balance: ctx.balance, plan: ctx.plan ?? "free", dailyLimit: ctx.daily_limit, monthlyLimit: ctx.monthly_limit ?? null, budgetLimit: ctx.budget_limit ?? null, projectId: ctx.project_id ?? null, monthlyBudget: ctx.monthly_budget ?? null, keyHash };
   if (ctx.routes) {
     return { ...common, single: null, routes: ctx.routes.map(rpcRouteToEndpoint) };
   }
@@ -152,7 +152,7 @@ async function cachedToResolved(
   cached: CachedProxyContext,
   keyHash: string,
 ): Promise<ResolvedContext> {
-  const common = { userId: cached.user_id, balance: cached.balance, plan: cached.plan ?? "free", dailyLimit: cached.daily_limit, monthlyLimit: cached.monthly_limit ?? null, projectId: cached.project_id ?? null, monthlyBudget: cached.monthly_budget ?? null, keyHash };
+  const common = { userId: cached.user_id, balance: cached.balance, plan: cached.plan ?? "free", dailyLimit: cached.daily_limit, monthlyLimit: cached.monthly_limit ?? null, budgetLimit: cached.budget_limit ?? null, projectId: cached.project_id ?? null, monthlyBudget: cached.monthly_budget ?? null, keyHash };
   if (cached.routes) {
     const routes = await Promise.all(cached.routes.map((r) => decryptRoute(env, r)));
     return { ...common, single: null, routes };

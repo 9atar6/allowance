@@ -929,6 +929,134 @@ begin
 end; $$;
 
 -- =============================================================================
+-- DELEGATED SUB-BUDGETS ("pocket money") — v9
+-- =============================================================================
+-- A parent key can mint child keys carved from its own access: same project
+-- (same routes), an optional lifetime spend cap (budget_limit), and an optional
+-- expiry. A child is valid only while its parent is active and unexpired, so
+-- revoking a parent grounds all its children at once. One level deep in v1
+-- (a child cannot itself have children).
+alter table public.proxy_keys
+  add column if not exists parent_key_id uuid references public.proxy_keys (id) on delete cascade;
+alter table public.proxy_keys
+  add column if not exists budget_limit numeric(14, 6)
+    check (budget_limit is null or budget_limit > 0);
+create index if not exists proxy_keys_parent_idx on public.proxy_keys (parent_key_id)
+  where parent_key_id is not null;
+
+-- get_proxy_context v7: returns budget_limit + parent_key_id, and a child key
+-- resolves only when its parent is still active and unexpired.
+create or replace function public.get_proxy_context(p_key_hash text)
+returns jsonb language plpgsql security definer set search_path = public, vault, pg_temp as $$
+declare k record; v_routes jsonb;
+begin
+  select pk.user_id, w.balance, w.plan, pk.endpoint_id, pk.project_id,
+         pk.daily_limit, pk.monthly_limit, pk.budget_limit, pk.parent_key_id,
+         pj.monthly_budget
+  into k
+  from public.proxy_keys pk
+  join public.wallets w on w.user_id = pk.user_id
+  left join public.projects pj on pj.id = pk.project_id
+  where pk.key_hash = p_key_hash and pk.is_active
+    and (pk.expires_at is null or pk.expires_at > now())
+    -- child keys die with their parent
+    and (pk.parent_key_id is null or exists (
+      select 1 from public.proxy_keys parent
+      where parent.id = pk.parent_key_id and parent.is_active
+        and (parent.expires_at is null or parent.expires_at > now())
+    ));
+  if not found then return null; end if;
+
+  update public.proxy_keys
+     set last_used_at = now()
+   where key_hash = p_key_hash
+     and (last_used_at is null or last_used_at < now() - interval '1 hour');
+
+  if k.project_id is not null then
+    with routes_cte as (
+      select ps.slug, e.id, e.target_url, e.cost_per_request, e.metering_mode,
+             e.input_token_cost, e.output_token_cost, e.vault_secret_id
+      from public.project_services ps
+      join public.endpoints e on e.id = ps.endpoint_id
+      where ps.project_id = k.project_id and e.is_active
+      union all
+      select e.slug, e.id, e.target_url, e.cost_per_request, e.metering_mode,
+             e.input_token_cost, e.output_token_cost, e.vault_secret_id
+      from public.endpoints e
+      where e.project_id = k.project_id and e.is_active and e.slug is not null
+    )
+    select jsonb_agg(jsonb_build_object(
+      'slug', slug, 'endpoint_id', id, 'target_url', target_url,
+      'cost_per_request', cost_per_request,
+      'metering_mode', coalesce(metering_mode, 'flat'),
+      'input_token_cost', coalesce(input_token_cost, 0),
+      'output_token_cost', coalesce(output_token_cost, 0),
+      'upstream_header', (select decrypted_secret from vault.decrypted_secrets where id = vault_secret_id)
+    ))
+    into v_routes from routes_cte;
+
+    return jsonb_build_object(
+      'user_id', k.user_id, 'balance', k.balance, 'plan', coalesce(k.plan, 'free'),
+      'daily_limit', k.daily_limit, 'monthly_limit', k.monthly_limit,
+      'budget_limit', k.budget_limit,
+      'project_id', k.project_id, 'monthly_budget', k.monthly_budget,
+      'routes', coalesce(v_routes, '[]'::jsonb)
+    );
+  end if;
+
+  return (
+    select jsonb_build_object(
+      'user_id', k.user_id, 'balance', k.balance, 'plan', coalesce(k.plan, 'free'),
+      'daily_limit', k.daily_limit, 'monthly_limit', k.monthly_limit,
+      'budget_limit', k.budget_limit,
+      'endpoint_id', e.id, 'target_url', e.target_url, 'cost_per_request', e.cost_per_request,
+      'metering_mode', coalesce(e.metering_mode, 'flat'),
+      'input_token_cost', coalesce(e.input_token_cost, 0),
+      'output_token_cost', coalesce(e.output_token_cost, 0),
+      'endpoint_active', coalesce(e.is_active, false),
+      'upstream_header', (select decrypted_secret from vault.decrypted_secrets where id = e.vault_secret_id)
+    )
+    from public.endpoints e where e.id = k.endpoint_id
+  );
+end; $$;
+
+-- Mint a child key from a parent, authenticated by the PARENT'S hash (the edge
+-- verifies the parent key, then calls this). Returns the new child id, or null
+-- if the parent is invalid/inactive/expired, is itself a child, or has no
+-- project. service_role / proxy_worker only.
+create or replace function public.issue_child_key(
+  p_parent_key_hash text, p_child_key_hash text, p_child_key_prefix text,
+  p_budget_limit numeric, p_expires_at timestamptz default null,
+  p_name text default null
+)
+returns uuid language plpgsql security definer set search_path = public, pg_temp as $$
+declare parent record; v_id uuid;
+begin
+  if p_budget_limit is null or p_budget_limit <= 0 or p_budget_limit > 1000000 then
+    return null;
+  end if;
+  select id, user_id, project_id, parent_key_id, is_active, expires_at
+    into parent
+  from public.proxy_keys
+  where key_hash = p_parent_key_hash;
+  if not found or not parent.is_active then return null; end if;
+  if parent.expires_at is not null and parent.expires_at <= now() then return null; end if;
+  if parent.parent_key_id is not null then return null; end if;  -- one level only
+  if parent.project_id is null then return null; end if;          -- project keys only
+
+  insert into public.proxy_keys
+    (user_id, key_hash, key_prefix, project_id, parent_key_id, budget_limit,
+     expires_at, name)
+  values
+    (parent.user_id, p_child_key_hash, p_child_key_prefix, parent.project_id,
+     parent.id, p_budget_limit, p_expires_at, nullif(btrim(p_name), ''))
+  returning id into v_id;
+  return v_id;
+end; $$;
+revoke all on function public.issue_child_key(text,text,text,numeric,timestamptz,text) from public, anon, authenticated;
+grant execute on function public.issue_child_key(text,text,text,numeric,timestamptz,text) to service_role, proxy_worker;
+
+-- =============================================================================
 -- LEGACY CLEANUP (all IF EXISTS — no-ops on fresh databases)
 -- =============================================================================
 -- Drops everything left dead by the Model-A pivot (the prepaid/auto-reload

@@ -87,6 +87,7 @@ export interface RpcProxyContext {
   plan?: PlanTier;
   daily_limit: number | null;
   monthly_limit?: number | null; // per-key monthly USD cap (null = none)
+  budget_limit?: number | null; // lifetime cap for a child key (null = none)
   // single-endpoint (legacy) key:
   endpoint_id?: string | null;
   target_url?: string | null;
@@ -124,6 +125,7 @@ export interface CachedProxyContext {
   plan: PlanTier;
   daily_limit: number | null;
   monthly_limit?: number | null; // per-key monthly USD cap (null = none)
+  budget_limit?: number | null; // lifetime cap for a child key (null = none)
   project_id: string | null;
   monthly_budget: number | null;
   single: CachedSingle | null;
@@ -150,6 +152,7 @@ export interface ResolvedContext {
   plan: PlanTier;
   dailyLimit: number | null;
   monthlyLimit: number | null;
+  budgetLimit: number | null; // lifetime cap for a child key (null = none)
   projectId: string | null;
   monthlyBudget: number | null;
   keyHash: string;

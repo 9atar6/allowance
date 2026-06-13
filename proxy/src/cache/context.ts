@@ -170,6 +170,30 @@ export async function addKeyMonthlySpend(
   });
 }
 
+// ── Per-key lifetime spend counter (for child-key "pocket money" caps) ───────
+// A child key's budget_limit is a one-time allowance, not monthly, so this
+// counter never resets. TTL is long; a child key is short-lived by design.
+const LIFETIME_TTL_SECONDS = 60 * 60 * 24 * 90; // 90 days
+const totalSpendKey = (hash: string) => `tspend:${hash}`;
+
+/** USD a key has spent over its lifetime (best-effort edge counter; 0 if unset). */
+export async function getKeyTotalSpend(env: Env, hash: string): Promise<number> {
+  const v = await env.WALLET_KV.get(totalSpendKey(hash));
+  return v ? Number(v) : 0;
+}
+
+/** Add to a key's lifetime spend (called during settlement for child keys). */
+export async function addKeyTotalSpend(
+  env: Env,
+  hash: string,
+  amount: number,
+): Promise<void> {
+  const current = await getKeyTotalSpend(env, hash);
+  await env.WALLET_KV.put(totalSpendKey(hash), String(current + amount), {
+    expirationTtl: LIFETIME_TTL_SECONDS,
+  });
+}
+
 // ── Per-project monthly spend counter (for the project-wide USD budget) ──────
 const projSpendKey = (projectId: string, month: string) =>
   `pspend:${projectId}:${month}`;

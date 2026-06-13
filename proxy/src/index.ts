@@ -13,6 +13,7 @@ import { recordErrorAndMaybeAlert } from "./lib/alert";
 import {
   getDailySpend,
   getKeyMonthlySpend,
+  getKeyTotalSpend,
   getMonthlyCount,
   getProjectSpend,
   utcDateKey,
@@ -27,7 +28,8 @@ import {
 import { logEvent } from "./lib/log";
 import { buildX402Body } from "./lib/x402";
 import { withinRateLimit } from "./lib/rate-limit";
-import { resetMonthlyAllowances } from "./lib/supabase";
+import { issueChildKey, resetMonthlyAllowances } from "./lib/supabase";
+import { generateProxyKey } from "./lib/keygen";
 import { authMiddleware } from "./middleware/auth";
 import { computeCost } from "./proxy/cost";
 import {
@@ -96,8 +98,65 @@ app.get("/v1/me", authMiddleware, async (c) => {
       remaining: Math.max(0, ctx.monthlyBudget - spent),
     };
   }
+  if (ctx.budgetLimit != null) {
+    const spent = await getKeyTotalSpend(c.env, ctx.keyHash);
+    body.isChildKey = true;
+    body.pocketMoney = {
+      limit: ctx.budgetLimit,
+      spent,
+      remaining: Math.max(0, ctx.budgetLimit - spent),
+    };
+  }
 
   return c.json(body);
+});
+
+// Delegated sub-budgets ("pocket money"): a parent key mints a capped,
+// optionally-expiring child key. Authenticated by the PARENT key (same
+// authMiddleware). The child inherits the parent's project/routes; its spend
+// also debits the shared account balance. One level deep (the RPC rejects a
+// child trying to mint). The plaintext child key is returned exactly once.
+app.post("/v1/keys", authMiddleware, async (c) => {
+  const ctx = c.get("resolved");
+  const requestId = c.get("requestId");
+  if (!(await withinRateLimit(c.env, ctx.keyHash))) {
+    return c.json({ error: "rate_limited" }, 429);
+  }
+  if (!ctx.projectId) {
+    return c.json({ error: "parent_must_be_project_key" }, 400);
+  }
+
+  const body = (await c.req.json().catch(() => null)) as {
+    budget?: unknown;
+    expiresInHours?: unknown;
+    name?: unknown;
+  } | null;
+  const budget = Number(body?.budget);
+  if (!Number.isFinite(budget) || budget <= 0 || budget > 1_000_000) {
+    return c.json({ error: "invalid_budget", hint: "budget must be 0 < n <= 1000000" }, 400);
+  }
+  const hours = Number(body?.expiresInHours);
+  const expiresAt =
+    Number.isFinite(hours) && hours >= 1 && hours <= 24 * 90
+      ? new Date(Date.now() + hours * 3_600_000).toISOString()
+      : null;
+  const name = typeof body?.name === "string" ? body.name.slice(0, 80) : null;
+
+  const child = await generateProxyKey();
+  const id = await issueChildKey(c.env, {
+    parentKeyHash: ctx.keyHash,
+    childKeyHash: child.keyHash,
+    childKeyPrefix: child.keyPrefix,
+    budgetLimit: budget,
+    expiresAt,
+    name,
+  });
+  if (!id) {
+    // Parent ineligible: inactive, expired, itself a child, or no project.
+    return c.json({ error: "cannot_delegate" }, 403);
+  }
+  logEvent({ event: "child_key_minted", requestId, userId: ctx.userId });
+  return c.json({ key: child.key, budget, expiresAt }, 201);
 });
 
 // All proxy traffic flows through here. The key is resolved by authMiddleware.
@@ -190,6 +249,26 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
           remaining: Math.max(0, ctx.monthlyLimit - spentThisMonth),
           retryHint:
             "Raise this key's monthly cap, or wait for the monthly reset (UTC).",
+          manageUrl,
+        },
+        402,
+      );
+    }
+  }
+
+  // ── Child-key lifetime cap ("pocket money"; edge counter; null = none) ────
+  if (ctx.budgetLimit != null) {
+    const spentTotal = await getKeyTotalSpend(c.env, ctx.keyHash);
+    spend.pocketRemaining = ctx.budgetLimit - spentTotal - active.costPerRequest;
+    if (spentTotal + active.costPerRequest > ctx.budgetLimit) {
+      logEvent({ event: "pocket_money_exhausted", requestId, userId: ctx.userId });
+      return c.json(
+        {
+          error: "pocket_money_exhausted",
+          limit: ctx.budgetLimit,
+          spent: spentTotal,
+          remaining: Math.max(0, ctx.budgetLimit - spentTotal),
+          retryHint: "This key's allowance is used up. Ask the parent for a new key.",
           manageUrl,
         },
         402,
@@ -301,6 +380,7 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
         usage,
         dailyLimit: ctx.dailyLimit,
         monthlyLimit: ctx.monthlyLimit,
+        budgetLimit: ctx.budgetLimit,
         plan: ctx.plan,
         monthlyBudget: ctx.monthlyBudget,
       });

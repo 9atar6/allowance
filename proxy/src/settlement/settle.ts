@@ -12,6 +12,7 @@
 import {
   addDailySpend,
   addKeyMonthlySpend,
+  addKeyTotalSpend,
   addProjectSpend,
   incrMonthlyCount,
   updateCachedBalance,
@@ -35,6 +36,7 @@ export async function settle(
     // Which edge counters this request actually needs, so we skip unused writes.
     dailyLimit: number | null;
     monthlyLimit: number | null;
+    budgetLimit: number | null;
     plan: PlanTier;
     monthlyBudget: number | null;
   },
@@ -73,6 +75,9 @@ export async function settle(
     }
     if (params.monthlyLimit != null) {
       await addKeyMonthlySpend(env, ctx.keyHash, utcMonthKey(), params.cost);
+    }
+    if (params.budgetLimit != null) {
+      await addKeyTotalSpend(env, ctx.keyHash, params.cost);
     }
     if (params.plan === "free") {
       await incrMonthlyCount(env, ctx.userId, utcMonthKey());

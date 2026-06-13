@@ -58,6 +58,8 @@ export interface FetchMock {
   debitCalls: Array<Record<string, unknown>>;
   proxyContextCalls: string[];
   upstreamCalls: Array<{ url: string; method: string }>;
+  childKeyCalls?: Array<Record<string, unknown>>;
+  childKeyId?: string | null;
 }
 
 function jsonResponse(value: unknown): Response {
@@ -83,6 +85,10 @@ export function installFetch(ctl: FetchMock) {
           init?.body ? JSON.parse(String(init.body)) : {},
         );
         return jsonResponse(true);
+      }
+      if (url.includes("/rpc/issue_child_key")) {
+        ctl.childKeyCalls?.push(init?.body ? JSON.parse(String(init.body)) : {});
+        return jsonResponse(ctl.childKeyId ?? "child-id-1");
       }
       ctl.upstreamCalls.push({ url, method });
       return ctl.makeUpstream();

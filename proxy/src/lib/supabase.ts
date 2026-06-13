@@ -88,6 +88,31 @@ export function resetMonthlyAllowances(env: Env): Promise<number> {
   return rpc<number>(env, "reset_monthly_allowances", {});
 }
 
+/**
+ * Mint a child key carved from a parent (authenticated by the parent's hash).
+ * Returns the new child's id, or null if the parent is invalid for delegation.
+ */
+export function issueChildKey(
+  env: Env,
+  params: {
+    parentKeyHash: string;
+    childKeyHash: string;
+    childKeyPrefix: string;
+    budgetLimit: number;
+    expiresAt: string | null;
+    name: string | null;
+  },
+): Promise<string | null> {
+  return rpc<string | null>(env, "issue_child_key", {
+    p_parent_key_hash: params.parentKeyHash,
+    p_child_key_hash: params.childKeyHash,
+    p_child_key_prefix: params.childKeyPrefix,
+    p_budget_limit: params.budgetLimit,
+    p_expires_at: params.expiresAt,
+    p_name: params.name,
+  });
+}
+
 /** Resolve a proxy key hash to its full edge context (or null = unknown key). */
 export function getProxyContext(
   env: Env,

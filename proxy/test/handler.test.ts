@@ -27,6 +27,7 @@ function newCtl(over: Partial<FetchMock> = {}): FetchMock {
     debitCalls: [],
     proxyContextCalls: [],
     upstreamCalls: [],
+    childKeyCalls: [],
     ...over,
   };
 }
@@ -103,6 +104,75 @@ describe("proxy handler", () => {
     expect(body.requestsThisMonth.limit).toBe(5000); // free plan
     expect(ctl.upstreamCalls).toHaveLength(0); // never forwarded
     expect(ctl.debitCalls).toHaveLength(0); // never charged
+  });
+
+  it("402s with pocket_money_exhausted when a child key's lifetime cap is hit", async () => {
+    // Child key with a $0.005 lifetime cap, cost 0.01 → first call already over.
+    const ctl = newCtl({
+      proxyContext: projectContext([makeRoute("chat")], { budget_limit: 0.005 }),
+    });
+    installFetch(ctl);
+    const { ctx, flush } = makeCtx();
+
+    const res = await app.fetch(proxyRequest(), makeEnv(), ctx);
+    await flush();
+
+    expect(res.status).toBe(402);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(body.error).toBe("pocket_money_exhausted");
+    expect(ctl.upstreamCalls).toHaveLength(0);
+  });
+
+  it("POST /v1/keys mints a child key from a project parent", async () => {
+    const ctl = newCtl({
+      proxyContext: projectContext([makeRoute("chat")]),
+    });
+    installFetch(ctl);
+    const { ctx } = makeCtx();
+
+    const req = new Request("https://proxy.test/v1/keys", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${KEY}`, "content-type": "application/json" },
+      body: JSON.stringify({ budget: 5, expiresInHours: 24, name: "sub-agent" }),
+    });
+    const res = await app.fetch(req, makeEnv(), ctx);
+    expect(res.status).toBe(201);
+    const body = (await res.json()) as Record<string, unknown>;
+    expect(String(body.key)).toMatch(/^alw_live_/);
+    expect(body.budget).toBe(5);
+    expect(body.expiresAt).toBeTruthy();
+    // The RPC was called with a freshly generated hash (not the parent's).
+    expect(ctl.childKeyCalls).toHaveLength(1);
+    expect(ctl.childKeyCalls?.[0].p_budget_limit).toBe(5);
+  });
+
+  it("POST /v1/keys rejects a non-project (single-endpoint) parent", async () => {
+    const ctl = newCtl({ proxyContext: baseContext() }); // single-endpoint key
+    installFetch(ctl);
+    const { ctx } = makeCtx();
+
+    const req = new Request("https://proxy.test/v1/keys", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${KEY}`, "content-type": "application/json" },
+      body: JSON.stringify({ budget: 5 }),
+    });
+    const res = await app.fetch(req, makeEnv(), ctx);
+    expect(res.status).toBe(400);
+    expect(ctl.childKeyCalls).toHaveLength(0);
+  });
+
+  it("POST /v1/keys rejects an invalid budget", async () => {
+    const ctl = newCtl({ proxyContext: projectContext([makeRoute("chat")]) });
+    installFetch(ctl);
+    const { ctx } = makeCtx();
+
+    const req = new Request("https://proxy.test/v1/keys", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${KEY}`, "content-type": "application/json" },
+      body: JSON.stringify({ budget: -1 }),
+    });
+    const res = await app.fetch(req, makeEnv(), ctx);
+    expect(res.status).toBe(400);
   });
 
   it("402s at zero balance even when the flat estimate is 0 (per-token)", async () => {

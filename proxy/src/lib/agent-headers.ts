@@ -19,6 +19,8 @@ export interface SpendState {
   monthlyRemaining?: number;
   /** USD left under the project's monthly budget (only set if it exists). */
   projectRemaining?: number;
+  /** USD left on a child key's lifetime allowance (only set for child keys). */
+  pocketRemaining?: number;
 }
 
 const usd = (n: number): string => Math.max(0, n).toFixed(6);
@@ -40,6 +42,9 @@ export function spendHeaders(s: SpendState): Record<string, string> {
   }
   if (s.projectRemaining != null) {
     h["x-allowance-project-remaining"] = usd(s.projectRemaining);
+  }
+  if (s.pocketRemaining != null) {
+    h["x-allowance-pocket-remaining"] = usd(s.pocketRemaining);
   }
   return h;
 }
