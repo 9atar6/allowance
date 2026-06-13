@@ -4,9 +4,9 @@ import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
-const TITLE = "Allowance: One key. Every API. A hard cap.";
+const TITLE = "Allowance: pocket money for software.";
 const DESCRIPTION =
-  "Route all your API spend through one key, with a spending cap your apps and agents can never exceed and an instant kill switch. Works with any API.";
+  "Your apps and agents get one key with a hard cap. At zero, the answer is no. Leaked? Revoke it and it's dead everywhere in seconds. Works with any API.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://getallowance.dev"),

@@ -25,21 +25,13 @@ for (const path of PUBLIC_PAGES) {
 
 test("landing: hero, open-source badge, and footer links", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("h1")).toContainText("One key. Every API.");
+  await expect(page.locator("h1")).toContainText("Pocket money");
   const badge = page.getByRole("link", { name: /open source/i });
   await expect(badge).toHaveAttribute("href", /github\.com\/9atar6\/allowance/);
   await expect(page.locator("footer").getByRole("link", { name: "Security" })).toBeVisible();
   await expect(page.locator("footer").getByRole("link", { name: "Status" })).toBeVisible();
-});
-
-test("cursor glow never covers the page before pointer movement", async ({ page }) => {
-  // Regression: on touch devices the glow once rendered at full opacity and
-  // washed out the whole UI. It must start hidden everywhere.
-  await page.goto("/");
-  const opacity = await page
-    .locator(".cursor-glow")
-    .evaluate((el) => getComputedStyle(el).opacity);
-  expect(opacity).toBe("0");
+  // The brand sign-off.
+  await expect(page.locator("footer")).toContainText("Allow once.");
 });
 
 test("security page makes verifiable claims", async ({ page }) => {

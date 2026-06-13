@@ -1,244 +1,247 @@
 @import "tailwindcss";
+@import url("https://api.fontshare.com/v2/css?f[]=sentient@400,500&f[]=general-sans@400,500,600&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap");
 
 /* =============================================================================
-   Soft Machine — monochrome neumorphism
-   One charcoal tone. Surfaces are extruded or recessed with soft dual shadows,
-   never borders or glass. Sharp-ish corners, generous space, one quiet accent.
+   Allowance — the analog-ledger world.
+   Ledger paper, ink, one vault green, and a rubber-stamp red that is EARNED:
+   it appears only when money stops (declines, revocations, anomalies). No
+   gradients, no glass, no neumorphism. Hairlines and whitespace, not cards.
+   If it's a dollar amount, it's mono. Default is paper; dark is a ledger at
+   night, not a gamer theme.
    ============================================================================= */
 
-:root {
-  /* Single base tone. Everything is this color, shaped only by light. */
-  --bg: #1e2024;
-  --bg-deep: #191b1e;
+:root,
+html.light {
+  --paper: #f5f4ee;       /* page — slightly green-cast paper, not cream */
+  --paper-2: #efeee6;     /* recessed paper: receipts, insets, table fills */
+  --ink: #191c19;         /* primary text, borders, the switch */
+  --pencil: #6e726b;      /* captions, hairline rules */
+  --vault: #17604a;       /* brand green: links, primary action, healthy money */
+  --vault-tint: #dfeae3;  /* healthy-budget fills, hovers */
+  --stamp: #be3320;       /* DECLINED / REVOKED / kills / anomalies — only */
 
-  /* Soft dual-shadow extrusion (dark lower-right, faint light upper-left). */
-  --raise: 7px 7px 16px rgba(0, 0, 0, 0.55), -6px -6px 14px rgba(255, 255, 255, 0.022);
-  --raise-sm: 4px 4px 9px rgba(0, 0, 0, 0.5), -3px -3px 8px rgba(255, 255, 255, 0.02);
-  --raise-lg: 12px 12px 28px rgba(0, 0, 0, 0.6), -9px -9px 22px rgba(255, 255, 255, 0.025);
-  --inset: inset 4px 4px 10px rgba(0, 0, 0, 0.55), inset -4px -4px 10px rgba(255, 255, 255, 0.022);
-  --inset-sm: inset 3px 3px 7px rgba(0, 0, 0, 0.5), inset -2px -2px 6px rgba(255, 255, 255, 0.02);
+  /* Semantic aliases so existing components inherit the new world unchanged. */
+  --bg: var(--paper);
+  --bg-deep: var(--paper-2);
+  --text: var(--ink);
+  --text-muted: #43463f;  /* darker pencil for body-contrast (≥ 7:1 on paper) */
+  --text-faint: var(--pencil);
+  --accent: var(--vault);
+  --accent-dim: #124e3c;
+  --line: rgba(25, 28, 25, 0.16);
+  --line-strong: rgba(25, 28, 25, 0.30);
 
-  /* One restrained accent. Used sparingly: primary action + key numbers. */
-  --accent: #7c7fff;
-  --accent-dim: #6366cc;
-
-  /* Text — kept high-contrast on purpose (neumorphism's usual weak point). */
-  --text: #eceef2;
-  --text-muted: #9a9da6;
-  --text-faint: #6a6d76;
-
-  /* A clearly visible divider line (theme-aware: light on dark / dark on light). */
-  --line: rgba(255, 255, 255, 0.14);
-
-  --r: 13px;   /* panel radius */
-  --r-sm: 9px; /* control radius */
+  --r: 4px;     /* controls/panels: 4px max */
+  --r-sm: 4px;
+  color-scheme: light;
 }
 
-/* Light mode: classic soft-UI. Light grey base, white highlight, grey shadow. */
-html.light {
-  --bg: #e7e8ed;
-  --bg-deep: #dfe1e8;
-  --raise: 7px 7px 15px rgba(170, 174, 186, 0.7), -6px -6px 13px rgba(255, 255, 255, 0.95);
-  --raise-sm: 4px 4px 9px rgba(170, 174, 186, 0.6), -3px -3px 8px rgba(255, 255, 255, 0.9);
-  --raise-lg: 12px 12px 26px rgba(170, 174, 186, 0.65), -9px -9px 20px rgba(255, 255, 255, 0.95);
-  --inset: inset 4px 4px 9px rgba(170, 174, 186, 0.75), inset -4px -4px 9px rgba(255, 255, 255, 0.95);
-  --inset-sm: inset 3px 3px 6px rgba(170, 174, 186, 0.7), inset -2px -2px 5px rgba(255, 255, 255, 0.9);
-  --accent: #5b5ef0;
-  --accent-dim: #4d50d8;
-  --text: #2a2d35;
-  --text-muted: #5c5f69;
-  --text-faint: #7e8290; /* darker than the classic soft-UI grey for WCAG contrast */
-  --line: rgba(0, 0, 0, 0.12);
-  color-scheme: light;
+/* Ledger at night — ink-on-charcoal. Vault and stamp stay nearly unchanged. */
+html.dark {
+  --paper: #141614;
+  --paper-2: #1b1e1b;
+  --ink: #ededE6;
+  --pencil: #9aa097;
+  --vault: #4cae8e;
+  --vault-tint: #1c2a24;
+  --stamp: #e0533f;
+
+  --bg: var(--paper);
+  --bg-deep: var(--paper-2);
+  --text: var(--ink);
+  --text-muted: #c2c6bd;
+  --text-faint: var(--pencil);
+  --accent: var(--vault);
+  --accent-dim: #3d9277;
+  --line: rgba(237, 237, 230, 0.16);
+  --line-strong: rgba(237, 237, 230, 0.30);
+  color-scheme: dark;
 }
 
 html {
   background: var(--bg);
-  color-scheme: dark;
-  transition: background 0.3s ease;
   scroll-behavior: smooth;
-  scroll-padding-top: 6rem; /* anchored sections clear the sticky nav */
+  scroll-padding-top: 6rem;
 }
-
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
 
-/* Selects: hide the native arrow, draw our own with right-side breathing room. */
+body {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "General Sans", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.005em;
+}
+
+/* ── Type roles ───────────────────────────────────────────────────────────── */
+/* Display: engraved serif with banknote DNA. Large sizes, regular weight. */
+.font-display {
+  font-family: "Sentient", var(--font-geist-sans), Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+/* Money & data: every dollar amount, token count, key, code — tabular mono. */
+.font-mono,
+.tabular-nums {
+  font-family: "IBM Plex Mono", var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+/* Passbook stationery labels: small, spaced, uppercased. */
+.label-caps {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ── Surfaces: hairlines, not cards ───────────────────────────────────────── */
+.neu {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+}
+.neu-sm {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.neu-lg {
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r);
+}
+.neu-inset {
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.neu-inset-sm {
+  background: var(--bg-deep);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+
+/* Pressable: a quiet ink tint on hover, a 1px settle on press. */
+.pressable {
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease, transform 0.08s ease;
+}
+.pressable:hover { border-color: var(--line-strong); background: var(--vault-tint); }
+.pressable:active { transform: translateY(1px); }
+
+/* Primary action: vault fill. Secondary: ink outline. */
+.btn-accent {
+  background: var(--vault);
+  color: var(--paper);
+  border: 1px solid var(--vault);
+  border-radius: var(--r-sm);
+  font-weight: 600;
+  transition: filter 0.12s ease, transform 0.08s ease;
+}
+.btn-accent:hover { filter: brightness(1.08); }
+.btn-accent:active { transform: translateY(1px); }
+
+.text-accent { color: var(--accent); }
+
+/* Selects: our own chevron, paper field. */
 .select-neu {
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239aa0ab' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236e726b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.85rem center;
   background-size: 12px;
   padding-right: 2.4rem;
 }
-body {
-  min-height: 100vh;
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  letter-spacing: -0.012em;
-}
 
-/* ── Surfaces ─────────────────────────────────────────────────────────────── */
-.neu {
-  background: var(--bg);
-  border-radius: var(--r);
-  box-shadow: var(--raise);
-}
-.neu-sm {
-  background: var(--bg);
-  border-radius: var(--r-sm);
-  box-shadow: var(--raise-sm);
-}
-.neu-lg {
-  background: var(--bg);
-  border-radius: 18px;
-  box-shadow: var(--raise-lg);
-}
-.neu-inset {
+/* ── Receipt: the canonical money display ─────────────────────────────────── */
+/* Mono type, dotted leader lines between label and amount, square corners. */
+.receipt {
   background: var(--bg-deep);
-  border-radius: var(--r-sm);
-  box-shadow: var(--inset);
+  border: 1px solid var(--line);
+  border-radius: 0;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
 }
-.neu-inset-sm {
-  background: var(--bg-deep);
-  border-radius: var(--r-sm);
-  box-shadow: var(--inset-sm);
+.receipt-line {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-variant-numeric: tabular-nums;
+}
+.receipt-line > .leader {
+  flex: 1;
+  border-bottom: 1px dotted var(--line-strong);
+  transform: translateY(-0.2em);
 }
 
-/* Pressable: raised, sinks on press. */
-.pressable {
-  transition: box-shadow 0.18s ease, transform 0.18s ease, color 0.18s ease;
+/* ── The stamp: lands when money stops ────────────────────────────────────── */
+.stamp {
+  display: inline-block;
+  color: var(--stamp);
+  border: 2px solid var(--stamp);
+  border-radius: 3px;
+  padding: 0.1em 0.4em;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+  opacity: 0.92;
 }
-.pressable:hover { box-shadow: var(--raise); }
-.pressable:active { box-shadow: var(--inset-sm); transform: translateY(1px); }
-
-/* The single accent button. Subtle raise, accent text, no fill noise. */
-.btn-accent {
-  background: var(--accent);
-  color: #fff;
-  border-radius: var(--r-sm);
-  font-weight: 600;
-  box-shadow: var(--raise-sm);
-  transition: box-shadow 0.18s ease, transform 0.18s ease, filter 0.18s ease;
+.stamp-land { animation: stamp-land 140ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+@keyframes stamp-land {
+  0%   { transform: rotate(-4deg) scale(1.4); opacity: 0; }
+  70%  { opacity: 0.92; }
+  100% { transform: rotate(-4deg) scale(1); opacity: 0.92; }
 }
-.btn-accent:hover { filter: brightness(1.04); }
-.btn-accent:active { transform: translateY(1px); box-shadow: var(--inset-sm); }
-
-.text-accent { color: var(--accent); }
-.font-mono { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 
 /* ── Focus, selection, scrollbar ──────────────────────────────────────────── */
-/* No browser outline and NO colored ring on fields — clicking an input or
-   select shows only the caret. Keyboard users still get a neutral (never blue)
-   ring on buttons/links/summaries for accessibility. */
 :focus { outline: none; }
 :focus-visible { outline: none; }
-
 a:focus-visible,
 button:focus-visible,
-summary:focus-visible {
-  box-shadow: 0 0 0 2px var(--text-faint);
-  border-radius: 8px;
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  box-shadow: 0 0 0 2px var(--vault);
+  border-radius: 4px;
 }
 
-/* Remove the ugly number-input spinner arrows everywhere. */
 input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-input[type="number"] {
-  -moz-appearance: textfield;
-  appearance: textfield;
-}
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 
-/* Use our own chevron, not the default details triangle. */
 summary { list-style: none; }
 summary::-webkit-details-marker { display: none; }
-/* Chevron points down when open, right when collapsed. */
 details:not([open]) .chevron { transform: rotate(-90deg); }
-::selection { background: rgba(124, 127, 255, 0.3); color: #fff; }
+
+::selection { background: var(--vault-tint); color: var(--ink); }
 ::-webkit-scrollbar { width: 11px; height: 11px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(130, 130, 150, 0.32);
-  border-radius: 99px;
+  background: var(--line-strong);
+  border-radius: 0;
   border: 3px solid transparent;
   background-clip: padding-box;
 }
 
-/* ── Cursor experience (landing) ──────────────────────────────────────────────
-   A soft light that follows the pointer — in neumorphism the light source is
-   the design, so moving it with the cursor makes the whole page feel alive.
-   Plus a tactile "press" ripple on click. Desktop-only, reduced-motion aware
-   (both gated in the component). */
-.cursor-glow {
-  /* Hidden by default: on touch devices the pointer script never runs, so
-     without this the glow sits over the page at full strength forever. */
-  opacity: 0;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 700px;
-  height: 700px;
-  margin: -350px 0 0 -350px;
-  border-radius: 50%;
-  pointer-events: none;
-  /* Above the sticky nav (z-20) so the light sweeps across it instead of
-     cutting off at its edge; below toasts (z-50). Pointer-events: none. */
-  z-index: 30;
-  background: radial-gradient(
-    circle,
-    rgba(124, 127, 255, 0.09) 0%,
-    rgba(124, 127, 255, 0.04) 35%,
-    transparent 70%
-  );
-  will-change: transform;
-}
-html.light .cursor-glow {
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.85) 0%,
-    rgba(91, 94, 240, 0.05) 40%,
-    transparent 70%
-  );
-  mix-blend-mode: soft-light;
-}
+/* The cursor glow belonged to the old world. Kept as an inert no-op so the
+   existing component renders nothing rather than 404-ing on the class. */
+.cursor-glow { display: none; }
+.click-ripple { display: none; }
 
-/* Click effect: a barely-there pressure ring, like the surface itself reacting.
-   No color, no glow — a faint neutral ring that expands and dissolves. */
-.click-ripple {
-  position: fixed;
-  width: 88px;
-  height: 88px;
-  margin: -44px 0 0 -44px;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  filter: blur(0.6px);
-  pointer-events: none;
-  z-index: 31;
-  animation: ripple-press 0.5s ease-out forwards;
-}
-html.light .click-ripple {
-  border-color: rgba(40, 42, 52, 0.16);
-}
-@keyframes ripple-press {
-  0%   { transform: scale(0.35); opacity: 0.8; }
-  100% { transform: scale(1); opacity: 0; }
-}
-
-/* ── Motion: a single quiet entrance ──────────────────────────────────────── */
+/* ── Motion: a single quiet entrance, like a pen entry ────────────────────── */
 @keyframes rise {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 .animate-in { animation: rise 0.5s ease both; }
-
 @media (prefers-reduced-motion: reduce) {
   .animate-in { animation: none; }
+  .stamp-land { animation: none; }
 }

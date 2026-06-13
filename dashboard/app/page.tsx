@@ -1,131 +1,72 @@
 import Link from "next/link";
-import { CodeBlock } from "@/components/marketing/code-block";
-import { CursorFx } from "@/components/cursor-fx";
 import { SiteNav } from "@/components/site-nav";
 import { Wordmark } from "@/components/wordmark";
-import {
-  IconCap,
-  IconLayers,
-  IconPower,
-  IconShield,
-  IconStream,
-  IconZap,
-} from "@/components/marketing/icons";
 
 export const metadata = {
-  title: "Allowance: One key. Every API. A hard cap.",
+  title: "Allowance: pocket money for software.",
   description:
-    "Route all your API spend through one key, with a spending cap your apps and agents can never exceed and an instant kill switch. Works with any API.",
+    "Your apps and agents get one key with a hard cap. At zero, the answer is no. Leaked? Revoke it and it's dead everywhere in seconds. Works with any API.",
 };
 
-// The live proxy host.
 const PROXY = "https://api.getallowance.dev";
-
-const HERO_CODE = `# Keep your code. Point the base URL at Allowance.
-curl ${PROXY}/v1/proxy/chat/completions \\
-  -H "Authorization: Bearer alw_live_your_key" \\
-  -d '{ "model": "gpt-4o-mini", "messages": [ ... ] }'`;
 
 const steps = [
   {
     n: "01",
-    title: "Set a budget",
-    body: "Tell Allowance how much your apps and agents may spend. That cap is the ceiling, nothing can ever go past it.",
+    title: "Set the cap",
+    body: "Decide what your software may spend. That number is a wall, not a suggestion.",
   },
   {
     n: "02",
-    title: "Connect your APIs",
-    body: "Add a service and its key. We vault the secret and hand you one key to use everywhere.",
+    title: "Seal your keys",
+    body: "Hand us the real credentials. We encrypt them and hand back one allowance.",
   },
   {
     n: "03",
-    title: "Route your traffic",
-    body: "Point your base URL at Allowance. We meter each call and stop at zero with a 402.",
+    title: "Route and relax",
+    body: "Point your base URL at us. Every call is metered. At zero: declined.",
   },
 ];
 
-const features = [
-  { icon: IconCap, title: "A hard cap", body: "At zero, the next call stops with a 402. No overdraft." },
-  { icon: IconPower, title: "Instant kill switch", body: "Revoke a key and it dies within seconds." },
-  { icon: IconLayers, title: "Any API", body: "Not just AI. Maps, SMS, data, your own services." },
-  { icon: IconStream, title: "Streaming", body: "Token streams pass straight through, in real time." },
-  { icon: IconShield, title: "Sealed keys", body: "Real credentials are encrypted and never logged." },
-  { icon: IconZap, title: "Agent-aware", body: "Spend headers on every response, self-inspection at /v1/me, webhooks at 50/80/100%." },
+const facts = [
+  ["A hard cap", "At zero, the next call is declined. No overdraft."],
+  ["Instant revoke", "Kill a key and it's dead everywhere within seconds."],
+  ["Any API", "Not just AI. Maps, SMS, data, your own services."],
+  ["Streaming", "Token streams pass straight through, in real time."],
+  ["Sealed keys", "Real credentials are encrypted and never logged."],
+  ["Pocket money", "Hand a sub-agent a capped child key. It can't exceed it."],
 ];
 
-// Only claims that are actually enforced/built today. Update as features land.
-const plans = [
-  {
-    name: "Free",
-    price: "$0",
-    cadence: "",
-    features: [
-      "5,000 requests / mo",
-      "Hard budget cap + kill switch",
-      "Projects, keys, rotation, ephemeral keys",
-      "Monthly auto-refill + spend webhooks",
-      "Low-budget email alerts",
-    ],
-    cta: "Start free",
-    highlight: false,
-  },
-  {
-    name: "Pro",
-    price: "$20",
-    cadence: "/mo",
-    features: [
-      "Everything in Free",
-      "No monthly request cap (fair use)",
-      "Usage analytics (trends + top services)",
-    ],
-    cta: "Upgrade",
-    highlight: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    cadence: "",
-    features: ["Custom limits", "Team features on request", "Priority support"],
-    cta: "Contact us",
-    highlight: false,
-  },
-];
-
-function Eyebrow({ children }: { children: string }) {
-  return (
-    <p className="text-xs font-medium uppercase tracking-[0.2em] text-[var(--text-faint)]">
-      {children}
-    </p>
-  );
+function Caps({ children }: { children: string }) {
+  return <p className="label-caps">{children}</p>;
 }
 
 export default function Landing() {
   return (
     <div className="min-h-screen">
-      <CursorFx />
       <SiteNav />
 
       {/* Hero */}
       <section className="mx-auto max-w-3xl px-6 pt-20 pb-24 text-center animate-in">
-        <Eyebrow>Spend control for APIs and AI agents</Eyebrow>
-        <h1 className="mx-auto mt-7 text-6xl font-semibold leading-[1.05] tracking-[-0.03em] sm:text-7xl">
-          One key. Every API.
+        <Caps>Spend control for software that spends</Caps>
+        <h1 className="font-display mx-auto mt-7 text-6xl sm:text-7xl">
+          Pocket money
           <br />
-          <span className="text-accent">A hard cap.</span>
+          for software.
         </h1>
         <p className="mx-auto mt-8 max-w-xl text-[17px] leading-relaxed text-[var(--text-muted)]">
-          Route every API your apps and agents call through one key. Set a
-          spending cap they can never exceed, and kill a leaked key in a click.
+          Your apps and agents get one key with a hard cap. At zero, the answer
+          is no. Leaked? Revoke it and it&apos;s dead everywhere in seconds.
         </p>
         <div className="mt-10 flex items-center justify-center gap-3">
-          <Link href="/login" className="btn-accent px-6 py-3">
-            Get started
+          <Link href="/login" className="btn-accent px-6 py-3 text-sm">
+            Open an account
           </Link>
           <Link
             href="/docs"
             className="neu-sm pressable px-6 py-3 text-sm font-medium text-[var(--text-muted)]"
           >
-            Read the docs
+            Read the ledger
           </Link>
         </div>
         <a
@@ -137,26 +78,48 @@ export default function Landing() {
           </svg>
           Open source. Verify every claim in the code.
         </a>
-        <div className="mx-auto mt-16 max-w-xl text-left">
-          <CodeBlock code={HERO_CODE} label="your terminal" />
+
+        {/* Hero receipt: the canonical money display, not a fake terminal. */}
+        <div className="receipt mx-auto mt-16 max-w-md p-6 text-left text-sm">
+          <div className="flex items-center justify-between">
+            <span className="label-caps">Allowance · this month</span>
+            <span className="text-xs text-[var(--text-faint)]">UTC</span>
+          </div>
+          <div className="mt-5 receipt-line">
+            <span className="text-[var(--text-muted)]">gpt-4o-mini</span>
+            <span className="leader" />
+            <span className="tabular-nums text-[var(--text-muted)]">-$3.58</span>
+          </div>
+          <div className="mt-2 receipt-line">
+            <span className="text-[var(--text-muted)]">maps · geocode</span>
+            <span className="leader" />
+            <span className="tabular-nums text-[var(--text-muted)]">-$0.41</span>
+          </div>
+          <div className="mt-2 receipt-line">
+            <span className="text-[var(--text-muted)]">sub-agent · research</span>
+            <span className="leader" />
+            <span className="tabular-nums text-[var(--text-muted)]">-$0.59</span>
+          </div>
+          <div className="my-4 border-t border-dashed border-[var(--line-strong)]" />
+          <div className="receipt-line text-base">
+            <span className="text-[var(--text)]">Left of $5.00 cap</span>
+            <span className="leader" />
+            <span className="tabular-nums font-medium text-[var(--vault)]">$0.42</span>
+          </div>
         </div>
       </section>
 
       {/* How it works */}
-      <section className="mx-auto max-w-5xl px-6 py-24">
+      <section className="mx-auto max-w-5xl px-6 py-20">
         <div className="text-center">
-          <Eyebrow>How it works</Eyebrow>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight">
-            Three steps to a budget you control
-          </h2>
+          <Caps>How it works</Caps>
+          <h2 className="font-display mt-4 text-4xl">Three steps to a wall</h2>
         </div>
-        <div className="mt-16 grid gap-6 md:grid-cols-3">
+        <div className="mt-14 grid gap-px overflow-hidden rounded border border-[var(--line)] bg-[var(--line)] md:grid-cols-3">
           {steps.map((s) => (
-            <div key={s.n} className="neu p-7">
-              <span className="font-mono text-sm text-accent">{s.n}</span>
-              <h3 className="mt-5 text-lg font-medium tracking-tight">
-                {s.title}
-              </h3>
+            <div key={s.n} className="bg-[var(--bg)] p-8">
+              <span className="font-mono text-sm text-[var(--vault)]">{s.n}</span>
+              <h3 className="font-display mt-4 text-xl">{s.title}</h3>
               <p className="mt-2.5 text-sm leading-relaxed text-[var(--text-muted)]">
                 {s.body}
               </p>
@@ -165,194 +128,115 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features */}
-      <section className="mx-auto max-w-5xl px-6 py-24">
-        <div className="text-center">
-          <Eyebrow>Why Allowance</Eyebrow>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight">
-            A budget and a kill switch, built in
-          </h2>
-        </div>
-        <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f) => {
-            const Icon = f.icon;
-            return (
-              <div key={f.title} className="neu p-6">
-                <div className="neu-inset-sm grid h-10 w-10 place-items-center text-accent">
-                  <Icon />
-                </div>
-                <h3 className="mt-5 font-medium tracking-tight">{f.title}</h3>
-                <p className="mt-1.5 text-sm leading-relaxed text-[var(--text-muted)]">
-                  {f.body}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
       {/* Built for agents */}
-      <section className="mx-auto max-w-5xl px-6 py-24">
+      <section className="mx-auto max-w-5xl px-6 py-20">
         <div className="grid items-center gap-12 md:grid-cols-2">
           <div>
-            <Eyebrow>Built for agents</Eyebrow>
-            <h2 className="mt-4 text-3xl font-semibold tracking-tight">
+            <Caps>Built for agents</Caps>
+            <h2 className="font-display mt-4 text-4xl">
               Your agent can read
               <br />
-              its own budget
+              its own allowance.
             </h2>
-            <p className="mt-5 max-w-md text-[15px] leading-relaxed text-[var(--text-muted)]">
-              A hard wall is hostile to autonomous agents. Allowance makes the
-              wall visible from a distance: every response carries spend
-              headers, a key can inspect itself at{" "}
-              <code className="font-mono text-sm text-[var(--text)]">
-                /v1/me
-              </code>
-              , and every 402 explains what tripped and what to do next. So an
-              agent finishes the task on a cheaper model instead of dying
-              mid-run.
+            <p className="mt-6 max-w-md text-[15px] leading-relaxed text-[var(--text-muted)]">
+              A wall you can&apos;t see is hostile. Ours is visible from a
+              distance: spend headers on every response, self-inspection at{" "}
+              <span className="font-mono text-[var(--text)]">/v1/me</span>, and a
+              402 that explains what tripped and what to do. Agents finish the
+              job on a cheaper model instead of dying mid-run. They can even hand
+              a sub-agent its own pocket money.
             </p>
-            <ul className="mt-6 space-y-2.5 text-sm text-[var(--text-muted)]">
-              <li className="flex gap-2.5">
-                <span className="text-accent">→</span>
-                x-allowance-* headers on every response
-              </li>
-              <li className="flex gap-2.5">
-                <span className="text-accent">→</span>
-                Webhooks at 50%, 80%, and 100% of budget
-              </li>
-              <li className="flex gap-2.5">
-                <span className="text-accent">→</span>
-                MCP server: budget tools your agent calls itself
-              </li>
-            </ul>
             <a
               href="https://github.com/9atar6/allowance/tree/main/mcp"
-              className="mt-7 inline-block text-sm font-medium text-[var(--accent)] hover:underline"
+              className="mt-7 inline-block text-sm font-medium text-[var(--vault)] hover:underline"
             >
-              Get allowance-mcp →
+              Get the MCP server →
             </a>
           </div>
-          <CodeBlock
-            label="your agent, mid-task"
-            code={`> check_budget
+          <div className="receipt p-6 text-sm">
+            <span className="label-caps">your agent, mid-task</span>
+            <pre className="mt-4 overflow-x-auto font-mono text-[13px] leading-relaxed text-[var(--text-muted)]">
+{`> check_budget
 
 {
   "plan": "pro",
   "budgetRemaining": 1.42,
   "dailyCap": {
     "limit": 5,
-    "spent": 3.58,
     "remaining": 1.42
   }
 }
 
 # 71% spent. Switching to
-# gpt-4o-mini to finish the run.`}
-          />
+# gpt-4o-mini to finish.`}
+            </pre>
+          </div>
         </div>
       </section>
 
-      {/* Pricing */}
-      <section className="mx-auto max-w-5xl px-6 py-24">
+      {/* Why — the ledger of facts */}
+      <section className="mx-auto max-w-5xl px-6 py-20">
         <div className="text-center">
-          <Eyebrow>Pricing</Eyebrow>
-          <h2 className="mt-4 text-3xl font-semibold tracking-tight">
-            Fair, and free to start
-          </h2>
-          <p className="mx-auto mt-4 max-w-lg text-[var(--text-muted)]">
-            We never mark up your AI. You pay for the gateway, not the tokens.
-          </p>
+          <Caps>What you get</Caps>
+          <h2 className="font-display mt-4 text-4xl">A wall and a kill switch</h2>
         </div>
-        <div className="mt-16 grid gap-6 md:grid-cols-3">
-          {plans.map((p) => (
-            <div
-              key={p.name}
-              className={`flex flex-col p-7 ${p.highlight ? "neu-lg" : "neu"}`}
-            >
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium tracking-tight">{p.name}</h3>
-                {p.highlight && (
-                  <span className="neu-inset-sm px-2.5 py-1 text-[11px] font-medium text-accent">
-                    Popular
-                  </span>
-                )}
-              </div>
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-semibold tracking-tight">
-                  {p.price}
-                </span>
-                <span className="text-sm text-[var(--text-faint)]">
-                  {p.cadence}
-                </span>
-              </div>
-              <ul className="mt-7 flex-1 space-y-3 text-sm">
-                {p.features.map((f) => (
-                  <li key={f} className="flex gap-2.5 text-[var(--text-muted)]">
-                    <span className="text-accent">·</span>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                href="/login"
-                className={`mt-8 px-4 py-2.5 text-center text-sm font-medium ${
-                  p.highlight
-                    ? "btn-accent"
-                    : "neu-sm pressable text-[var(--text-muted)]"
-                }`}
-              >
-                {p.cta}
-              </Link>
+        <div className="mt-14 grid gap-px overflow-hidden rounded border border-[var(--line)] bg-[var(--line)] sm:grid-cols-2 lg:grid-cols-3">
+          {facts.map(([title, body]) => (
+            <div key={title} className="bg-[var(--bg)] p-6">
+              <h3 className="font-display text-lg">{title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-[var(--text-muted)]">
+                {body}
+              </p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="mx-auto max-w-3xl px-6 py-24">
-        <div className="neu-lg px-8 py-16 text-center">
-          <h2 className="text-4xl font-semibold tracking-tight">
-            Give your agents an <span className="text-accent">allowance</span>.
-          </h2>
-          <p className="mx-auto mt-4 max-w-md text-[var(--text-muted)]">
-            A budget your apps and agents can never blow past. Two minutes to
-            start.
-          </p>
-          <Link href="/login" className="btn-accent mt-9 inline-block px-7 py-3">
-            Get started
-          </Link>
+      {/* Pricing */}
+      <section className="mx-auto max-w-3xl px-6 py-20 text-center">
+        <Caps>Pricing</Caps>
+        <h2 className="font-display mt-4 text-4xl">Free to start</h2>
+        <p className="mx-auto mt-5 max-w-lg text-[var(--text-muted)]">
+          We never mark up your tokens. Your providers bill you directly, as
+          before. You pay for the ledger, not the spend.
+        </p>
+        <div className="mx-auto mt-12 grid max-w-3xl gap-px overflow-hidden rounded border border-[var(--line)] bg-[var(--line)] sm:grid-cols-3 text-left">
+          {[
+            ["Free", "$0", ["5,000 requests / mo", "Hard cap + kill switch", "Projects, keys, pocket money", "Rotation + ephemeral keys"]],
+            ["Pro", "$20", ["Everything in Free", "No monthly request cap", "Usage analytics", "Spend webhooks"]],
+            ["Self-host", "$0", ["Run your own instance", "Your Supabase + Cloudflare", "We see nothing", "MIT licensed"]],
+          ].map(([name, price, feats]) => (
+            <div key={name as string} className="bg-[var(--bg)] p-7">
+              <h3 className="font-display text-xl">{name as string}</h3>
+              <p className="mt-3 font-mono text-3xl tabular-nums">{price as string}</p>
+              <ul className="mt-6 space-y-2.5 text-sm text-[var(--text-muted)]">
+                {(feats as string[]).map((f) => (
+                  <li key={f} className="flex gap-2.5">
+                    <span className="text-[var(--vault)]">·</span>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-6 py-10 text-sm text-[var(--text-faint)] sm:flex-row">
-        <Wordmark />
-        <div className="flex gap-6">
-          <Link href="/docs" className="transition-colors hover:text-[var(--text)]">
-            Docs
-          </Link>
-          <Link href="/security" className="transition-colors hover:text-[var(--text)]">
-            Security
-          </Link>
-          <Link href="/terms" className="transition-colors hover:text-[var(--text)]">
-            Terms
-          </Link>
-          <Link href="/privacy" className="transition-colors hover:text-[var(--text)]">
-            Privacy
-          </Link>
-          <a
-            href="https://github.com/9atar6/allowance"
-            className="transition-colors hover:text-[var(--text)]"
-          >
-            GitHub
-          </a>
-          <a
-            href="https://stats.uptimerobot.com/bewvMY4MqN"
-            className="transition-colors hover:text-[var(--text)]"
-          >
-            Status
-          </a>
+      <footer className="mx-auto mt-12 max-w-5xl px-6 py-12">
+        <div className="border-t border-[var(--line)] pt-10">
+          <p className="font-display text-2xl">Allow once.</p>
+          <div className="mt-6 flex flex-col items-start justify-between gap-4 text-sm text-[var(--text-faint)] sm:flex-row sm:items-center">
+            <Wordmark />
+            <div className="flex flex-wrap gap-6">
+              <Link href="/docs" className="hover:text-[var(--text)]">Docs</Link>
+              <Link href="/security" className="hover:text-[var(--text)]">Security</Link>
+              <Link href="/terms" className="hover:text-[var(--text)]">Terms</Link>
+              <Link href="/privacy" className="hover:text-[var(--text)]">Privacy</Link>
+              <a href="https://github.com/9atar6/allowance" className="hover:text-[var(--text)]">GitHub</a>
+              <a href="https://stats.uptimerobot.com/bewvMY4MqN" className="hover:text-[var(--text)]">Status</a>
+            </div>
+          </div>
         </div>
       </footer>
     </div>
