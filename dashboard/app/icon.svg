@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- Allowance mark: a single ink "a" inside a stamped ring, on paper. -->
-  <rect x="0" y="0" width="64" height="64" rx="12" fill="#F5F4EE"/>
-  <circle cx="32" cy="32" r="24" fill="none" stroke="#191C19" stroke-width="3.5" transform="rotate(-4 32 32)"/>
-  <text x="32" y="42" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#191C19">a</text>
+  <!-- Round mark: paper disc, stamped ink ring, centered ink "a". No square. -->
+  <circle cx="32" cy="32" r="32" fill="#F5F4EE"/>
+  <circle cx="32" cy="32" r="25" fill="none" stroke="#191C19" stroke-width="4" transform="rotate(-4 32 32)"/>
+  <text x="32" y="40" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#191C19">a</text>
 </svg>

@@ -54,14 +54,11 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2">
-        <CardTitle>Plan</CardTitle>
-        <span className="text-sm font-medium text-[var(--text)]">
-          {planLabel(plan)}
-        </span>
-      </div>
+      {/* Mirror the Budget column: small-caps label over a big value. */}
+      <CardTitle>Plan</CardTitle>
+      <p className="font-display mt-3 text-4xl leading-none">{planLabel(plan)}</p>
 
-      <div className="mt-4">
+      <div className="mt-6">
         <div className="flex justify-between text-xs text-[var(--text-faint)]">
           <span>Requests this month</span>
           <span className="font-mono tabular-nums">

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -18,7 +19,7 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-sm animate-in">
-        <Wordmark />
+        <Link href="/"><Wordmark /></Link>
         <CardTitle className="mt-6 mb-6">Sign in</CardTitle>
 
         {/* OAuth */}

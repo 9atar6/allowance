@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ActivityTable, type ActivityRow } from "@/components/activity-table";
 import { CollapsibleCard } from "@/components/collapsible-card";
 import {
@@ -269,7 +270,7 @@ export default async function DashboardPage({
       <Toaster />
       {/* Top bar */}
       <header className="flex items-center justify-between py-7">
-        <Wordmark />
+        <Link href="/"><Wordmark /></Link>
         <div className="flex items-center gap-3">
           <span
             className={`px-3 py-1 text-xs font-medium ${

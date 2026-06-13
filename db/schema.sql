@@ -1111,6 +1111,9 @@ grant execute on function public.get_proxy_context(text) to proxy_worker;
 grant execute on function public.debit_wallet(uuid,uuid,numeric,text,int,int,int,int,int) to proxy_worker;
 grant execute on function public.wallets_needing_low_balance_alert() to proxy_worker;
 grant execute on function public.mark_low_balance_alerted(uuid) to proxy_worker;
+-- issue_child_key is granted again here (its earlier grant in the sub-budgets
+-- section runs BEFORE this revoke-all and would otherwise be stripped).
+grant execute on function public.issue_child_key(text,text,text,numeric,timestamptz,text) to proxy_worker;
 
 -- =============================================================================
 -- debit_wallet v2: always record a served call (may go negative once)

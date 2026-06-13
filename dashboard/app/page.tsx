@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { HeroField } from "@/components/hero-field";
 import { SiteNav } from "@/components/site-nav";
 import { Wordmark } from "@/components/wordmark";
 
@@ -47,7 +48,8 @@ export default function Landing() {
       <SiteNav />
 
       {/* Hero */}
-      <section className="mx-auto max-w-3xl px-6 pt-20 pb-24 text-center animate-in">
+      <section className="relative mx-auto max-w-3xl px-6 pt-20 pb-24 text-center animate-in">
+        <HeroField />
         <Caps>Spend control for software that spends</Caps>
         <h1 className="font-display mx-auto mt-7 text-6xl sm:text-7xl">
           Pocket money
@@ -242,7 +244,7 @@ export default function Landing() {
         <div className="border-t border-[var(--line)] pt-10">
           <p className="font-display text-2xl">Allow once.</p>
           <div className="mt-6 flex flex-col items-start justify-between gap-4 text-sm text-[var(--text-faint)] sm:flex-row sm:items-center">
-            <Wordmark />
+            <Link href="/"><Wordmark /></Link>
             <div className="flex flex-wrap gap-6">
               <Link href="/docs" className="hover:text-[var(--text)]">Docs</Link>
               <Link href="/security" className="hover:text-[var(--text)]">Security</Link>

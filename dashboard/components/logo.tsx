@@ -26,7 +26,7 @@ export function LogoMark({ size = 28 }: { size?: number }) {
          centered regardless of how the renderer treats dominant-baseline. */}
       <text
         x="32"
-        y="41.5"
+        y="40"
         textAnchor="middle"
         fontFamily="Sentient, Georgia, serif"
         fontSize="32"
