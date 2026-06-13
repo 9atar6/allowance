@@ -8,8 +8,10 @@ export function Button({ className, variant = "primary", ...props }: Props) {
   const styles = {
     primary: "btn-accent",
     ghost: "neu-sm pressable text-[var(--text-muted)] hover:text-[var(--text)]",
+    // Destructive: stamp-red outline that fills on hover/confirm. Red is
+    // earned — it only appears where money stops.
     danger:
-      "neu-sm pressable text-red-400 hover:text-red-300",
+      "rounded-[4px] border border-[var(--stamp)] text-[var(--stamp)] transition-colors hover:bg-[var(--stamp)] hover:text-[var(--paper)]",
   }[variant];
 
   return (

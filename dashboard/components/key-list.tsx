@@ -50,6 +50,8 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState<string | null>(null);
   const [rotatedKey, setRotatedKey] = useState<string | null>(null);
+  // The key id whose REVOKED stamp should animate (the one just revoked).
+  const [justRevoked, setJustRevoked] = useState<string | null>(null);
 
   if (keys.length === 0) {
     return <p className="text-xs text-[var(--text-faint)]">No keys yet.</p>;
@@ -60,7 +62,10 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
     startTransition(async () => {
       const res = await revokeProxyKey(id);
       if (!res.ok) toast(res.error ?? "Failed to revoke the key.", "error");
-      else toast("Key revoked. It stops working within seconds.");
+      else {
+        setJustRevoked(id);
+        toast("Revoked. It's dead everywhere within seconds.");
+      }
       setBusy(null);
     });
   }
@@ -129,7 +134,13 @@ export function KeyList({ keys }: { keys: KeyItem[] }) {
                   {k.keyPrefix}…
                 </code>
                 {!k.isActive && (
-                  <span className="text-[var(--text-faint)]">(revoked)</span>
+                  <span
+                    className={`stamp text-[10px] ${
+                      justRevoked === k.id ? "stamp-land" : ""
+                    }`}
+                  >
+                    Revoked
+                  </span>
                 )}
                 {isExpiringSoon(k) && (
                   <span className="text-amber-500">(expiring)</span>

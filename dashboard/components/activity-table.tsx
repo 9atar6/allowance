@@ -52,13 +52,13 @@ export function ActivityTable({ rows }: { rows: ActivityRow[] }) {
                 {r.status ?? "-"}
               </td>
               <td
-                className={`py-2.5 text-right tabular-nums ${
+                className={`py-2.5 text-right font-mono tabular-nums ${
                   credit ? "text-[var(--accent)]" : "text-[var(--text)]"
                 }`}
               >
                 {formatSignedUsd(r.amount)}
               </td>
-              <td className="py-2.5 text-right tabular-nums text-[var(--text-muted)]">
+              <td className="py-2.5 text-right font-mono tabular-nums text-[var(--text-muted)]">
                 {formatUsd(r.balanceAfter)}
               </td>
             </tr>

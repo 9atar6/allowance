@@ -64,7 +64,7 @@ export function PlanCard({ plan, used, limit, periodEnd }: Props) {
       <div className="mt-4">
         <div className="flex justify-between text-xs text-[var(--text-faint)]">
           <span>Requests this month</span>
-          <span className="tabular-nums">
+          <span className="font-mono tabular-nums">
             {formatInt(used)}
             {limit != null ? ` / ${formatInt(limit)}` : ""}
           </span>
