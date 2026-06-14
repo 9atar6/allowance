@@ -5,10 +5,15 @@
   "compatibility_date": "2025-03-25",
   // nodejs_compat is required by OpenNext (Next.js server relies on Node APIs).
   "compatibility_flags": ["nodejs_compat"],
+  // Keep the *.workers.dev preview URL alive alongside the custom domain.
+  "workers_dev": true,
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  // Production domain. Cloudflare manages the proxied DNS record for this
+  // custom domain; the worker serves getallowance.dev directly.
+  "routes": [{ "pattern": "getallowance.dev", "custom_domain": true }],
   "observability": {
     "enabled": true
   },
