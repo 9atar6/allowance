@@ -175,6 +175,35 @@ describe("proxy handler", () => {
     expect(res.status).toBe(400);
   });
 
+  it("never injects stream frames into a non-streaming JSON body (per-token, low balance)", async () => {
+    // A per-token call with a low balance whose JSON body is large enough that
+    // the guard's estimate would 'exceed' — but it's NOT a stream, so the guard
+    // must stay off and the JSON must pass through intact.
+    const big = "x".repeat(4000); // ~1000 estimated tokens
+    const ctl = newCtl({
+      proxyContext: projectContext(
+        [makeRoute("chat", { metering_mode: "per_token", output_token_cost: 0.01 })],
+        { balance: 0.5 },
+      ),
+      makeUpstream: () =>
+        new Response(JSON.stringify({ data: big }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    });
+    installFetch(ctl);
+    const { ctx, flush } = makeCtx();
+
+    const res = await app.fetch(proxyRequest(), makeEnv(), ctx);
+    const text = await res.text();
+    await flush();
+
+    expect(res.status).toBe(200);
+    expect(text).not.toContain("[DONE]");
+    expect(text).not.toContain("finish_reason");
+    expect(() => JSON.parse(text)).not.toThrow(); // body intact, still valid JSON
+  });
+
   it("402s at zero balance even when the flat estimate is 0 (per-token)", async () => {
     // Per-token connections store cost_per_request = 0; "balance < cost" alone
     // (0 < 0) would never trip. The gate must fire on balance <= 0 by itself.

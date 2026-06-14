@@ -341,16 +341,21 @@ app.all(`${PROXY_BASE_PATH}/*`, authMiddleware, async (c) => {
   // Register ONE waitUntil synchronously (before returning) that keeps the
   // worker alive until the body finishes piping, then settles. Scheduling
   // waitUntil from a later callback would be dropped by the runtime.
-  // Mid-stream budget guard: only for per-token billing with a finite balance,
-  // so normal traffic streams through untouched. Caps the overshoot a single
-  // long generation could cause before settlement runs.
-  const guard = guardApplies(active.meteringMode, ctx.balance)
-    ? {
-        inputTokenCost: active.inputTokenCost,
-        outputTokenCost: active.outputTokenCost,
-        balanceRemaining: ctx.balance,
-      }
-    : undefined;
+  // Mid-stream budget guard: only for per-token billing with a finite balance
+  // AND only on a real SSE stream. The guard injects terminal SSE frames, so it
+  // must never touch a non-streaming JSON body (it would corrupt it). A regular
+  // JSON response just settles afterwards, as before.
+  const isEventStream = (upstream.headers.get("content-type") ?? "")
+    .toLowerCase()
+    .includes("text/event-stream");
+  const guard =
+    isEventStream && guardApplies(active.meteringMode, ctx.balance)
+      ? {
+          inputTokenCost: active.inputTokenCost,
+          outputTokenCost: active.outputTokenCost,
+          balanceRemaining: ctx.balance,
+        }
+      : undefined;
   const { response, done } = streamWithCount(upstream, guard);
   const withSpend = withExtraHeaders(response, spendHeaders(spend));
 
