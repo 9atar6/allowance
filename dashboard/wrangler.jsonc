@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "allowance-dashboard",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-03-25",
+  // nodejs_compat is required by OpenNext (Next.js server relies on Node APIs).
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  // Public, build-safe values. Server-only secrets (SUPABASE_SERVICE_ROLE_KEY,
+  // POLAR_*, PROXY_PURGE_SECRET) are set with `wrangler secret put`, never here.
+  "vars": {
+    "PROXY_KEY_PREFIX": "alw_live_",
+    "NEXT_PUBLIC_APP_URL": "https://getallowance.dev"
+  }
+}

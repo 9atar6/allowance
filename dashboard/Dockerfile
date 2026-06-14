@@ -20,6 +20,9 @@ ARG NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
     NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+# DOCKER_BUILD=1 selects Next's standalone output (server.js); the default
+# build is reserved for the Cloudflare/OpenNext deploy.
+ENV DOCKER_BUILD=1
 RUN npm run build
 
 FROM node:22-alpine AS runner

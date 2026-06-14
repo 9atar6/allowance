@@ -10,9 +10,11 @@ node_modules/
 
 # Build output
 .next/
+.open-next/
 dist/
 .vercel/
 .wrangler/
+.dev.vars
 *.tsbuildinfo
 
 # Supabase local
