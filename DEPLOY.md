@@ -35,15 +35,28 @@ npx wrangler kv namespace create WALLET_KV --preview
 
 # Secrets (never put these in wrangler.jsonc):
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"  # → EDGE_ENCRYPTION_KEY
-npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+
+# IMPORTANT — the proxy must NOT hold the raw service_role key. Mint a JWT for
+# the restricted `proxy_worker` role (it can execute only the granted RPCs and
+# touch nothing else), and store THAT as SUPABASE_SERVICE_ROLE_KEY:
+#   $env:SUPABASE_JWT_SECRET="<Supabase > Settings > API > JWT (legacy) secret>"
+#   node scripts/mint-worker-jwt.mjs        # prints the proxy_worker JWT
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY   # ← paste the minted JWT, not the raw key
 npx wrangler secret put EDGE_ENCRYPTION_KEY
 npx wrangler secret put ADMIN_PURGE_SECRET  # must equal dashboard PROXY_PURGE_SECRET
 npx wrangler secret put RESEND_API_KEY      # optional: low-budget alert emails
 npx wrangler secret put ALERT_WEBHOOK_URL   # optional: Slack/Discord error alerts
 
-# Set the non-secret SUPABASE_URL in wrangler.jsonc "vars", then:
+# Set the non-secret SUPABASE_URL and SUPABASE_ANON_KEY in wrangler.jsonc "vars"
+# (the anon key fills PostgREST's apikey slot; the JWT above does the auth), then:
 npx wrangler deploy
 ```
+
+> Why a JWT and not the service_role key: PostgREST resolves the bearer token's
+> `role` claim, so the minted token authenticates as `proxy_worker` — a role
+> that can execute only the handful of granted RPCs (all `SECURITY DEFINER`) and
+> read/write nothing directly. Using the raw service_role key would give the
+> edge an RLS-bypassing admin credential, which the design specifically avoids.
 
 Edit `wrangler.jsonc`:
 - `kv_namespaces[0].id` / `preview_id` → the ids printed above.

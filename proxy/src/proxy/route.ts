@@ -12,7 +12,7 @@ import type { ActiveRequest, ResolvedContext, ResolvedEndpoint } from "../types"
 export type ResolveError = "inactive" | "unknown_service";
 
 /** First path segment after the proxy base, e.g. "/v1/proxy/openai/x" -> "openai". */
-export function serviceSlug(reqUrl: string): string | null {
+function serviceSlug(reqUrl: string): string | null {
   const { pathname } = new URL(reqUrl);
   const rest = pathname.startsWith(PROXY_BASE_PATH)
     ? pathname.slice(PROXY_BASE_PATH.length)

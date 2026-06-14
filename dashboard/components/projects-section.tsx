@@ -25,7 +25,7 @@ export interface ConnectionOption {
   id: string;
   name: string;
 }
-export interface ProjectKeyRow {
+interface ProjectKeyRow {
   id: string;
   key_prefix: string;
   is_active: boolean;

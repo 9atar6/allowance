@@ -35,7 +35,12 @@ dashboard is a normal Next.js app and **does** containerize; a Dockerfile and
 npm install
 npx wrangler kv namespace create WALLET_KV          # note the id it prints
 # put the id into wrangler.jsonc (kv_namespaces[0].id)
-npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY   # from Supabase > Settings > API
+
+# Mint a JWT for the restricted proxy_worker role (NOT the raw service_role key,
+# so the edge never holds an RLS-bypassing admin credential):
+#   $env:SUPABASE_JWT_SECRET="<Supabase > Settings > API > JWT (legacy) secret>"
+#   node scripts/mint-worker-jwt.mjs
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY   # paste the minted proxy_worker JWT
 npx wrangler secret put EDGE_ENCRYPTION_KEY         # see below to generate
 npx wrangler deploy
 ```

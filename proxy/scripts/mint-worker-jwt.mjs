@@ -5,7 +5,7 @@
 //   node proxy/scripts/mint-worker-jwt.mjs
 //   Remove-Item Env:SUPABASE_JWT_SECRET
 //
-// The output token can ONLY execute the 4 RPCs granted to proxy_worker in
+// The output token can ONLY execute the RPCs granted to proxy_worker in
 // db/schema.sql. Set it as the worker's SUPABASE_SERVICE_ROLE_KEY secret.
 // Runs locally with zero dependencies; the secret never leaves your machine.
 

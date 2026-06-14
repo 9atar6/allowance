@@ -8,7 +8,7 @@
 
 import type { Env } from "../types";
 
-export async function sendAlert(env: Env, message: string): Promise<void> {
+async function sendAlert(env: Env, message: string): Promise<void> {
   if (!env.ALERT_WEBHOOK_URL) return;
   try {
     await fetch(env.ALERT_WEBHOOK_URL, {

@@ -191,8 +191,6 @@ export default async function DashboardPage({
     })
     .filter((a): a is AttachmentRow => a !== null);
   const isPro = plan !== "free";
-  const serviceName = (id: string | null) =>
-    (id && endpointNames.get(id)) || "Unknown";
   const serviceNames = Object.fromEntries(endpointNames);
 
   // Fresh account → guided onboarding instead of the full sections.

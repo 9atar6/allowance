@@ -9,8 +9,6 @@ export const metadata = {
     "Your apps and agents get one key with a hard cap. At zero, the answer is no. Leaked? Revoke it and it's dead everywhere in seconds. Works with any API.",
 };
 
-const PROXY = "https://api.getallowance.dev";
-
 const steps = [
   {
     n: "01",
