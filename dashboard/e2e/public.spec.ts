@@ -34,6 +34,17 @@ test("landing: hero, open-source badge, and footer links", async ({ page }) => {
   await expect(page.locator("footer")).toContainText("Allow once.");
 });
 
+test("homepage never overflows horizontally", async ({ page }) => {
+  await page.goto("/");
+  await page.waitForLoadState("networkidle");
+  // scrollWidth must not exceed the viewport (allow 1px rounding). Guards
+  // against full-bleed elements (w-screen) re-introducing horizontal scroll.
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
 test("security page makes verifiable claims", async ({ page }) => {
   await page.goto("/security");
   await expect(page.locator("h1")).toHaveText("Security");

@@ -63,6 +63,9 @@ html {
   background: var(--bg);
   scroll-behavior: smooth;
   scroll-padding-top: 6rem;
+  /* No horizontal scroll, ever. `clip` (not `hidden`) so position: sticky
+     keeps working — `hidden` would turn html into a scroll container. */
+  overflow-x: clip;
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -75,6 +78,7 @@ body {
   font-family: "General Sans", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   letter-spacing: -0.005em;
+  overflow-x: clip;
 }
 
 /* ── Type roles ───────────────────────────────────────────────────────────── */
@@ -221,13 +225,17 @@ summary::-webkit-details-marker { display: none; }
 details:not([open]) .chevron { transform: rotate(-90deg); }
 
 ::selection { background: var(--vault-tint); color: var(--ink); }
-::-webkit-scrollbar { width: 11px; height: 11px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: var(--line-strong);
-  border-radius: 0;
-  border: 3px solid transparent;
-  background-clip: padding-box;
+
+/* Hide every scrollbar (page and inner scroll areas like code blocks/tables).
+   Scrolling still works via wheel, touch, drag, and keyboard. */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* legacy Edge */
+}
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* Chrome, Safari, Brave, Edge */
 }
 
 /* The cursor glow belonged to the old world. Kept as an inert no-op so the
