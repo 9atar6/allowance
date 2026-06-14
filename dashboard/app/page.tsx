@@ -56,9 +56,11 @@ export default function Landing() {
           <br />
           for software.
         </h1>
-        <p className="mx-auto mt-8 max-w-xl text-[17px] leading-relaxed text-[var(--text-muted)]">
-          Your apps and agents get one key with a hard cap. At zero, the answer
-          is no. Leaked? Revoke it and it&apos;s dead everywhere in seconds.
+        <p className="mx-auto mt-8 max-w-xl text-pretty text-[17px] leading-relaxed text-[var(--text-muted)]">
+          Your apps and agents get one key with a hard cap.
+          <br className="hidden sm:inline" /> At zero, the answer is no.
+          <br className="hidden sm:inline" /> Leaked? Revoke it and it&apos;s
+          dead everywhere in seconds.
         </p>
         <div className="mt-10 flex items-center justify-center gap-3">
           <Link href="/login" className="btn-accent px-6 py-3 text-sm">

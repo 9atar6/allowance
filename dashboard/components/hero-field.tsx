@@ -160,14 +160,14 @@ export function HeroField() {
   return (
     <div
       aria-hidden
-      className="pointer-events-none absolute left-1/2 top-0 -z-10 h-[640px] w-screen -translate-x-1/2"
+      className="pointer-events-none absolute bottom-0 left-1/2 top-0 -z-10 w-screen -translate-x-1/2"
       style={{
-        // Fade the field out toward the edges and bottom so it never competes
-        // with the hero text — it's atmosphere, not decoration.
+        // Spans the whole hero (behind the receipt too); fades in under the nav
+        // and out just before the next section, so it never bleeds past it.
         maskImage:
-          "radial-gradient(120% 90% at 50% 30%, #000 35%, transparent 78%)",
+          "linear-gradient(to bottom, transparent 0%, #000 7%, #000 88%, transparent 100%)",
         WebkitMaskImage:
-          "radial-gradient(120% 90% at 50% 30%, #000 35%, transparent 78%)",
+          "linear-gradient(to bottom, transparent 0%, #000 7%, #000 88%, transparent 100%)",
       }}
     >
       <canvas ref={canvasRef} className="h-full w-full" />
