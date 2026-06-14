@@ -8,8 +8,9 @@ code, is published at https://getallowance.dev/security.
 ## Reporting a vulnerability
 
 Please report vulnerabilities privately via
-[GitHub security advisories](https://github.com/9atar6/allowance/security/advisories/new).
-Do not open a public issue for security reports.
+[GitHub security advisories](https://github.com/9atar6/allowance/security/advisories/new)
+or email <support@getallowance.dev>. Do not open a public issue for security
+reports.
 
 - We aim to acknowledge reports within 48 hours.
 - We will keep you informed while we investigate and fix.

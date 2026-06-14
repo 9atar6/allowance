@@ -154,6 +154,13 @@ export default function Security() {
               className="text-[var(--accent)] hover:underline"
             >
               GitHub security advisories
+            </a>{" "}
+            or email{" "}
+            <a
+              href="mailto:support@getallowance.dev"
+              className="text-[var(--accent)] hover:underline"
+            >
+              support@getallowance.dev
             </a>
             . We aim to acknowledge within 48 hours. No bounty program yet, but
             researchers are credited in the changelog.

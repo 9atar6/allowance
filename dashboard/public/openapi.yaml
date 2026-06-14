@@ -8,6 +8,8 @@ info:
     every response carries x-allowance-* spend headers so agents can adapt
     before hitting the wall. Source: https://github.com/9atar6/allowance
   contact:
+    name: Allowance support
+    email: support@getallowance.dev
     url: https://github.com/9atar6/allowance/issues
 servers:
   - url: https://api.getallowance.dev

@@ -82,14 +82,14 @@ export default function Privacy() {
 
           <H2>Contact</H2>
           <p>
-            Privacy questions or deletion requests: open an issue at{" "}
+            Privacy questions or deletion requests:{" "}
             <a
-              href="https://github.com/9atar6/allowance/issues"
+              href="mailto:support@getallowance.dev"
               className="text-[var(--accent)] hover:underline"
             >
-              github.com/9atar6/allowance
+              support@getallowance.dev
             </a>
-            . A support inbox is coming with general availability.
+            .
           </p>
         </div>
       </main>
