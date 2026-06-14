@@ -17,11 +17,13 @@ export const metadata: Metadata = {
     description: DESCRIPTION,
     siteName: "Allowance",
     type: "website",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Allowance — pocket money for software" }],
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: TITLE,
     description: DESCRIPTION,
+    images: ["/og.png"],
   },
 };
 
