@@ -12,6 +12,7 @@ import { SpendWebhookSetting } from "@/components/spend-webhook-setting";
 import { Onboarding } from "@/components/onboarding";
 import { OnboardingGate } from "@/components/onboarding-gate";
 import { PlanCard } from "@/components/plan-card";
+import { SpendReceipt } from "@/components/spend-receipt";
 import {
   ProjectsSection,
   type AttachmentRow,
@@ -233,6 +234,14 @@ export default async function DashboardPage({
     cost: Number(s.cost),
   }));
 
+  // Spend receipt: resolve endpoint names + total, for the shareable slip.
+  const receiptServices = serviceRows.map((s) => ({
+    name: (s.endpointId && serviceNames[s.endpointId]) || "unknown service",
+    requests: s.requests,
+    cost: s.cost,
+  }));
+  const receiptTotal = receiptServices.reduce((sum, s) => sum + s.cost, 0);
+
   // Map request_id → request detail, to enrich debit rows.
   const usageByReq = new Map<string, { status: number | null; endpointId: string | null }>();
   for (const u of usage ?? []) {
@@ -342,6 +351,16 @@ export default async function DashboardPage({
           )}
         </div>
         </div>
+      </CollapsibleCard>
+
+      {/* Spend receipt: the canonical money display, live and shareable */}
+      <CollapsibleCard title="Receipt">
+        <SpendReceipt
+          services={receiptServices}
+          totalSpent={receiptTotal}
+          budgetLeft={Number(balance)}
+          periodDays={30}
+        />
       </CollapsibleCard>
 
       {/* Sticky choice: minting the first key must not unmount onboarding
