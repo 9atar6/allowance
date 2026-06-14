@@ -549,8 +549,13 @@ x-allowance-project-remaining: 8.40000 # only if the project has a budget`}
                       What happens to in-flight streams when a cap trips?
                     </p>
                     <p className="mt-1">
-                      Caps are checked before each call. A stream that already
-                      started always finishes; the next call gets the 402.
+                      Caps are checked before each call, so the next call after
+                      a cap trips gets the 402. Normal streams pass straight
+                      through untouched. For per-token streaming there is also a
+                      mid-stream guard: if a single long generation would blow
+                      well past your remaining budget, the proxy ends that stream
+                      cleanly (a normal terminal event) rather than letting it
+                      overshoot the cap.
                     </p>
                   </div>
                   <div>

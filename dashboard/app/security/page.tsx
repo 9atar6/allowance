@@ -100,8 +100,10 @@ export default function Security() {
           >
             The database denies all access by default (row-level security); you
             can only ever read your own rows. The edge proxy itself does not
-            hold an admin credential: it runs with a restricted role that can
-            execute exactly four database functions and touch nothing else.
+            hold an admin credential: it runs with a restricted role granted
+            only a small, explicit set of database functions (balance and
+            context reads, the debit, child-key minting, and the scheduled
+            refill and alert jobs) and can touch nothing else.
           </Claim>
 
           <Claim
