@@ -93,10 +93,18 @@ export function HeroField() {
     };
 
     let raf = 0;
-    const onMove = (e: PointerEvent) => {
+    const setTarget = (clientX: number, clientY: number) => {
       const rect = canvas.getBoundingClientRect();
-      targetX = e.clientX - rect.left;
-      targetY = e.clientY - rect.top;
+      targetX = clientX - rect.left;
+      targetY = clientY - rect.top;
+    };
+    const onMove = (e: PointerEvent) => setTarget(e.clientX, e.clientY);
+    // Touch: follow the finger while it's down (passive — page scroll is never
+    // blocked). iOS doesn't reliably emit pointermove for touch, so handle it
+    // explicitly. The cluster fades out when the finger lifts.
+    const onTouch = (e: TouchEvent) => {
+      const t = e.touches[0];
+      if (t) setTarget(t.clientX, t.clientY);
     };
     const onLeave = () => {
       targetX = -9999;
@@ -125,6 +133,10 @@ export function HeroField() {
     raf = requestAnimationFrame(draw);
     window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("pointerout", onLeave, { passive: true });
+    window.addEventListener("touchstart", onTouch, { passive: true });
+    window.addEventListener("touchmove", onTouch, { passive: true });
+    window.addEventListener("touchend", onLeave, { passive: true });
+    window.addEventListener("touchcancel", onLeave, { passive: true });
     window.addEventListener("resize", resize);
     const themeObserver = new MutationObserver(readInk);
     themeObserver.observe(document.documentElement, {
@@ -136,6 +148,10 @@ export function HeroField() {
       cancelAnimationFrame(raf);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerout", onLeave);
+      window.removeEventListener("touchstart", onTouch);
+      window.removeEventListener("touchmove", onTouch);
+      window.removeEventListener("touchend", onLeave);
+      window.removeEventListener("touchcancel", onLeave);
       window.removeEventListener("resize", resize);
       themeObserver.disconnect();
     };
