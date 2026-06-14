@@ -115,10 +115,12 @@ export function HeroField() {
       const t = e.touches[0];
       if (t) setTarget(t.clientX, t.clientY);
     };
-    // Desktop: when the mouse leaves, ease the cluster away. Touch deliberately
-    // does NOT reset on lift — the gather stays where you last touched so it's
-    // visible on a phone (no hover to keep it alive).
-    const onLeave = () => {
+    // Desktop: when the mouse leaves, ease the cluster away. Touch must NOT
+    // reset on lift — pointerout fires when a finger is raised, which would make
+    // every tap a one-frame flash. Ignoring touch here keeps the gather where
+    // you last touched, so the effect is actually visible on a phone.
+    const onLeave = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
       targetX = -9999;
       targetY = -9999;
       kick();
