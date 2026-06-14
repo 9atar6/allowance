@@ -11,7 +11,7 @@ incident that isn't covered here should add a section.
 | Worker logs (live) | `cd proxy && npx wrangler tail` |
 | Worker dashboard | Cloudflare → Workers & Pages → `api-wallet-proxy` (metrics, errors, cron runs) |
 | Database | Supabase dashboard → project `izcxmonodmfoebaazxxe` |
-| Dashboard hosting | Vercel → `allowance` project (deployments, function logs) |
+| Dashboard hosting | Cloudflare → Workers & Pages → `allowance-dashboard` (serves `getallowance.dev`; deployments, logs) |
 | CI | GitHub → Actions tab |
 
 ---
@@ -80,8 +80,9 @@ Most "bugs" are a cap they forgot they set, or a provider key they rotated.
 
 - **Worker**: `cd proxy && npx wrangler deploy`. Verify: healthz 200 + one real
   proxied call. Rollback: `npx wrangler rollback`.
-- **Dashboard**: push to `main` → Vercel auto-deploys. Rollback: Vercel →
-  Deployments → previous → "Promote to Production".
+- **Dashboard**: `cd dashboard && NEXT_PUBLIC_APP_URL=https://getallowance.dev npm run cf:deploy`.
+  Rollback: `cd dashboard && npx wrangler rollback`, or Cloudflare → Workers &
+  Pages → `allowance-dashboard` → Deployments → roll back to a prior version.
 - **Database**: paste `db/schema.sql` in the Supabase SQL editor (idempotent).
   There is no automated rollback — schema changes are additive by convention;
   destructive changes require a dedicated reviewed migration.

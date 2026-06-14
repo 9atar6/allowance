@@ -127,6 +127,7 @@ export function HeroField() {
     readInk();
     resize(); // draws the initial faint grid
 
+    window.addEventListener("pointerdown", onMove, { passive: true });
     window.addEventListener("pointermove", onMove, { passive: true });
     window.addEventListener("pointerout", onLeave, { passive: true });
     window.addEventListener("touchstart", onTouch, { passive: true });
@@ -143,6 +144,7 @@ export function HeroField() {
 
     return () => {
       cancelAnimationFrame(raf);
+      window.removeEventListener("pointerdown", onMove);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerout", onLeave);
       window.removeEventListener("touchstart", onTouch);

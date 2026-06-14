@@ -202,7 +202,7 @@ curl "${PROXY}/v1/proxy/gemini/models/gemini-1.5-flash:generateContent" \\
   -d '{ "contents": [{ "parts": [{ "text": "hi" }] }] }'`}
                 />
                 <CodeBlock
-                  label="vercel ai sdk"
+                  label="ai sdk (@ai-sdk/openai)"
                   code={`import { createOpenAI } from "@ai-sdk/openai";
 
 const openai = createOpenAI({

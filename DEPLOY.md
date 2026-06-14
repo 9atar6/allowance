@@ -1,6 +1,6 @@
 # Deploy Runbook
 
-Order matters: **Supabase → Proxy (Cloudflare) → Dashboard (Vercel) → Polar → Auth URLs.**
+Order matters: **Supabase → Proxy (Cloudflare) → Dashboard (Cloudflare) → Polar → Auth URLs.**
 Do it once for a `dev`/preview environment, then repeat for production with prod keys.
 
 ---
@@ -27,7 +27,7 @@ Do it once for a `dev`/preview environment, then repeat for production with prod
 ```bash
 cd proxy
 npm install
-npm test                                   # 51 tests should pass
+npm test                                   # 72 tests should pass
 
 # Create the KV namespace, then paste the printed id(s) into wrangler.jsonc
 npx wrangler kv namespace create WALLET_KV
@@ -58,31 +58,54 @@ Note the deployed Worker URL, e.g. `https://api-wallet-proxy.<acct>.workers.dev`
 
 ---
 
-## 3. Dashboard (Vercel)
+## 3. Dashboard (Cloudflare Workers, via OpenNext)
+
+The Next.js dashboard runs on Cloudflare Workers using the
+[`@opennextjs/cloudflare`](https://opennext.js.org/cloudflare) adapter — same
+account as the proxy, no second vendor. (For a containerized alternative, see
+[`SELFHOST.md`](SELFHOST.md); the Dockerfile path is unaffected.)
 
 ```bash
 cd dashboard
 npm install
-npm run build        # sanity check locally
+npm run build                 # local sanity check
+npm run cf:build              # OpenNext transform → .open-next/worker.js
 ```
 
-Push to a Git repo, import into Vercel, set **root directory = `dashboard`**, and
-add env vars (Project → Settings → Environment Variables):
+Config lives in `dashboard/wrangler.jsonc` (`nodejs_compat`, the `ASSETS`
+binding, and the custom-domain route) and `dashboard/open-next.config.ts`.
 
-| Var | Value | Exposed to browser? |
-|-----|-------|---------------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | yes |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key | yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | service_role key | **no** |
-| `NEXT_PUBLIC_APP_URL` | your Vercel URL | yes |
-| `PROXY_KEY_PREFIX` | `alw_live_` | no |
-| `POLAR_ACCESS_TOKEN` | `polar_oat_…` (from step 4) | **no** |
-| `POLAR_WEBHOOK_SECRET` | `polar_whs_…` (from step 4) | **no** |
-| `POLAR_PRO_PRODUCT_ID` | the $20/mo product id (from step 4) | **no** |
-| `PROXY_ADMIN_URL` | deployed worker URL | **no** |
-| `PROXY_PURGE_SECRET` | = worker `ADMIN_PURGE_SECRET` | **no** |
+**Public, build-safe values** go in `wrangler.jsonc` `"vars"`
+(`PROXY_KEY_PREFIX`, `NEXT_PUBLIC_APP_URL`). `NEXT_PUBLIC_*` are also inlined at
+build time, so set `NEXT_PUBLIC_APP_URL` to your real origin before building:
 
-Deploy.
+```bash
+# PowerShell: $env:NEXT_PUBLIC_APP_URL="https://getallowance.dev"
+NEXT_PUBLIC_APP_URL=https://getallowance.dev npm run cf:deploy
+```
+
+**Server-only secrets** are set with `wrangler secret put` (never in the repo):
+
+| Secret | Value |
+|--------|-------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | service_role key (**never** browser-exposed) |
+| `POLAR_ACCESS_TOKEN` | `polar_oat_…` (from step 4) |
+| `POLAR_WEBHOOK_SECRET` | `polar_whs_…` (from step 4) |
+| `POLAR_PRO_PRODUCT_ID` | the $20/mo product id (from step 4) |
+| `PROXY_ADMIN_URL` | deployed worker URL (e.g. `https://api.getallowance.dev`) |
+| `PROXY_PURGE_SECRET` | = worker `ADMIN_PURGE_SECRET` |
+
+```bash
+cd dashboard
+npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY    # repeat per secret above
+```
+
+**Custom domain:** in the Cloudflare dashboard, Workers & Pages →
+`allowance-dashboard` → Domains → Add Custom Domain. If the apex already has a
+DNS record (e.g. a CNAME from a prior host), delete it first, then add the
+domain — Cloudflare creates the proxied record to the worker.
 
 ---
 
@@ -93,12 +116,12 @@ pays out to an individual — no registered business required.
 
 1. Create an organization at [polar.sh](https://polar.sh) (sign in with GitHub).
 2. **Product**: Products → New → "Allowance Pro", subscription, **$20/month**.
-   Copy the product id → `POLAR_PRO_PRODUCT_ID` (Vercel).
+   Copy the product id → `POLAR_PRO_PRODUCT_ID` (worker secret).
 3. **Access token**: Settings → Developers → New token (checkouts +
-   customer sessions scopes, or all) → `POLAR_ACCESS_TOKEN` (Vercel).
+   customer sessions scopes, or all) → `POLAR_ACCESS_TOKEN` (worker secret).
 4. **Webhook**: Settings → Webhooks → Add endpoint
    `https://<your-app>/api/polar/webhook`, format **Raw**, subscribe to all
-   `subscription.*` events. Copy the secret → `POLAR_WEBHOOK_SECRET` (Vercel).
+   `subscription.*` events. Copy the secret → `POLAR_WEBHOOK_SECRET` (worker secret).
 5. Redeploy the dashboard so the env takes effect.
 
 ---

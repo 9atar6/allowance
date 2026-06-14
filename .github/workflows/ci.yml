@@ -37,7 +37,7 @@ jobs:
         working-directory: dashboard
     env:
       # Placeholders so module-load env guards don't fail the CI build.
-      # Real values live only in Vercel.
+      # Real values live only as Cloudflare Worker secrets.
       NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder
       SUPABASE_SERVICE_ROLE_KEY: ci-placeholder

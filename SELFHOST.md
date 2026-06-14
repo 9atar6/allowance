@@ -21,7 +21,7 @@ dashboard is a normal Next.js app and **does** containerize; a Dockerfile and
 | --- | --- | --- |
 | Database + Vault + auth | Your Supabase project | Free tier |
 | Proxy (the part that holds keys) | Your Cloudflare Worker | Free tier |
-| Dashboard | Docker, Vercel, or any Node host | Free / your call |
+| Dashboard | Docker, Cloudflare Workers, or any Node host | Free / your call |
 
 ## 10-minute setup
 
@@ -58,7 +58,9 @@ docker compose up --build                # http://localhost:3000
 ```
 
 Or run it on Node directly (`cd dashboard && npm install && npm run build &&
-npm start`) with the same environment variables, or deploy it to Vercel.
+npm start`) with the same environment variables. To run it on Cloudflare
+Workers instead (how the hosted instance runs), use the OpenNext adapter:
+`npm run cf:deploy` from `dashboard/` (config in `dashboard/wrangler.jsonc`).
 
 **4. Auth redirect.** In Supabase > Authentication > URL Configuration, add
 your dashboard origin (e.g. `http://localhost:3000`) to the allowed redirect

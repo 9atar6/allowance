@@ -43,7 +43,7 @@ proxy/  ── Hono on Cloudflare Workers ────────────�
    └─────────────────────────────────────────────────────────────┘
         │
         ▼
-db/  Supabase (Postgres + Vault)         dashboard/  Next.js 15 (Vercel)
+db/  Supabase (Postgres + Vault)         dashboard/  Next.js 15 (Cloudflare)
    • RLS deny-by-default                   • GitHub/Google OAuth + magic link
    • creds encrypted in Vault              • connections → projects → keys
    • worker runs a restricted role         • rotation · ephemeral keys

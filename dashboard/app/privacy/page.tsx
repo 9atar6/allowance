@@ -60,11 +60,10 @@ export default function Privacy() {
           <H2>Who we share with</H2>
           <p>
             We use a small set of infrastructure providers to run the Service:
-            Supabase (database and authentication), Cloudflare (the edge proxy),
-            Polar (payments, as merchant of record; we never see or store your
-            card details), Resend
-            (transactional email), and Vercel (hosting). We do not sell your data
-            or share it for advertising.
+            Supabase (database and authentication), Cloudflare (the edge proxy
+            and dashboard hosting), Polar (payments, as merchant of record; we
+            never see or store your card details), and Resend (transactional
+            email). We do not sell your data or share it for advertising.
           </p>
 
           <H2>Cookies</H2>

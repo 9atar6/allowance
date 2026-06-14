@@ -23,7 +23,7 @@ reports.
 - The live deployments at `getallowance.dev` and `api.getallowance.dev`.
 
 Out of scope: denial-of-service volumetrics, social engineering, and issues in
-third-party providers (Cloudflare, Supabase, Vercel, Polar, Resend) without an
+third-party providers (Cloudflare, Supabase, Polar, Resend) without an
 Allowance-specific exploitation path.
 
 ## Key facts for reviewers
