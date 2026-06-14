@@ -50,7 +50,7 @@ export default function Landing() {
       {/* Hero */}
       <section className="relative mx-auto max-w-3xl px-6 pt-20 pb-24 text-center animate-in">
         <HeroField />
-        <Caps>Spend control for software that spends</Caps>
+        <Caps>Spend control for software</Caps>
         <h1 className="font-display mx-auto mt-7 text-6xl sm:text-7xl">
           Pocket money
           <br />
