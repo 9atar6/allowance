@@ -39,6 +39,18 @@ export default function RootLayout({
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
       <body className="min-h-screen antialiased">
+        {/* The OpenNext/Cloudflare build runs esbuild with keepNames, which
+            injects calls to its `__name` helper into the function next-themes
+            serializes into its inline anti-FOUC script. That helper lives only
+            in the server bundle, so the browser throws "__name is not defined"
+            on every page. Define it as a harmless identity before that inline
+            script runs — must stay first in <body>, ahead of ThemeProvider. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "globalThis.__name=globalThis.__name||function(t){return t};",
+          }}
+        />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
